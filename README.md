@@ -37,19 +37,20 @@ praxity-trace report course.json --out report/
 ```
 
 Open `report/report.html` in a browser. `report/report.json` holds the same data
-for an assistant or a script. Every view has a Chart mode and a Table mode, and
+for an LLM or a script. Every view has a Chart mode and a Table mode, and
 every mark points to its lesson file and line.
 
-## Views that need a model
+## Views that need an LLM
 
 Some views need judgment, such as which knowledge check covers which objective.
-Trace never calls a model itself. It prepares a bundle with the course text, a
-prompt and the answer format; your own model writes the answer; Trace checks the
+Trace never calls an LLM itself. It prepares a bundle with the course text, a
+prompt and the answer format; you run it through an LLM you already use, such as
+Claude or ChatGPT, which writes the answer; Trace checks the
 answer against this revision of the course and draws the view.
 
 ```sh
 praxity-trace prepare alignment course.json --out bundle/
-# your model reads bundle/prompt.md and bundle/course.md and writes bundle/answer.json
+# run bundle/prompt.md and bundle/course.md through your LLM; save its output as bundle/answer.json
 praxity-trace report course.json --out report/ --alignment bundle/answer.json
 ```
 
