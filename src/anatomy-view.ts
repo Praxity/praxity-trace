@@ -17,9 +17,9 @@ const LANE_LABEL: Record<(typeof LANES)[number], string> = {
 };
 const LANE_HELP: Record<(typeof LANES)[number], string> = {
 	unknown: "Assessment whose correct answers are not supplied by the input.",
-	text: "Text read on screen: paragraphs, lists, tables, notes, quotes and code.",
+	text: "Text read on screen: paragraphs, lists, tables, notes, quotes, code, visible cards and sequences.",
 	media: "Images, video, audio, charts and embedded documents.",
-	explore: "Content the learner opens or steps through: accordions, tabs, cards, sequences and labelled graphics. Interactive, but nothing to answer.",
+	explore: "Content the learner opens or steps through: accordions, tabs, flip cards, card carousels, scrollable horizontal sequences and labelled graphics. Interactive, but nothing to answer.",
 	activity: "A response without a right answer, such as a reflection or a checklist.",
 	check: "A question with a right answer.",
 };
@@ -243,7 +243,7 @@ export function renderAnatomy(report: Shape): string {
 	level: 3,
 	title: "Anatomy",
 	question: "What is each lesson made of, and where do learners act?",
-	lead: `<div class="table-wrap" tabindex="0" role="region" aria-label="Blocks, words and time by lesson">${compositionTable(report.anatomy)}</div>${method(`<p class="rule">Blocks are grouped by what learners do with them; blocks inside columns count individually, and headings, dividers, buttons and logic are left out. Words are on-screen text, headings included, narration and alt text excluded. The bar beside each number compares lessons within its column.</p>`)}`,
+	lead: `<div class="table-wrap" tabindex="0" role="region" aria-label="Blocks, words and time by lesson">${compositionTable(report.anatomy)}</div>${method(`<p class="rule">Blocks are grouped by what learners do with them; blocks inside columns count individually, and headings, dividers, buttons and logic are left out. Sequences count as explore only when horizontal and scrollable. Schema 1 omits these settings, so its sequences count as text; scrolling cannot be determined. Words are on-screen text, headings included, narration and alt text excluded. The bar beside each number compares lessons within its column.</p>`)}`,
 	chart: `<h4 class="chart-title">Block types by page</h4>${lessonVariants(report.anatomy.map((_, index) => index + 1), (lesson) => (lesson === null ? blockGrid(report.anatomy) : blockGrid([report.anatomy[lesson - 1] as LessonAnatomy], lesson)))}`,
 	table: blockTable(report.anatomy),
 	after: rhythmNote(report.rhythm, partialInput(report.anatomy)),

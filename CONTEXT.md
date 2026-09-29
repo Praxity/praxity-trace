@@ -52,7 +52,7 @@ Why a task checks work: diagnostic, practice, summative, none or unknown. Record
 Unclassified means no supported task type was assigned to a page. Unsupported means inspect marks at least one block's text coverage unsupported; that block may contain no learner prose. The two can overlap.
 
 **Explore block**:
-Content the learner opens or steps through, such as an accordion, tabs, cards or a labelled graphic. It is interactive but not an activity: the learner reveals, not responds.
+Content the learner opens or steps through, such as an accordion, tabs, flip cards, a card carousel, a scrollable horizontal sequence or a labelled graphic. Visible card grids and non-scrolling sequences are text. It is interactive but not an activity: the learner reveals, not responds.
 _Avoid_: interaction, activity (for this meaning)
 _Avoid_: learning activity, practice, response, engagement
 

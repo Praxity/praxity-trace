@@ -196,3 +196,43 @@ test("instruction nested inside an accordion counts as behind a click in schema 
 	const view = availabilityView(course, alignmentView(course, answer), anatomy(course).lessons);
 	assert.equal(view.checks[0]?.available, "behind-click");
 });
+
+test("schema 0 sequence instruction follows page position unless horizontal and scrollable", () => {
+	for (const settings of [{}, { orientation: "vertical", scrollable: true }, { orientation: "horizontal", scrollable: false }, { orientation: "horizontal", scrollable: true }]) {
+		const sequence = { id: "seq", type: "sequence", line: 1, data: { ...settings, items: [{ label: "Read the gauge", children: [{ id: "inner", type: "text", data: { content: "Read the flood gauge against the safe band." } }] }] } };
+		const course = parseCourse(JSON.stringify({
+			ok: true, schema: "praxity-inspect/0", studioVersion: "test", course: { title: "Flood gauge", locale: "en" },
+			lessons: [{ file: "gauge.prax", title: "Flood gauge", sha256: "x", pages: [
+				{ id: "p1", number: 1, title: "Earlier instruction", blocks: [sequence] },
+				{ id: "p2", number: 2, title: "Checks", blocks: [sequence, ...[1, 2, 3].map(i => ({ id: `q${i}`, type: "assessment", line: 5 + i, data: { question: "Is the flood gauge below the safe band?", options: [{ text: "Yes", correct: true }] } }))] },
+				{ id: "p3", number: 3, title: "Later instruction", blocks: [sequence] },
+			] }],
+		}));
+		const view = links(course, review(["1.2.1", "1.1.1", "1.3.1"].map((ref, i) => knowledge(`1.2.${i + 2}`, [{ ref, channel: "screen" }])))).availability;
+		const hides = settings.orientation === "horizontal" && settings.scrollable === true;
+		assert.deepEqual(view.checks.map(check => check.available), hides ? ["behind-click", "behind-click", "after"] : ["same-page", "earlier-page", "after"]);
+		assert.deepEqual(view.checks.map(check => check.instructionLinks[0]?.available), view.checks.map(check => check.available));
+	}
+});
+
+test("instruction nested inside a schema 1 sequence follows page position", () => {
+	const location = { file: "gauge.prax", startLine: 1, endLine: 1 };
+	const text = (ref: string, role: string, value: string) => ({ ref, role, value, format: "plain", location });
+	const course = parseCourse(JSON.stringify({
+		ok: true, schema: "praxity-inspect/1", studioVersion: "test", revision: "a".repeat(64), course: { title: "Flood gauge", locale: "en" },
+		lessons: [{ file: "gauge.prax", id: null, title: "Flood gauge", sha256: "x", unlinkedNarrationCount: 0, narration: [], pages: [
+			{ ref: "p1", id: null, number: 1, title: "Teach and check", blocks: [
+				{ ref: "seq", parentRef: null, id: null, type: "sequence", coverage: "container", location, texts: [text("seq/label", "heading", "Read the gauge")] },
+				{ ref: "inner", parentRef: "seq", id: null, type: "text", coverage: "text", location, texts: [text("inner/body", "body", "Read the flood gauge against the safe band.")] },
+				{ ref: "q1", parentRef: null, id: null, type: "assessment", coverage: "text", location, texts: [text("q1/prompt", "prompt", "Is the flood gauge below the safe band?")] },
+			] },
+			{ ref: "p2", id: null, number: 2, title: "Later check", blocks: [
+				{ ref: "q2", parentRef: null, id: null, type: "assessment", coverage: "text", location, texts: [text("q2/prompt", "prompt", "Is the flood gauge below the safe band?")] },
+			] },
+		] }],
+	}));
+	const view = links(course, review(["1.1.3", "1.2.1"].map(ref => knowledge(ref, [{ ref: "1.1.2", channel: "screen" }])))).availability;
+	assert.deepEqual(view.checks.map(check => check.available), ["same-page", "earlier-page"]);
+	assert.deepEqual(view.checks.map(check => check.instructionLinks[0]?.available), ["same-page", "earlier-page"]);
+	assert.deepEqual(view.checks.map(check => check.source?.ref), ["1.1.2", "1.1.2"]);
+});

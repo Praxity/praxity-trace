@@ -676,3 +676,38 @@ test("cards hide content only as flip cards or a carousel", async () => {
 	assert.equal(card({ layout: "slides", items: [{ front: "A", back: "" }] }), "explore");
 	assert.equal(roleOf({ type: "accordion" }), "explore");
 });
+
+test("sequences count as explore only when horizontal and scrollable", async () => {
+	const { roleOf } = await import("../src/anatomy.ts");
+	const sequence = (data: Record<string, unknown>) => roleOf({ type: "sequence", data });
+	assert.equal(roleOf({ type: "sequence" }), "text");
+	assert.equal(sequence({ scrollable: true }), "text", "default orientation is vertical");
+	assert.equal(sequence({ orientation: "horizontal" }), "text", "default scrollable is false");
+	assert.equal(sequence({ orientation: "horizontal", scrollable: "true" }), "text", "requires a boolean");
+	for (const variant of ["numbered", "timeline", "plain"]) {
+		for (const distribution of ["uniform", "scaled"]) {
+			for (const alignment of ["left", "center", "right"]) {
+				const settings = { variant, distribution, alignment };
+				assert.equal(sequence({ ...settings, orientation: "vertical", scrollable: true }), "text");
+				assert.equal(sequence({ ...settings, orientation: "horizontal", scrollable: false }), "text");
+				assert.equal(sequence({ ...settings, orientation: "horizontal", scrollable: true }), "explore");
+			}
+		}
+	}
+});
+
+test("Anatomy marks sequences as text in both inspect schemas", () => {
+	for (const file of ["examples.inspect.json", "examples.schema1.inspect.json"]) {
+		const course = parseCourse(readFileSync(new URL(`fixtures/${file}`, import.meta.url), "utf8"));
+		const sequence = course.lessons.flatMap(lesson => lesson.pages).flatMap(page => page.blocks).find(block => block.type === "sequence");
+		assert.ok(sequence);
+		assert.equal(sequence.data.orientation, undefined);
+		assert.equal(sequence.data.scrollable, undefined);
+		const mark = anatomy(course).lessons.flatMap(lesson => lesson.marks).find(mark => mark.type === "sequence");
+		assert.equal(mark?.role, "text");
+		assert.equal(mark?.line, sequence.line, "source pointer is preserved");
+		if (course.schema === "praxity-inspect/1") {
+			assert.equal(sequence.data.variant, undefined, "schema 1 omits sequence settings");
+		}
+	}
+});

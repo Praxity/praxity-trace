@@ -18,6 +18,7 @@ export function isKnowledgeCheck(block: Block): boolean | null {
 export const ROLES = ["text", "media", "explore", "response"] as const;
 export type Role = (typeof ROLES)[number];
 
+/** Default roles; card and sequence settings are resolved by roleOf. */
 export const ROLE_BY_TYPE: Record<string, Role> = {
 	text: "text",
 	quote: "text",
@@ -36,7 +37,7 @@ export const ROLE_BY_TYPE: Record<string, Role> = {
 	heroCover: "media",
 	accordion: "explore",
 	tabs: "explore",
-	sequence: "explore",
+	sequence: "text",
 	card: "explore",
 	labeledGraphic: "explore",
 	assessment: "response",
@@ -48,8 +49,11 @@ export const ROLE_BY_TYPE: Record<string, Role> = {
 /**
  * A block's role. Cards hide content only as flip cards or a carousel (`layout: slides`); a grid,
  * masonry or rows of cards shows every card at once, so it reads like text.
+ * Sequences put steps in a scroll strip only when horizontal and scrollable. Schema 1 omits
+ * those settings, so its sequences count as text without inferring hidden content.
  */
 export function roleOf(block: { type: string; data?: Record<string, unknown> }): Role | undefined {
+	if (block.type === "sequence") return block.data?.orientation === "horizontal" && block.data?.scrollable === true ? "explore" : "text";
 	if (block.type !== "card") return ROLE_BY_TYPE[block.type];
 	const items = Array.isArray(block.data?.items) ? block.data.items : [];
 	const flips = items.some((item) => typeof item === "object" && item !== null && typeof (item as { back?: unknown }).back === "string" && (item as { back: string }).back.trim() !== "");
