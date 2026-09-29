@@ -7,8 +7,7 @@ beside Check (accessibility) and Proof (learner results), and is in research:
 views are drafts until they prove useful on real courses.
 
 Use the vocabulary in [CONTEXT.md](CONTEXT.md). Read [docs/adr/](docs/adr/)
-before changing inputs, model use, runtime or scoring. Current work is in
-[backlog.md](backlog.md).
+before changing inputs, model use, runtime or scoring. Current work is tracked outside this repository.
 
 ## Design rules
 
