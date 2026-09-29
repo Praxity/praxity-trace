@@ -1,0 +1,26 @@
+{
+	"name": "praxity-trace",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Design diagnostics for learning courses",
+	"bin": {
+		"praxity-trace": "src/cli.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "node --test test/*.test.ts",
+		"verify": "pnpm typecheck && pnpm test"
+	},
+	"engines": {
+		"node": ">=24.18"
+	},
+	"packageManager": "pnpm@11.5.3",
+	"devDependencies": {
+		"@types/node": "^24.13.6",
+		"typescript": "^7.0.2"
+	},
+	"dependencies": {
+		"parse5": "8.0.1"
+	}
+}

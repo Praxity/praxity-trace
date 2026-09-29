@@ -1,0 +1,45 @@
+---
+title: Flood response judgment
+lang: en
+---
+
+## First decision
+
+### The river reading is uncertain. Apply the Bayesian update before choosing a gate setting.
+as: choice
+
+(x) Keep the gate partly open
+( ) Close the gate at once
+
+---
+
+## A usable rule
+
+Read the operating rule: when two gauges disagree, hold the gate setting and request a second reading.
+
+### Two gauges disagree. What should you do first?
+as: choice
+
+(x) Hold the gate setting and request a second reading
+( ) Move the gate based on the higher gauge alone
+
+---
+
+## Test a hypothesis
+
+Open the flood model. Predict whether opening the relief channel will lower the upstream reading, change the relief setting, and compare the result with your prediction.
+
+[Open flood model](assets/flood-model.html)
+as: button
+
+---
+
+## Explain and discuss
+
+Write a short explanation of why the relief channel changed the upstream reading. Then discuss your explanation with a colleague outside this course.
+
+---
+
+## Compare reports
+
+Compare the two readings: gauge A shows 12 units and gauge B shows 16 units. List what further information you would request before moving the gate.

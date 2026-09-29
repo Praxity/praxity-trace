@@ -1,0 +1,1 @@
+<?xml version="1.0"?><manifest><organizations><organization><item identifier="i2" identifierref="r2"/><item identifier="i1" identifierref="r1"/></organization></organizations><resources><resource identifier="r1" href="./first.html"/><resource identifier="r2" href="second.html"/></resources></manifest>

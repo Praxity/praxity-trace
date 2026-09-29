@@ -1,0 +1,57 @@
+---
+title: Flood gate awareness
+lang: en
+---
+
+## Read the gate guide
+
+Open the two headings and read how the gate works. You can return to this guide during a shift.
+
+### Normal level
+as: accordion
+
+At the normal river level, the gate stays open and water moves through the channel.
+
+### High level
+
+At the high river level, the operator closes the gate and checks the upstream gauge.
+
+close: accordion
+
+---
+
+## Watch the overview
+
+Watch the short overview of the gate and the upstream gauge. The words below restate its main point.
+
+https://example.invalid/gate-overview.mp4
+as: video
+
+The upstream gauge shows how much water is waiting behind the gate.
+
+---
+
+## Before the explanation
+
+This first question checks what you already know. Choose an answer before reading the next page; it does not determine completion.
+
+### What does the upstream gauge show?
+as: choice
+
+(x) Water waiting behind the gate
+( ) The gate's paint colour
+
+---
+
+## Reference summary
+
+Read this summary: the gate controls flow, while the upstream gauge shows water waiting behind it.
+
+---
+
+## Map preview
+
+https://example.invalid/flood-map
+as: embed
+
+var: mapReady = false

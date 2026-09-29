@@ -1,0 +1,2041 @@
+{
+  "coverage": {
+    "status": "partial",
+    "limitations": "Partial text projection: unsupported blocks may contain additional prose or media. Assessment correctness and scoring reflect authored source and course/lesson defaults, not workspace settings; open or unsupported correctness stays unknown. Media sources and asset status are known, but remote contents, caption-track prose, and audio/video playback lengths are not measured. Stored narration durations are sidecar-recorded alignment endpoints, not measured full-file durations; narration time remains a script estimate at 150 words per minute. Disabled and unlinked scripts are excluded from spoken counts. Feedback, glossary definitions, media alternatives and authored transcripts are separate from on-screen prose. Reading and course timing omit unprojected content and media playback."
+  },
+  "tool": {
+    "name": "Praxity Trace",
+    "version": "0.0.0"
+  },
+  "courseHash": "33ad774574dc38095747fc9a506516fbc0bc9c8dce339517786d9fb34df37444",
+  "source": {
+    "schema": "praxity-inspect/1",
+    "studioVersion": "0.2.0",
+    "revision": "0a36f24a11325725077313c3a1c11d8191ac38b424c209c4bb6dbd6af31f09fa",
+    "projectionVersion": 2,
+    "mediaInventory": [],
+    "assessmentGroups": [],
+    "unlinkedNarration": [],
+    "places": {
+      "1.1.1": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 6,
+        "sourceRef": "lesson/lesson.prax/blocks/0",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 6,
+          "endLine": 7
+        },
+        "position": 0
+      },
+      "1.1.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 8,
+        "sourceRef": "lesson/lesson.prax/blocks/1",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 8,
+          "endLine": 13
+        },
+        "position": 1
+      },
+      "1.2.1": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 16,
+        "sourceRef": "lesson/lesson.prax/blocks/3",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 16,
+          "endLine": 17
+        },
+        "position": 2
+      },
+      "1.2.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 18,
+        "sourceRef": "lesson/lesson.prax/blocks/4",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 18,
+          "endLine": 18
+        },
+        "position": 3
+      },
+      "1.2.3": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 20,
+        "sourceRef": "lesson/lesson.prax/blocks/5",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 20,
+          "endLine": 25
+        },
+        "position": 4
+      },
+      "1.3.1": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 28,
+        "sourceRef": "lesson/lesson.prax/blocks/7",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 28,
+          "endLine": 29
+        },
+        "position": 5
+      },
+      "1.3.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 30,
+        "sourceRef": "lesson/lesson.prax/blocks/8",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 30,
+          "endLine": 30
+        },
+        "position": 6
+      },
+      "1.3.3": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 32,
+        "sourceRef": "lesson/lesson.prax/blocks/9",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 32,
+          "endLine": 33
+        },
+        "position": 7
+      },
+      "1.4.1": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 37,
+        "sourceRef": "lesson/lesson.prax/blocks/11",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 37,
+          "endLine": 38
+        },
+        "position": 8
+      },
+      "1.4.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 39,
+        "sourceRef": "lesson/lesson.prax/blocks/12",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 39,
+          "endLine": 39
+        },
+        "position": 9
+      },
+      "1.5.1": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 5,
+        "file": "lesson.prax",
+        "line": 43,
+        "sourceRef": "lesson/lesson.prax/blocks/14",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 43,
+          "endLine": 44
+        },
+        "position": 10
+      },
+      "1.5.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 5,
+        "file": "lesson.prax",
+        "line": 45,
+        "sourceRef": "lesson/lesson.prax/blocks/15",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 45,
+          "endLine": 45
+        },
+        "position": 11
+      }
+    },
+    "unlinkedNarrationCount": 0
+  },
+  "course": {
+    "title": "Flood response judgment",
+    "locale": "en"
+  },
+  "speakingWpm": 150,
+  "anatomy": [
+    {
+      "file": "lesson.prax",
+      "title": "Flood response judgment",
+      "pages": 5,
+      "words": 158,
+      "counts": {
+        "text": 4,
+        "media": 0,
+        "explore": 0,
+        "response": 2
+      },
+      "marks": [
+        {
+          "lesson": "lesson.prax",
+          "page": 1,
+          "order": 0,
+          "role": "response",
+          "type": "assessment",
+          "knowledgeCheck": true,
+          "scoring": {
+            "gradingMode": "none",
+            "scored": false,
+            "points": null,
+            "required": false,
+            "attempts": 0,
+            "feedbackMode": null
+          },
+          "line": 8,
+          "coverage": "text",
+          "ref": "1.1.2",
+          "sourceRef": "lesson/lesson.prax/blocks/1",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 8,
+            "endLine": 13
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/1",
+              "role": "narration",
+              "value": "The river reading is uncertain. Apply the Bayesian update before choosing a gate setting.\n\nKeep the gate partly open\n\nClose the gate at once",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 8,
+                "endLine": 13
+              },
+              "blockRef": "lesson/lesson.prax/blocks/1",
+              "pageRef": "lesson/lesson.prax/page/1",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 24
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 2,
+          "order": 1,
+          "role": "text",
+          "type": "text",
+          "line": 18,
+          "coverage": "text",
+          "ref": "1.2.2",
+          "sourceRef": "lesson/lesson.prax/blocks/4",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 18,
+            "endLine": 18
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/3",
+              "role": "narration",
+              "value": "Read the operating rule: when two gauges disagree, hold the gate setting and request a second reading.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 18,
+                "endLine": 18
+              },
+              "blockRef": "lesson/lesson.prax/blocks/4",
+              "pageRef": "lesson/lesson.prax/page/2",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 17
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 2,
+          "order": 2,
+          "role": "response",
+          "type": "assessment",
+          "knowledgeCheck": true,
+          "scoring": {
+            "gradingMode": "none",
+            "scored": false,
+            "points": null,
+            "required": false,
+            "attempts": 0,
+            "feedbackMode": null
+          },
+          "line": 20,
+          "coverage": "text",
+          "ref": "1.2.3",
+          "sourceRef": "lesson/lesson.prax/blocks/5",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 20,
+            "endLine": 25
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/4",
+              "role": "narration",
+              "value": "Two gauges disagree. What should you do first?\n\nHold the gate setting and request a second reading\n\nMove the gate based on the higher gauge alone",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 20,
+                "endLine": 25
+              },
+              "blockRef": "lesson/lesson.prax/blocks/5",
+              "pageRef": "lesson/lesson.prax/page/2",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 26
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 3,
+          "order": 3,
+          "role": "text",
+          "type": "text",
+          "line": 30,
+          "coverage": "text",
+          "ref": "1.3.2",
+          "sourceRef": "lesson/lesson.prax/blocks/8",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 30,
+            "endLine": 30
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/6",
+              "role": "narration",
+              "value": "Open the flood model. Predict whether opening the relief channel will lower the upstream reading, change the relief setting, and compare the result with your prediction.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 30,
+                "endLine": 30
+              },
+              "blockRef": "lesson/lesson.prax/blocks/8",
+              "pageRef": "lesson/lesson.prax/page/3",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 26
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 4,
+          "order": 4,
+          "role": "text",
+          "type": "text",
+          "line": 39,
+          "coverage": "text",
+          "ref": "1.4.2",
+          "sourceRef": "lesson/lesson.prax/blocks/12",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 39,
+            "endLine": 39
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/9",
+              "role": "narration",
+              "value": "Write a short explanation of why the relief channel changed the upstream reading. Then discuss your explanation with a colleague outside this course.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 39,
+                "endLine": 39
+              },
+              "blockRef": "lesson/lesson.prax/blocks/12",
+              "pageRef": "lesson/lesson.prax/page/4",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 23
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 5,
+          "order": 5,
+          "role": "text",
+          "type": "text",
+          "line": 45,
+          "coverage": "text",
+          "ref": "1.5.2",
+          "sourceRef": "lesson/lesson.prax/blocks/15",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 45,
+            "endLine": 45
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/11",
+              "role": "narration",
+              "value": "Compare the two readings: gauge A shows 12 units and gauge B shows 16 units. List what further information you would request before moving the gate.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 45,
+                "endLine": 45
+              },
+              "blockRef": "lesson/lesson.prax/blocks/15",
+              "pageRef": "lesson/lesson.prax/page/5",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 26
+        }
+      ],
+      "pace": [
+        {
+          "number": 1,
+          "measurementStatus": "partial",
+          "narrationDurationKnown": false,
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/0",
+              "role": "narration",
+              "value": "First decision",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 6,
+                "endLine": 7
+              },
+              "blockRef": "lesson/lesson.prax/blocks/0",
+              "pageRef": "lesson/lesson.prax/page/1",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/1",
+              "role": "narration",
+              "value": "The river reading is uncertain. Apply the Bayesian update before choosing a gate setting.\n\nKeep the gate partly open\n\nClose the gate at once",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 8,
+                "endLine": 13
+              },
+              "blockRef": "lesson/lesson.prax/blocks/1",
+              "pageRef": "lesson/lesson.prax/page/1",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "recordedNarration": [],
+          "title": "First decision",
+          "words": 26,
+          "readingSeconds": 6.554621848739496,
+          "narrationSeconds": 10.4,
+          "estimatedNarrationSeconds": 10.4,
+          "preview": {
+            "lines": [
+              {
+                "kind": "text",
+                "text": "The river reading is uncertain. Apply the Bayesian update before choosing a gate setting."
+              },
+              {
+                "kind": "item",
+                "text": "Keep the gate partly open"
+              },
+              {
+                "kind": "item",
+                "text": "Close the gate at once"
+              }
+            ],
+            "narrated": true,
+            "checks": 1,
+            "unknownResponses": 0,
+            "activities": 0
+          }
+        },
+        {
+          "number": 2,
+          "measurementStatus": "partial",
+          "narrationDurationKnown": false,
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/2",
+              "role": "narration",
+              "value": "A usable rule",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 16,
+                "endLine": 17
+              },
+              "blockRef": "lesson/lesson.prax/blocks/3",
+              "pageRef": "lesson/lesson.prax/page/2",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/3",
+              "role": "narration",
+              "value": "Read the operating rule: when two gauges disagree, hold the gate setting and request a second reading.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 18,
+                "endLine": 18
+              },
+              "blockRef": "lesson/lesson.prax/blocks/4",
+              "pageRef": "lesson/lesson.prax/page/2",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/4",
+              "role": "narration",
+              "value": "Two gauges disagree. What should you do first?\n\nHold the gate setting and request a second reading\n\nMove the gate based on the higher gauge alone",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 20,
+                "endLine": 25
+              },
+              "blockRef": "lesson/lesson.prax/blocks/5",
+              "pageRef": "lesson/lesson.prax/page/2",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "recordedNarration": [],
+          "title": "A usable rule",
+          "words": 46,
+          "readingSeconds": 11.596638655462185,
+          "narrationSeconds": 18.4,
+          "estimatedNarrationSeconds": 18.4,
+          "preview": {
+            "lines": [
+              {
+                "kind": "text",
+                "text": "Read the operating rule: when two gauges disagree, hold the gate setting and request a second reading."
+              },
+              {
+                "kind": "text",
+                "text": "Two gauges disagree. What should you do first?"
+              },
+              {
+                "kind": "item",
+                "text": "Hold the gate setting and request a second reading"
+              },
+              {
+                "kind": "item",
+                "text": "Move the gate based on the higher gauge alone"
+              }
+            ],
+            "narrated": true,
+            "checks": 1,
+            "unknownResponses": 0,
+            "activities": 0
+          }
+        },
+        {
+          "number": 3,
+          "measurementStatus": "partial",
+          "narrationDurationKnown": false,
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/5",
+              "role": "narration",
+              "value": "Test a hypothesis",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 28,
+                "endLine": 29
+              },
+              "blockRef": "lesson/lesson.prax/blocks/7",
+              "pageRef": "lesson/lesson.prax/page/3",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/6",
+              "role": "narration",
+              "value": "Open the flood model. Predict whether opening the relief channel will lower the upstream reading, change the relief setting, and compare the result with your prediction.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 30,
+                "endLine": 30
+              },
+              "blockRef": "lesson/lesson.prax/blocks/8",
+              "pageRef": "lesson/lesson.prax/page/3",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/7",
+              "role": "narration",
+              "value": "Open flood model",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 32,
+                "endLine": 33
+              },
+              "blockRef": "lesson/lesson.prax/blocks/9",
+              "pageRef": "lesson/lesson.prax/page/3",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "recordedNarration": [],
+          "title": "Test a hypothesis",
+          "words": 32,
+          "readingSeconds": 8.067226890756302,
+          "narrationSeconds": 12.799999999999999,
+          "estimatedNarrationSeconds": 12.799999999999999,
+          "preview": {
+            "lines": [
+              {
+                "kind": "text",
+                "text": "Open the flood model. Predict whether opening the relief channel will lower the upstream reading, change the relief setting, and compare the result with your prediction."
+              },
+              {
+                "kind": "item",
+                "text": "Open flood model"
+              }
+            ],
+            "narrated": true,
+            "checks": 0,
+            "unknownResponses": 0,
+            "activities": 0
+          }
+        },
+        {
+          "number": 4,
+          "measurementStatus": "partial",
+          "narrationDurationKnown": false,
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/8",
+              "role": "narration",
+              "value": "Explain and discuss",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 37,
+                "endLine": 38
+              },
+              "blockRef": "lesson/lesson.prax/blocks/11",
+              "pageRef": "lesson/lesson.prax/page/4",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/9",
+              "role": "narration",
+              "value": "Write a short explanation of why the relief channel changed the upstream reading. Then discuss your explanation with a colleague outside this course.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 39,
+                "endLine": 39
+              },
+              "blockRef": "lesson/lesson.prax/blocks/12",
+              "pageRef": "lesson/lesson.prax/page/4",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "recordedNarration": [],
+          "title": "Explain and discuss",
+          "words": 26,
+          "readingSeconds": 6.554621848739496,
+          "narrationSeconds": 10.399999999999999,
+          "estimatedNarrationSeconds": 10.399999999999999,
+          "preview": {
+            "lines": [
+              {
+                "kind": "text",
+                "text": "Write a short explanation of why the relief channel changed the upstream reading. Then discuss your explanation with a colleague outside this course."
+              }
+            ],
+            "narrated": true,
+            "checks": 0,
+            "unknownResponses": 0,
+            "activities": 0
+          }
+        },
+        {
+          "number": 5,
+          "measurementStatus": "partial",
+          "narrationDurationKnown": false,
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/10",
+              "role": "narration",
+              "value": "Compare reports",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 43,
+                "endLine": 44
+              },
+              "blockRef": "lesson/lesson.prax/blocks/14",
+              "pageRef": "lesson/lesson.prax/page/5",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/11",
+              "role": "narration",
+              "value": "Compare the two readings: gauge A shows 12 units and gauge B shows 16 units. List what further information you would request before moving the gate.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 45,
+                "endLine": 45
+              },
+              "blockRef": "lesson/lesson.prax/blocks/15",
+              "pageRef": "lesson/lesson.prax/page/5",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "recordedNarration": [],
+          "title": "Compare reports",
+          "words": 28,
+          "readingSeconds": 7.0588235294117645,
+          "narrationSeconds": 11.200000000000001,
+          "estimatedNarrationSeconds": 11.200000000000001,
+          "preview": {
+            "lines": [
+              {
+                "kind": "text",
+                "text": "Compare the two readings: gauge A shows 12 units and gauge B shows 16 units. List what further information you would request before moving the gate."
+              }
+            ],
+            "narrated": true,
+            "checks": 0,
+            "unknownResponses": 0,
+            "activities": 0
+          }
+        }
+      ]
+    }
+  ],
+  "rhythm": {
+    "withoutAction": [],
+    "textOnly": [],
+    "generatedBy": null
+  },
+  "trace": {
+    "columns": [
+      {
+        "lesson": 1,
+        "page": 1,
+        "title": "First decision",
+        "phase": "set",
+        "seconds": 10.4
+      },
+      {
+        "lesson": 1,
+        "page": 2,
+        "title": "A usable rule",
+        "phase": "hold",
+        "seconds": 18.4
+      },
+      {
+        "lesson": 1,
+        "page": 3,
+        "title": "Test a hypothesis",
+        "phase": "hold",
+        "seconds": 12.799999999999999
+      },
+      {
+        "lesson": 1,
+        "page": 4,
+        "title": "Explain and discuss",
+        "phase": "hold",
+        "seconds": 10.399999999999999
+      },
+      {
+        "lesson": 1,
+        "page": 5,
+        "title": "Compare reports",
+        "phase": "hold",
+        "seconds": 11.200000000000001
+      }
+    ],
+    "lessons": [
+      {
+        "title": "Flood response judgment",
+        "start": 0,
+        "end": 5
+      }
+    ],
+    "rows": [
+      {
+        "label": "Introduction",
+        "group": "Course",
+        "depth": 0,
+        "marks": [
+          {
+            "column": 0,
+            "symbol": "fill",
+            "note": "First decision"
+          }
+        ]
+      },
+      {
+        "label": "Review and summary",
+        "group": "Course",
+        "depth": 0,
+        "marks": []
+      },
+      {
+        "label": "Practice",
+        "group": "Course",
+        "depth": 0,
+        "marks": [
+          {
+            "column": 0,
+            "symbol": "fill",
+            "note": "First decision"
+          },
+          {
+            "column": 1,
+            "symbol": "fill",
+            "note": "A usable rule"
+          }
+        ]
+      }
+    ],
+    "pageObjectives": [
+      {
+        "stated": [],
+        "instructed": [],
+        "activities": [],
+        "checks": []
+      },
+      {
+        "stated": [],
+        "instructed": [],
+        "activities": [],
+        "checks": []
+      },
+      {
+        "stated": [],
+        "instructed": [],
+        "activities": [],
+        "checks": []
+      },
+      {
+        "stated": [],
+        "instructed": [],
+        "activities": [],
+        "checks": []
+      },
+      {
+        "stated": [],
+        "instructed": [],
+        "activities": [],
+        "checks": []
+      }
+    ]
+  },
+  "language": {
+    "locale": "en",
+    "lessons": [
+      {
+        "file": "lesson.prax",
+        "title": "Flood response judgment",
+        "channels": {
+          "screen": {
+            "sentences": 7,
+            "words": 92,
+            "medianLength": 13,
+            "p90Length": 22,
+            "longWordShare": 0.08695652173913043,
+            "grade": null,
+            "lengths": [
+              4,
+              10,
+              11,
+              13,
+              15,
+              17,
+              22
+            ],
+            "cohesion": {
+              "adjacentPairs": 3,
+              "overlapping": 1,
+              "causal": 0,
+              "contrastive": 0
+            },
+            "structure": {
+              "clauseCuesPer100Sentences": 14,
+              "twoOrMoreClauseCues": 0,
+              "passive": 0,
+              "nominalisationsPer100Words": 4,
+              "frontLoaded": 0
+            }
+          },
+          "narration": {
+            "sentences": 19,
+            "words": 158,
+            "medianLength": 5,
+            "p90Length": 18,
+            "longWordShare": 0.08860759493670886,
+            "grade": 5.801259160559628,
+            "lengths": [
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              4,
+              5,
+              5,
+              9,
+              10,
+              10,
+              11,
+              13,
+              15,
+              17,
+              18,
+              22
+            ],
+            "cohesion": {
+              "adjacentPairs": 14,
+              "overlapping": 5,
+              "causal": 0,
+              "contrastive": 0
+            },
+            "structure": {
+              "clauseCuesPer100Sentences": 5,
+              "twoOrMoreClauseCues": 0,
+              "passive": 0,
+              "nominalisationsPer100Words": 3,
+              "frontLoaded": 0
+            }
+          }
+        }
+      }
+    ],
+    "longest": [
+      {
+        "id": "1.3.s2",
+        "lesson": 1,
+        "page": 3,
+        "ref": "1.3.2",
+        "channel": "screen",
+        "text": "Predict whether opening the relief channel will lower the upstream reading, change the relief setting, and compare the result with your prediction.",
+        "words": 22,
+        "syllables": 37,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 1,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.2.n5",
+        "lesson": 1,
+        "page": 2,
+        "ref": "1.2.3",
+        "channel": "narration",
+        "text": "Hold the gate setting and request a second reading Move the gate based on the higher gauge alone",
+        "words": 18,
+        "syllables": 24,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.2.s1",
+        "lesson": 1,
+        "page": 2,
+        "ref": "1.2.2",
+        "channel": "screen",
+        "text": "Read the operating rule: when two gauges disagree, hold the gate setting and request a second reading.",
+        "words": 17,
+        "syllables": 27,
+        "structure": {
+          "subordinateClauses": 1,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": [
+            {
+              "start": 25,
+              "end": 29
+            }
+          ]
+        }
+      },
+      {
+        "id": "1.5.s1",
+        "lesson": 1,
+        "page": 5,
+        "ref": "1.5.2",
+        "channel": "screen",
+        "text": "Compare the two readings: gauge A shows 12 units and gauge B shows 16 units.",
+        "words": 15,
+        "syllables": 17,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.4.s1",
+        "lesson": 1,
+        "page": 4,
+        "ref": "1.4.2",
+        "channel": "screen",
+        "text": "Write a short explanation of why the relief channel changed the upstream reading.",
+        "words": 13,
+        "syllables": 20,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 1,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.5.s2",
+        "lesson": 1,
+        "page": 5,
+        "ref": "1.5.2",
+        "channel": "screen",
+        "text": "List what further information you would request before moving the gate.",
+        "words": 11,
+        "syllables": 18,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 1,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.1.n4",
+        "lesson": 1,
+        "page": 1,
+        "ref": "1.1.2",
+        "channel": "narration",
+        "text": "Keep the gate partly open Close the gate at once",
+        "words": 10,
+        "syllables": 12,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.4.s2",
+        "lesson": 1,
+        "page": 4,
+        "ref": "1.4.2",
+        "channel": "screen",
+        "text": "Then discuss your explanation with a colleague outside this course.",
+        "words": 10,
+        "syllables": 17,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 1,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.1.n3",
+        "lesson": 1,
+        "page": 1,
+        "ref": "1.1.2",
+        "channel": "narration",
+        "text": "Apply the Bayesian update before choosing a gate setting.",
+        "words": 9,
+        "syllables": 16,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.1.n2",
+        "lesson": 1,
+        "page": 1,
+        "ref": "1.1.2",
+        "channel": "narration",
+        "text": "The river reading is uncertain.",
+        "words": 5,
+        "syllables": 9,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.2.n4",
+        "lesson": 1,
+        "page": 2,
+        "ref": "1.2.3",
+        "channel": "narration",
+        "text": "What should you do first?",
+        "words": 5,
+        "syllables": 5,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.3.s1",
+        "lesson": 1,
+        "page": 3,
+        "ref": "1.3.2",
+        "channel": "screen",
+        "text": "Open the flood model.",
+        "words": 4,
+        "syllables": 6,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      }
+    ],
+    "flagged": {
+      "passive": [],
+      "clauses": [],
+      "frontLoaded": [],
+      "nominal": []
+    },
+    "acronyms": [],
+    "vocabulary": {
+      "lessons": [
+        {
+          "screen": {
+            "words": 89,
+            "lessCommon": 2,
+            "rare": 0
+          },
+          "narration": {
+            "words": 152,
+            "lessCommon": 4,
+            "rare": 0
+          }
+        }
+      ],
+      "rare": []
+    },
+    "places": {
+      "1.3.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 30,
+        "sourceRef": "lesson/lesson.prax/blocks/8",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 30,
+          "endLine": 30
+        },
+        "position": 6
+      },
+      "1.2.3": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 20,
+        "sourceRef": "lesson/lesson.prax/blocks/5",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 20,
+          "endLine": 25
+        },
+        "position": 4
+      },
+      "1.2.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 18,
+        "sourceRef": "lesson/lesson.prax/blocks/4",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 18,
+          "endLine": 18
+        },
+        "position": 3
+      },
+      "1.5.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 5,
+        "file": "lesson.prax",
+        "line": 45,
+        "sourceRef": "lesson/lesson.prax/blocks/15",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 45,
+          "endLine": 45
+        },
+        "position": 11
+      },
+      "1.4.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 39,
+        "sourceRef": "lesson/lesson.prax/blocks/12",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 39,
+          "endLine": 39
+        },
+        "position": 9
+      },
+      "1.1.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 8,
+        "sourceRef": "lesson/lesson.prax/blocks/1",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 8,
+          "endLine": 13
+        },
+        "position": 1
+      }
+    }
+  },
+  "emphasis": {
+    "lessons": [
+      {
+        "file": "lesson.prax",
+        "title": "Flood response judgment",
+        "counts": {
+          "strong": 0,
+          "em": 0,
+          "mark": 0,
+          "u": 0,
+          "span.praxity-doodle": 0
+        },
+        "pages": [
+          {
+            "number": 1,
+            "spans": 0
+          },
+          {
+            "number": 2,
+            "spans": 0
+          },
+          {
+            "number": 3,
+            "spans": 0
+          },
+          {
+            "number": 4,
+            "spans": 0
+          },
+          {
+            "number": 5,
+            "spans": 0
+          }
+        ],
+        "emphasizedWords": 0,
+        "screenWords": 145,
+        "share": 0
+      }
+    ],
+    "spans": [],
+    "places": {}
+  },
+  "tasks": {
+    "model": "fixture-hand-coded",
+    "evidenceKind": "interpretation",
+    "countingUnit": "page presence",
+    "taxonomyVersion": "conole-task-families/1",
+    "annotations": [
+      {
+        "ref": "1.1.2",
+        "evidence": [
+          {
+            "ref": "1.1.2",
+            "channel": "screen",
+            "quote": "Apply the Bayesian update before choosing a gate setting."
+          }
+        ],
+        "taskTypes": [
+          "experiential"
+        ],
+        "explanation": "The learner must apply a prior method to a scenario before this course teaches it.",
+        "work": "inside",
+        "assessmentPurpose": "summative"
+      },
+      {
+        "ref": "1.2.2",
+        "evidence": [
+          {
+            "ref": "1.2.2",
+            "channel": "screen",
+            "quote": "Read the operating rule: when two gauges disagree"
+          }
+        ],
+        "taskTypes": [
+          "assimilative"
+        ],
+        "explanation": "The learner reads the rule on the same page as a supported check.",
+        "work": "inside",
+        "assessmentPurpose": "none"
+      },
+      {
+        "ref": "1.2.3",
+        "evidence": [
+          {
+            "ref": "1.2.3",
+            "channel": "screen",
+            "quote": "Two gauges disagree. What should you do first?"
+          }
+        ],
+        "taskTypes": [
+          "experiential"
+        ],
+        "explanation": "The learner applies the stated rule to a choice.",
+        "work": "inside",
+        "assessmentPurpose": "practice"
+      },
+      {
+        "ref": "1.3.2",
+        "evidence": [
+          {
+            "ref": "1.3.2",
+            "channel": "screen",
+            "quote": "Predict whether opening the relief channel will lower the upstream reading, change the relief setting, and compare the result with your prediction."
+          }
+        ],
+        "taskTypes": [
+          "adaptive",
+          "information handling"
+        ],
+        "explanation": "The learner changes a model setting to test a prediction and compares the output with it.",
+        "work": "inside",
+        "assessmentPurpose": "none"
+      },
+      {
+        "ref": "1.4.2",
+        "evidence": [
+          {
+            "ref": "1.4.2",
+            "channel": "screen",
+            "quote": "Write a short explanation of why the relief channel changed the upstream reading."
+          }
+        ],
+        "taskTypes": [
+          "productive"
+        ],
+        "explanation": "The learner is asked to write an explanation in the course.",
+        "work": "inside",
+        "assessmentPurpose": "none"
+      },
+      {
+        "ref": "1.4.2",
+        "evidence": [
+          {
+            "ref": "1.4.2",
+            "channel": "screen",
+            "quote": "discuss your explanation with a colleague outside this course."
+          }
+        ],
+        "taskTypes": [
+          "communicative"
+        ],
+        "explanation": "The learner is asked to discuss with a colleague outside the course; participation is not observed.",
+        "work": "outside",
+        "assessmentPurpose": "none"
+      },
+      {
+        "ref": "1.5.2",
+        "evidence": [
+          {
+            "ref": "1.5.2",
+            "channel": "screen",
+            "quote": "Compare the two readings: gauge A shows 12 units and gauge B shows 16 units."
+          }
+        ],
+        "taskTypes": [
+          "information handling",
+          "productive"
+        ],
+        "explanation": "The learner compares two readings and lists further information to request.",
+        "work": "inside",
+        "assessmentPurpose": "none"
+      }
+    ],
+    "pages": [
+      {
+        "key": "1.1",
+        "lesson": 1,
+        "title": "First decision",
+        "ref": "1.1.1",
+        "taskTypes": [
+          "experiential"
+        ],
+        "unknown": false,
+        "unsupported": false
+      },
+      {
+        "key": "1.2",
+        "lesson": 1,
+        "title": "A usable rule",
+        "ref": "1.2.1",
+        "taskTypes": [
+          "assimilative",
+          "experiential"
+        ],
+        "unknown": false,
+        "unsupported": false
+      },
+      {
+        "key": "1.3",
+        "lesson": 1,
+        "title": "Test a hypothesis",
+        "ref": "1.3.1",
+        "taskTypes": [
+          "information handling",
+          "adaptive"
+        ],
+        "unknown": false,
+        "unsupported": false
+      },
+      {
+        "key": "1.4",
+        "lesson": 1,
+        "title": "Explain and discuss",
+        "ref": "1.4.1",
+        "taskTypes": [
+          "communicative",
+          "productive"
+        ],
+        "unknown": false,
+        "unsupported": false
+      },
+      {
+        "key": "1.5",
+        "lesson": 1,
+        "title": "Compare reports",
+        "ref": "1.5.1",
+        "taskTypes": [
+          "information handling",
+          "productive"
+        ],
+        "unknown": false,
+        "unsupported": false
+      }
+    ],
+    "counts": {
+      "assimilative": 1,
+      "information handling": 2,
+      "communicative": 1,
+      "productive": 2,
+      "experiential": 2,
+      "adaptive": 1,
+      "unclassified": 0,
+      "unsupported": 0
+    },
+    "places": {
+      "1.1.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 8,
+        "sourceRef": "lesson/lesson.prax/blocks/1",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 8,
+          "endLine": 13
+        },
+        "position": 1
+      },
+      "1.2.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 18,
+        "sourceRef": "lesson/lesson.prax/blocks/4",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 18,
+          "endLine": 18
+        },
+        "position": 3
+      },
+      "1.2.3": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 20,
+        "sourceRef": "lesson/lesson.prax/blocks/5",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 20,
+          "endLine": 25
+        },
+        "position": 4
+      },
+      "1.3.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 30,
+        "sourceRef": "lesson/lesson.prax/blocks/8",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 30,
+          "endLine": 30
+        },
+        "position": 6
+      },
+      "1.4.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 39,
+        "sourceRef": "lesson/lesson.prax/blocks/12",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 39,
+          "endLine": 39
+        },
+        "position": 9
+      },
+      "1.5.2": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 5,
+        "file": "lesson.prax",
+        "line": 45,
+        "sourceRef": "lesson/lesson.prax/blocks/15",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 45,
+          "endLine": 45
+        },
+        "position": 11
+      },
+      "1.1.1": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 6,
+        "sourceRef": "lesson/lesson.prax/blocks/0",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 6,
+          "endLine": 7
+        },
+        "position": 0
+      },
+      "1.2.1": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 16,
+        "sourceRef": "lesson/lesson.prax/blocks/3",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 16,
+          "endLine": 17
+        },
+        "position": 2
+      },
+      "1.3.1": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 28,
+        "sourceRef": "lesson/lesson.prax/blocks/7",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 28,
+          "endLine": 29
+        },
+        "position": 5
+      },
+      "1.4.1": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 37,
+        "sourceRef": "lesson/lesson.prax/blocks/11",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 37,
+          "endLine": 38
+        },
+        "position": 8
+      },
+      "1.5.1": {
+        "lesson": 1,
+        "lessonTitle": "Flood response judgment",
+        "page": 5,
+        "file": "lesson.prax",
+        "line": 43,
+        "sourceRef": "lesson/lesson.prax/blocks/14",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 43,
+          "endLine": 44
+        },
+        "position": 10
+      }
+    }
+  },
+  "guides": {
+    "trace": [
+      {
+        "see": "Objectives stated but never practised or checked",
+        "could": "The objective may be assessed elsewhere in a larger programme, or the course may not yet give learners a chance to show it."
+      },
+      {
+        "see": "Long stretches of instruction with no activity or check",
+        "could": "A deliberate reading phase, or a place where learners go long without doing anything with what they read."
+      },
+      {
+        "see": "New concepts bunched on a few pages",
+        "could": "A glossary or overview page doing its job, or a heavy introduction the learner meets all at once."
+      }
+    ],
+    "anatomy": [
+      {
+        "see": "A lesson made almost entirely of text",
+        "could": "A reading or reference lesson, fitting for foundations; worth a second look if its objectives ask learners to do something."
+      },
+      {
+        "see": "Explore blocks carrying much of a lesson",
+        "could": "Content the learner can choose to open; well suited to optional depth, riskier for anything a later check needs."
+      },
+      {
+        "see": "Activities or checks only at the end of a lesson",
+        "could": "An end-of-lesson assessment design, or practice that could be spread through the lesson."
+      },
+      {
+        "see": "Long runs of pages without an activity or check",
+        "could": "A narrative or conceptual stretch, or a place where attention may drift; look at what the learner does next."
+      }
+    ],
+    "tasks": [
+      {
+        "see": "A page asks for more than one task type",
+        "could": "The learner may combine kinds of work on one page; inspect each quoted request before revising it."
+      },
+      {
+        "see": "Work requested outside the course",
+        "could": "The course states the task, while completion or participation may be recorded elsewhere or remain unseen."
+      },
+      {
+        "see": "Unclassified or unsupported pages",
+        "could": "The request may be ambiguous, or inspection may not expose enough text to classify it."
+      }
+    ],
+    "pace": [
+      {
+        "see": "Narration much longer than reading time",
+        "could": "Narration that adds explanation the screen leaves out, or a page learners will skip ahead of."
+      },
+      {
+        "see": "A few pages far longer than their neighbours",
+        "could": "Dense pages that could be split, or deliberate case studies and summaries."
+      },
+      {
+        "see": "A steep stretch of the running total",
+        "could": "Where the course takes the most time, which is where changes save learners the most minutes."
+      }
+    ],
+    "evidence": [
+      {
+        "see": "An objective group with no check or activity",
+        "could": "Knowledge the course introduces but does not ask learners to show, perhaps by design as prior or awareness-level knowledge."
+      },
+      {
+        "see": "One group with most of the evidence",
+        "could": "The course's core outcome, or practice concentrated on what is easiest to check."
+      }
+    ],
+    "flow": [
+      {
+        "see": "Checks whose instruction comes after them",
+        "could": "A pre-test or retrieval-first design, or a check placed before its teaching by mistake."
+      },
+      {
+        "see": "Evidence that traces back to few objectives",
+        "could": "Objectives that are broad enough to cover much, or objectives the evidence does not reach."
+      }
+    ],
+    "outcomes": [
+      {
+        "see": "Objectives mostly at Remember and Understand",
+        "could": "A foundations or awareness course, which may be the intent; check that activities do not ask for more than the objectives state, or less."
+      },
+      {
+        "see": "Objectives at Apply or above with only recall checks",
+        "could": "Checks that measure less than the objectives promise."
+      },
+      {
+        "see": "Most objectives Verbal information in Gagné's terms",
+        "could": "A course about knowing that; skills learners must perform need practice with feedback, not only statements."
+      },
+      {
+        "see": "Objectives that state an action but no conditions or standard",
+        "could": "Common and often fine; a standard is worth adding where the course must show learners reached a level."
+      }
+    ],
+    "availability": [
+      {
+        "see": "Needed instruction behind a click",
+        "could": "Content learners may never open; fine for optional depth, a risk when a check depends on it."
+      },
+      {
+        "see": "Needed instruction many minutes before the check",
+        "could": "Deliberate spacing that strengthens memory, or a gap long enough that learners need a recap first."
+      },
+      {
+        "see": "Needed instruction only in narration or a tooltip",
+        "could": "Information some learners never see; check that the screen carries it too."
+      },
+      {
+        "see": "Pre-assessments",
+        "could": "Checks that find out what learners already know; worth asking what the results change, such as letting learners skip ahead or pointing them to the right section."
+      },
+      {
+        "see": "Checks taught only after they are asked, not marked as pre-assessments",
+        "could": "A retrieval-first or discovery design, or a check placed before its teaching by mistake."
+      },
+      {
+        "see": "Checks with no instruction found",
+        "could": "Prior knowledge the course assumes, a scenario judgement that needs none, or a gap in the teaching."
+      }
+    ],
+    "concepts": [
+      {
+        "see": "A concept used before it is defined",
+        "could": "A preview or advance organiser, or a definition that arrives too late."
+      },
+      {
+        "see": "Defined concepts with no knowledge check",
+        "could": "Supporting ideas that need no check, or core ideas the course never asks learners to use."
+      },
+      {
+        "see": "A concept that appears once and never returns",
+        "could": "A passing mention, or an idea that needs revisiting to be remembered."
+      }
+    ],
+    "prerequisites": [
+      {
+        "see": "A concept that comes before what it builds on",
+        "could": "A spiral design that returns to it later, or an ordering to fix."
+      }
+    ],
+    "spacing": [
+      {
+        "see": "Long gaps between encounters with a concept",
+        "could": "Spacing that helps long-term memory, or a concept that fades before it is needed; it depends on how long learners must remember it."
+      },
+      {
+        "see": "Every encounter within a few minutes",
+        "could": "Massed practice that feels fluent but fades faster than spaced practice."
+      }
+    ],
+    "distinctions": [
+      {
+        "see": "A confusable pair with no stated difference or contrasting example",
+        "could": "A distinction learners already hold, or one they will blur; a side-by-side example is the usual remedy."
+      },
+      {
+        "see": "Pairs stated but never checked",
+        "could": "Distinctions the course explains but does not ask learners to make."
+      }
+    ],
+    "sentence-length": [
+      {
+        "see": "Many sentences past the dashed line",
+        "could": "Long sentences that load working memory, often lists or qualifications that read better split."
+      },
+      {
+        "see": "Narration sentences longer than on-screen ones",
+        "could": "Harder to follow by ear than on the page. Where learners can read along, as with the transcript Studio shows beside narrated slides, they can reread and it matters less; it matters most for learners who listen without looking."
+      }
+    ],
+    "readability": [
+      {
+        "see": "A lesson with few shared words between sentences",
+        "could": "Each sentence starts a new thread, as in lists of facts or bullet-like prose; learners must connect the ideas themselves. Fine for reference text, harder for an explanation."
+      },
+      {
+        "see": "Few causal or contrast connectives in an explanatory lesson",
+        "could": "Reasons and differences left implicit; a because or however can make the logic visible. Procedural steps need fewer."
+      },
+      {
+        "see": "A lesson high on several measures at once",
+        "could": "Long sentences, rare words and loose connections together are the clearest sign of text worth revising first."
+      },
+      {
+        "see": "A lesson several Flesch–Kincaid grades above the rest",
+        "could": "Longer sentences or longer words, which is all the formula counts: dense academic-style prose, or subject terms that are long but taught."
+      }
+    ],
+    "structure": [
+      {
+        "see": "Clusters of passive or front-loaded sentences",
+        "could": "Formal or legal source language carried over; the review list shows each sentence."
+      }
+    ],
+    "review": [
+      {
+        "see": "The same construction repeating in one lesson",
+        "could": "One writer's habit or one source's style, cheapest to fix together."
+      }
+    ],
+    "longest": [
+      {
+        "see": "Lists run together as one sentence",
+        "could": "Content that would read better as a bulleted list."
+      }
+    ],
+    "vocabulary": [
+      {
+        "see": "A lesson with many rare words",
+        "could": "Subject terminology the course teaches, which is fine when defined, or general wording that could be plainer."
+      },
+      {
+        "see": "Rare words with no glossary tooltip",
+        "could": "Terms learners may not know; check whether the text explains them nearby."
+      }
+    ],
+    "acronyms": [
+      {
+        "see": "Acronyms never spelled out",
+        "could": "Terms the audience already knows, or ones a newcomer cannot decode."
+      }
+    ],
+    "terms": [
+      {
+        "see": "Flags clustered in one lesson",
+        "could": "A lesson written for a more expert reader than the rest."
+      },
+      {
+        "see": "Unstated premises",
+        "could": "Steps in reasoning the writer knows and the learner may not; each flag quotes the words concerned."
+      }
+    ],
+    "emphasis": [
+      {
+        "see": "A high share of emphasised words",
+        "could": "Emphasis that no longer stands out; when much is bold, nothing is."
+      },
+      {
+        "see": "Emphasis on labels rather than concepts",
+        "could": "Formatting used for layout, which is fine, while key ideas go unmarked."
+      }
+    ],
+    "visuals": [
+      {
+        "see": "Several opportunities on one page",
+        "could": "A page carrying a process or comparison in prose that a diagram would make easier to follow."
+      }
+    ]
+  }
+}

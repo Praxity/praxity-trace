@@ -1,0 +1,123 @@
+{
+  "view": "tasks",
+  "promptVersion": "tasks/2-projection-2",
+  "taxonomyVersion": "conole-task-families/1",
+  "courseHash": "33ad774574dc38095747fc9a506516fbc0bc9c8dce339517786d9fb34df37444",
+  "model": "fixture-hand-coded",
+  "annotations": [
+    {
+      "ref": "1.1.2",
+      "evidence": [
+        {
+          "ref": "1.1.2",
+          "channel": "screen",
+          "quote": "Apply the Bayesian update before choosing a gate setting."
+        }
+      ],
+      "taskTypes": [
+        "experiential"
+      ],
+      "explanation": "The learner must apply a prior method to a scenario before this course teaches it.",
+      "work": "inside",
+      "assessmentPurpose": "summative"
+    },
+    {
+      "ref": "1.2.2",
+      "evidence": [
+        {
+          "ref": "1.2.2",
+          "channel": "screen",
+          "quote": "Read the operating rule: when two gauges disagree"
+        }
+      ],
+      "taskTypes": [
+        "assimilative"
+      ],
+      "explanation": "The learner reads the rule on the same page as a supported check.",
+      "work": "inside",
+      "assessmentPurpose": "none"
+    },
+    {
+      "ref": "1.2.3",
+      "evidence": [
+        {
+          "ref": "1.2.3",
+          "channel": "screen",
+          "quote": "Two gauges disagree. What should you do first?"
+        }
+      ],
+      "taskTypes": [
+        "experiential"
+      ],
+      "explanation": "The learner applies the stated rule to a choice.",
+      "work": "inside",
+      "assessmentPurpose": "practice"
+    },
+    {
+      "ref": "1.3.2",
+      "evidence": [
+        {
+          "ref": "1.3.2",
+          "channel": "screen",
+          "quote": "Predict whether opening the relief channel will lower the upstream reading, change the relief setting, and compare the result with your prediction."
+        }
+      ],
+      "taskTypes": [
+        "adaptive",
+        "information handling"
+      ],
+      "explanation": "The learner changes a model setting to test a prediction and compares the output with it.",
+      "work": "inside",
+      "assessmentPurpose": "none"
+    },
+    {
+      "ref": "1.4.2",
+      "evidence": [
+        {
+          "ref": "1.4.2",
+          "channel": "screen",
+          "quote": "Write a short explanation of why the relief channel changed the upstream reading."
+        }
+      ],
+      "taskTypes": [
+        "productive"
+      ],
+      "explanation": "The learner is asked to write an explanation in the course.",
+      "work": "inside",
+      "assessmentPurpose": "none"
+    },
+    {
+      "ref": "1.4.2",
+      "evidence": [
+        {
+          "ref": "1.4.2",
+          "channel": "screen",
+          "quote": "discuss your explanation with a colleague outside this course."
+        }
+      ],
+      "taskTypes": [
+        "communicative"
+      ],
+      "explanation": "The learner is asked to discuss with a colleague outside the course; participation is not observed.",
+      "work": "outside",
+      "assessmentPurpose": "none"
+    },
+    {
+      "ref": "1.5.2",
+      "evidence": [
+        {
+          "ref": "1.5.2",
+          "channel": "screen",
+          "quote": "Compare the two readings: gauge A shows 12 units and gauge B shows 16 units."
+        }
+      ],
+      "taskTypes": [
+        "information handling",
+        "productive"
+      ],
+      "explanation": "The learner compares two readings and lists further information to request.",
+      "work": "inside",
+      "assessmentPurpose": "none"
+    }
+  ]
+}

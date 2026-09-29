@@ -1,0 +1,2310 @@
+{
+  "coverage": {
+    "status": "partial",
+    "limitations": "Partial text projection: unsupported blocks may contain additional prose or media. Assessment correctness and scoring reflect authored source and course/lesson defaults, not workspace settings; open or unsupported correctness stays unknown. Media sources and asset status are known, but remote contents, caption-track prose, and audio/video playback lengths are not measured. Stored narration durations are sidecar-recorded alignment endpoints, not measured full-file durations; narration time remains a script estimate at 150 words per minute. Disabled and unlinked scripts are excluded from spoken counts. Feedback, glossary definitions, media alternatives and authored transcripts are separate from on-screen prose. Reading and course timing omit unprojected content and media playback."
+  },
+  "tool": {
+    "name": "Praxity Trace",
+    "version": "0.0.0"
+  },
+  "courseHash": "f6781a8a9575750ee906524e2492d44482b77744c376245dc5628640f79dd7d0",
+  "source": {
+    "schema": "praxity-inspect/1",
+    "studioVersion": "0.2.0",
+    "revision": "3a2d1c09ae8a501296a23dfe7a2ae092b3a288da41c697c5d27deeca07688824",
+    "projectionVersion": 2,
+    "mediaInventory": [],
+    "assessmentGroups": [],
+    "unlinkedNarration": [],
+    "places": {
+      "1.1.1": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 6,
+        "sourceRef": "lesson/lesson.prax/blocks/0",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 6,
+          "endLine": 7
+        },
+        "position": 0
+      },
+      "1.1.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 8,
+        "sourceRef": "lesson/lesson.prax/blocks/1",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 8,
+          "endLine": 8
+        },
+        "position": 1
+      },
+      "1.1.3": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 10,
+        "sourceRef": "lesson/lesson.prax/blocks/2",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 10,
+          "endLine": 10
+        },
+        "position": 2
+      },
+      "1.2.1": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 14,
+        "sourceRef": "lesson/lesson.prax/blocks/4",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 14,
+          "endLine": 15
+        },
+        "position": 3
+      },
+      "1.2.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 16,
+        "sourceRef": "lesson/lesson.prax/blocks/5",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 16,
+          "endLine": 16
+        },
+        "position": 4
+      },
+      "1.2.3": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 18,
+        "sourceRef": "lesson/lesson.prax/blocks/6",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 18,
+          "endLine": 23
+        },
+        "position": 5
+      },
+      "1.2.4": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 21,
+        "sourceRef": "lesson/lesson.prax/blocks/6/data/items/0/children/0",
+        "parentRef": "lesson/lesson.prax/blocks/6",
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 21,
+          "endLine": 21
+        },
+        "position": 6
+      },
+      "1.3.1": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 27,
+        "sourceRef": "lesson/lesson.prax/blocks/8",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 27,
+          "endLine": 28
+        },
+        "position": 7
+      },
+      "1.3.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 29,
+        "sourceRef": "lesson/lesson.prax/blocks/9",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 29,
+          "endLine": 34
+        },
+        "position": 8
+      },
+      "1.4.1": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 37,
+        "sourceRef": "lesson/lesson.prax/blocks/11",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 37,
+          "endLine": 38
+        },
+        "position": 9
+      },
+      "1.4.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 39,
+        "sourceRef": "lesson/lesson.prax/blocks/12",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 39,
+          "endLine": 39
+        },
+        "position": 10
+      },
+      "1.4.3": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 41,
+        "sourceRef": "lesson/lesson.prax/blocks/13",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 41,
+          "endLine": 46
+        },
+        "position": 11
+      },
+      "1.5.1": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 5,
+        "file": "lesson.prax",
+        "line": 49,
+        "sourceRef": "lesson/lesson.prax/blocks/15",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 49,
+          "endLine": 50
+        },
+        "position": 12
+      },
+      "1.5.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 5,
+        "file": "lesson.prax",
+        "line": 51,
+        "sourceRef": "lesson/lesson.prax/blocks/16",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 51,
+          "endLine": 51
+        },
+        "position": 13
+      }
+    },
+    "unlinkedNarrationCount": 0
+  },
+  "course": {
+    "title": "Pump restart procedure",
+    "locale": "en"
+  },
+  "speakingWpm": 150,
+  "anatomy": [
+    {
+      "file": "lesson.prax",
+      "title": "Pump restart procedure",
+      "pages": 5,
+      "words": 156,
+      "counts": {
+        "text": 6,
+        "media": 0,
+        "explore": 1,
+        "response": 2
+      },
+      "marks": [
+        {
+          "lesson": "lesson.prax",
+          "page": 1,
+          "order": 0,
+          "role": "text",
+          "type": "text",
+          "line": 8,
+          "coverage": "text",
+          "ref": "1.1.2",
+          "sourceRef": "lesson/lesson.prax/blocks/1",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 8,
+            "endLine": 8
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/1",
+              "role": "narration",
+              "value": "Complete the plant isolation briefing before this course. That briefing teaches the lockout tags used here.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 8,
+                "endLine": 8
+              },
+              "blockRef": "lesson/lesson.prax/blocks/1",
+              "pageRef": "lesson/lesson.prax/page/1",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 16
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 1,
+          "order": 1,
+          "role": "text",
+          "type": "text",
+          "line": 10,
+          "coverage": "text",
+          "ref": "1.1.3",
+          "sourceRef": "lesson/lesson.prax/blocks/2",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 10,
+            "endLine": 10
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/2",
+              "role": "narration",
+              "value": "For a routine restart, verify the isolation tag, inspect the pressure gauge, then ask the lead to release the pump.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 10,
+                "endLine": 10
+              },
+              "blockRef": "lesson/lesson.prax/blocks/2",
+              "pageRef": "lesson/lesson.prax/page/1",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 20
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 2,
+          "order": 2,
+          "role": "text",
+          "type": "text",
+          "line": 16,
+          "coverage": "text",
+          "ref": "1.2.2",
+          "sourceRef": "lesson/lesson.prax/blocks/5",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 16,
+            "endLine": 16
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/4",
+              "role": "narration",
+              "value": "Open the pressure note if you need a reminder before the next question.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 16,
+                "endLine": 16
+              },
+              "blockRef": "lesson/lesson.prax/blocks/5",
+              "pageRef": "lesson/lesson.prax/page/2",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 13
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 2,
+          "order": 3,
+          "role": "explore",
+          "type": "accordion",
+          "line": 18,
+          "coverage": "container",
+          "ref": "1.2.3",
+          "sourceRef": "lesson/lesson.prax/blocks/6",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 18,
+            "endLine": 23
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/5",
+              "role": "narration",
+              "value": "Pressure note If pressure rises during restart, pause the feed before opening the vent.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 18,
+                "endLine": 23
+              },
+              "blockRef": "lesson/lesson.prax/blocks/6",
+              "pageRef": "lesson/lesson.prax/page/2",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 2
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 2,
+          "order": 4,
+          "role": "text",
+          "type": "text",
+          "line": 21,
+          "coverage": "text",
+          "ref": "1.2.4",
+          "sourceRef": "lesson/lesson.prax/blocks/6/data/items/0/children/0",
+          "parentRef": "lesson/lesson.prax/blocks/6",
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 21,
+            "endLine": 21
+          },
+          "narration": [],
+          "words": 12
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 3,
+          "order": 5,
+          "role": "response",
+          "type": "assessment",
+          "knowledgeCheck": true,
+          "scoring": {
+            "gradingMode": "none",
+            "scored": false,
+            "points": null,
+            "required": false,
+            "attempts": 0,
+            "feedbackMode": null
+          },
+          "line": 29,
+          "coverage": "text",
+          "ref": "1.3.2",
+          "sourceRef": "lesson/lesson.prax/blocks/9",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 29,
+            "endLine": 34
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/7",
+              "role": "narration",
+              "value": "Pressure rises during restart. What should you do first?\n\nPause the feed\n\nOpen the vent immediately",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 29,
+                "endLine": 34
+              },
+              "blockRef": "lesson/lesson.prax/blocks/9",
+              "pageRef": "lesson/lesson.prax/page/3",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 16
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 4,
+          "order": 6,
+          "role": "text",
+          "type": "text",
+          "line": 39,
+          "coverage": "text",
+          "ref": "1.4.2",
+          "sourceRef": "lesson/lesson.prax/blocks/12",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 39,
+            "endLine": 39
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/9",
+              "role": "narration",
+              "value": "Read this rule: if the gauge is below the marked safe band, stop the restart and call the lead.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 39,
+                "endLine": 39
+              },
+              "blockRef": "lesson/lesson.prax/blocks/12",
+              "pageRef": "lesson/lesson.prax/page/4",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 19
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 4,
+          "order": 7,
+          "role": "response",
+          "type": "assessment",
+          "knowledgeCheck": true,
+          "scoring": {
+            "gradingMode": "none",
+            "scored": false,
+            "points": null,
+            "required": false,
+            "attempts": 0,
+            "feedbackMode": null
+          },
+          "line": 41,
+          "coverage": "text",
+          "ref": "1.4.3",
+          "sourceRef": "lesson/lesson.prax/blocks/13",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 41,
+            "endLine": 46
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/10",
+              "role": "narration",
+              "value": "The gauge is below the safe band. What should you do?\n\nStop the restart and call the lead\n\nContinue until the gauge rises",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 41,
+                "endLine": 46
+              },
+              "blockRef": "lesson/lesson.prax/blocks/13",
+              "pageRef": "lesson/lesson.prax/page/4",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 23
+        },
+        {
+          "lesson": "lesson.prax",
+          "page": 5,
+          "order": 8,
+          "role": "text",
+          "type": "text",
+          "line": 51,
+          "coverage": "text",
+          "ref": "1.5.2",
+          "sourceRef": "lesson/lesson.prax/blocks/16",
+          "parentRef": null,
+          "location": {
+            "file": "lesson.prax",
+            "startLine": 51,
+            "endLine": 51
+          },
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/12",
+              "role": "narration",
+              "value": "Outside this course, fill in the restart worksheet with the isolation tag, gauge reading and lead's name. Bring it to the next shift handoff.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 51,
+                "endLine": 51
+              },
+              "blockRef": "lesson/lesson.prax/blocks/16",
+              "pageRef": "lesson/lesson.prax/page/5",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "words": 24
+        }
+      ],
+      "pace": [
+        {
+          "number": 1,
+          "measurementStatus": "partial",
+          "narrationDurationKnown": false,
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/0",
+              "role": "narration",
+              "value": "Before you start",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 6,
+                "endLine": 7
+              },
+              "blockRef": "lesson/lesson.prax/blocks/0",
+              "pageRef": "lesson/lesson.prax/page/1",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/1",
+              "role": "narration",
+              "value": "Complete the plant isolation briefing before this course. That briefing teaches the lockout tags used here.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 8,
+                "endLine": 8
+              },
+              "blockRef": "lesson/lesson.prax/blocks/1",
+              "pageRef": "lesson/lesson.prax/page/1",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/2",
+              "role": "narration",
+              "value": "For a routine restart, verify the isolation tag, inspect the pressure gauge, then ask the lead to release the pump.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 10,
+                "endLine": 10
+              },
+              "blockRef": "lesson/lesson.prax/blocks/2",
+              "pageRef": "lesson/lesson.prax/page/1",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "recordedNarration": [],
+          "title": "Before you start",
+          "words": 39,
+          "readingSeconds": 9.831932773109244,
+          "narrationSeconds": 15.600000000000001,
+          "estimatedNarrationSeconds": 15.600000000000001,
+          "preview": {
+            "lines": [
+              {
+                "kind": "text",
+                "text": "Complete the plant isolation briefing before this course. That briefing teaches the lockout tags used here."
+              },
+              {
+                "kind": "text",
+                "text": "For a routine restart, verify the isolation tag, inspect the pressure gauge, then ask the lead to release the pump."
+              }
+            ],
+            "narrated": true,
+            "checks": 0,
+            "unknownResponses": 0,
+            "activities": 0
+          }
+        },
+        {
+          "number": 2,
+          "measurementStatus": "partial",
+          "narrationDurationKnown": false,
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/3",
+              "role": "narration",
+              "value": "Optional pressure note",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 14,
+                "endLine": 15
+              },
+              "blockRef": "lesson/lesson.prax/blocks/4",
+              "pageRef": "lesson/lesson.prax/page/2",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/4",
+              "role": "narration",
+              "value": "Open the pressure note if you need a reminder before the next question.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 16,
+                "endLine": 16
+              },
+              "blockRef": "lesson/lesson.prax/blocks/5",
+              "pageRef": "lesson/lesson.prax/page/2",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/5",
+              "role": "narration",
+              "value": "Pressure note If pressure rises during restart, pause the feed before opening the vent.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 18,
+                "endLine": 23
+              },
+              "blockRef": "lesson/lesson.prax/blocks/6",
+              "pageRef": "lesson/lesson.prax/page/2",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "recordedNarration": [],
+          "title": "Optional pressure note",
+          "words": 30,
+          "readingSeconds": 7.563025210084033,
+          "narrationSeconds": 12,
+          "estimatedNarrationSeconds": 12,
+          "preview": {
+            "lines": [
+              {
+                "kind": "text",
+                "text": "Open the pressure note if you need a reminder before the next question."
+              },
+              {
+                "kind": "heading",
+                "text": "Pressure note"
+              },
+              {
+                "kind": "text",
+                "text": "If pressure rises during restart, pause the feed before opening the vent."
+              }
+            ],
+            "narrated": true,
+            "checks": 0,
+            "unknownResponses": 0,
+            "activities": 0
+          }
+        },
+        {
+          "number": 3,
+          "measurementStatus": "partial",
+          "narrationDurationKnown": false,
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/6",
+              "role": "narration",
+              "value": "Pressure check",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 27,
+                "endLine": 28
+              },
+              "blockRef": "lesson/lesson.prax/blocks/8",
+              "pageRef": "lesson/lesson.prax/page/3",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/7",
+              "role": "narration",
+              "value": "Pressure rises during restart. What should you do first?\n\nPause the feed\n\nOpen the vent immediately",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 29,
+                "endLine": 34
+              },
+              "blockRef": "lesson/lesson.prax/blocks/9",
+              "pageRef": "lesson/lesson.prax/page/3",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "recordedNarration": [],
+          "title": "Pressure check",
+          "words": 18,
+          "readingSeconds": 4.53781512605042,
+          "narrationSeconds": 7.2,
+          "estimatedNarrationSeconds": 7.2,
+          "preview": {
+            "lines": [
+              {
+                "kind": "text",
+                "text": "Pressure rises during restart. What should you do first?"
+              },
+              {
+                "kind": "item",
+                "text": "Pause the feed"
+              },
+              {
+                "kind": "item",
+                "text": "Open the vent immediately"
+              }
+            ],
+            "narrated": true,
+            "checks": 1,
+            "unknownResponses": 0,
+            "activities": 0
+          }
+        },
+        {
+          "number": 4,
+          "measurementStatus": "partial",
+          "narrationDurationKnown": false,
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/8",
+              "role": "narration",
+              "value": "Gauge check",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 37,
+                "endLine": 38
+              },
+              "blockRef": "lesson/lesson.prax/blocks/11",
+              "pageRef": "lesson/lesson.prax/page/4",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/9",
+              "role": "narration",
+              "value": "Read this rule: if the gauge is below the marked safe band, stop the restart and call the lead.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 39,
+                "endLine": 39
+              },
+              "blockRef": "lesson/lesson.prax/blocks/12",
+              "pageRef": "lesson/lesson.prax/page/4",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/10",
+              "role": "narration",
+              "value": "The gauge is below the safe band. What should you do?\n\nStop the restart and call the lead\n\nContinue until the gauge rises",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 41,
+                "endLine": 46
+              },
+              "blockRef": "lesson/lesson.prax/blocks/13",
+              "pageRef": "lesson/lesson.prax/page/4",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "recordedNarration": [],
+          "title": "Gauge check",
+          "words": 44,
+          "readingSeconds": 11.092436974789916,
+          "narrationSeconds": 17.6,
+          "estimatedNarrationSeconds": 17.6,
+          "preview": {
+            "lines": [
+              {
+                "kind": "text",
+                "text": "Read this rule: if the gauge is below the marked safe band, stop the restart and call the lead."
+              },
+              {
+                "kind": "text",
+                "text": "The gauge is below the safe band. What should you do?"
+              },
+              {
+                "kind": "item",
+                "text": "Stop the restart and call the lead"
+              },
+              {
+                "kind": "item",
+                "text": "Continue until the gauge rises"
+              }
+            ],
+            "narrated": true,
+            "checks": 1,
+            "unknownResponses": 0,
+            "activities": 0
+          }
+        },
+        {
+          "number": 5,
+          "measurementStatus": "partial",
+          "narrationDurationKnown": false,
+          "narration": [
+            {
+              "ref": "lesson/lesson.prax/narration/11",
+              "role": "narration",
+              "value": "Worksheet",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 49,
+                "endLine": 50
+              },
+              "blockRef": "lesson/lesson.prax/blocks/15",
+              "pageRef": "lesson/lesson.prax/page/5",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            },
+            {
+              "ref": "lesson/lesson.prax/narration/12",
+              "role": "narration",
+              "value": "Outside this course, fill in the restart worksheet with the isolation tag, gauge reading and lead's name. Bring it to the next shift handoff.",
+              "format": "plain",
+              "location": {
+                "file": "lesson.prax",
+                "startLine": 51,
+                "endLine": 51
+              },
+              "blockRef": "lesson/lesson.prax/blocks/16",
+              "pageRef": "lesson/lesson.prax/page/5",
+              "origin": "derived",
+              "disabled": false,
+              "audio": null,
+              "timings": null,
+              "audioProvenance": null,
+              "duration": null
+            }
+          ],
+          "recordedNarration": [],
+          "title": "Worksheet",
+          "words": 25,
+          "readingSeconds": 6.302521008403361,
+          "narrationSeconds": 10,
+          "estimatedNarrationSeconds": 10,
+          "preview": {
+            "lines": [
+              {
+                "kind": "text",
+                "text": "Outside this course, fill in the restart worksheet with the isolation tag, gauge reading and lead's name. Bring it to the next shift handoff."
+              }
+            ],
+            "narrated": true,
+            "checks": 0,
+            "unknownResponses": 0,
+            "activities": 0
+          }
+        }
+      ]
+    }
+  ],
+  "rhythm": {
+    "withoutAction": [],
+    "textOnly": [],
+    "generatedBy": null
+  },
+  "trace": {
+    "columns": [
+      {
+        "lesson": 1,
+        "page": 1,
+        "title": "Before you start",
+        "phase": "set",
+        "seconds": 15.600000000000001
+      },
+      {
+        "lesson": 1,
+        "page": 2,
+        "title": "Optional pressure note",
+        "phase": "hold",
+        "seconds": 12
+      },
+      {
+        "lesson": 1,
+        "page": 3,
+        "title": "Pressure check",
+        "phase": "hold",
+        "seconds": 7.2
+      },
+      {
+        "lesson": 1,
+        "page": 4,
+        "title": "Gauge check",
+        "phase": "hold",
+        "seconds": 17.6
+      },
+      {
+        "lesson": 1,
+        "page": 5,
+        "title": "Worksheet",
+        "phase": "hold",
+        "seconds": 10
+      }
+    ],
+    "lessons": [
+      {
+        "title": "Pump restart procedure",
+        "start": 0,
+        "end": 5
+      }
+    ],
+    "rows": [
+      {
+        "label": "Introduction",
+        "group": "Course",
+        "depth": 0,
+        "marks": [
+          {
+            "column": 0,
+            "symbol": "fill",
+            "note": "Before you start"
+          }
+        ]
+      },
+      {
+        "label": "Review and summary",
+        "group": "Course",
+        "depth": 0,
+        "marks": []
+      },
+      {
+        "label": "Practice",
+        "group": "Course",
+        "depth": 0,
+        "marks": [
+          {
+            "column": 2,
+            "symbol": "fill",
+            "note": "Pressure check"
+          },
+          {
+            "column": 3,
+            "symbol": "fill",
+            "note": "Gauge check"
+          }
+        ]
+      }
+    ],
+    "pageObjectives": [
+      {
+        "stated": [],
+        "instructed": [],
+        "activities": [],
+        "checks": []
+      },
+      {
+        "stated": [],
+        "instructed": [],
+        "activities": [],
+        "checks": []
+      },
+      {
+        "stated": [],
+        "instructed": [],
+        "activities": [],
+        "checks": []
+      },
+      {
+        "stated": [],
+        "instructed": [],
+        "activities": [],
+        "checks": []
+      },
+      {
+        "stated": [],
+        "instructed": [],
+        "activities": [],
+        "checks": []
+      }
+    ]
+  },
+  "language": {
+    "locale": "en",
+    "lessons": [
+      {
+        "file": "lesson.prax",
+        "title": "Pump restart procedure",
+        "channels": {
+          "screen": {
+            "sentences": 9,
+            "words": 106,
+            "medianLength": 12,
+            "p90Length": 20,
+            "longWordShare": 0.05660377358490566,
+            "grade": 5.478805031446541,
+            "lengths": [
+              2,
+              7,
+              8,
+              8,
+              12,
+              13,
+              17,
+              19,
+              20
+            ],
+            "cohesion": {
+              "adjacentPairs": 5,
+              "overlapping": 3,
+              "causal": 0,
+              "contrastive": 0
+            },
+            "structure": {
+              "clauseCuesPer100Sentences": 33,
+              "twoOrMoreClauseCues": 0,
+              "passive": 0,
+              "nominalisationsPer100Words": 4,
+              "frontLoaded": 0
+            }
+          },
+          "narration": {
+            "sentences": 19,
+            "words": 156,
+            "medianLength": 7,
+            "p90Length": 19,
+            "longWordShare": 0.057692307692307696,
+            "grade": 4.0262078272604604,
+            "lengths": [
+              1,
+              2,
+              2,
+              3,
+              3,
+              4,
+              4,
+              5,
+              7,
+              7,
+              7,
+              8,
+              8,
+              12,
+              13,
+              14,
+              17,
+              19,
+              20
+            ],
+            "cohesion": {
+              "adjacentPairs": 14,
+              "overlapping": 8,
+              "causal": 0,
+              "contrastive": 0
+            },
+            "structure": {
+              "clauseCuesPer100Sentences": 16,
+              "twoOrMoreClauseCues": 0,
+              "passive": 0,
+              "nominalisationsPer100Words": 3,
+              "frontLoaded": 0
+            }
+          }
+        }
+      }
+    ],
+    "longest": [
+      {
+        "id": "1.1.s3",
+        "lesson": 1,
+        "page": 1,
+        "ref": "1.1.3",
+        "channel": "screen",
+        "text": "For a routine restart, verify the isolation tag, inspect the pressure gauge, then ask the lead to release the pump.",
+        "words": 20,
+        "syllables": 30,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 1,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.4.s1",
+        "lesson": 1,
+        "page": 4,
+        "ref": "1.4.2",
+        "channel": "screen",
+        "text": "Read this rule: if the gauge is below the marked safe band, stop the restart and call the lead.",
+        "words": 19,
+        "syllables": 22,
+        "structure": {
+          "subordinateClauses": 1,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": [
+            {
+              "start": 16,
+              "end": 18
+            }
+          ]
+        }
+      },
+      {
+        "id": "1.5.s1",
+        "lesson": 1,
+        "page": 5,
+        "ref": "1.5.2",
+        "channel": "screen",
+        "text": "Outside this course, fill in the restart worksheet with the isolation tag, gauge reading and lead's name.",
+        "words": 17,
+        "syllables": 24,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 1,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.2.n3",
+        "lesson": 1,
+        "page": 2,
+        "ref": "1.2.3",
+        "channel": "narration",
+        "text": "Pressure note If pressure rises during restart, pause the feed before opening the vent.",
+        "words": 14,
+        "syllables": 21,
+        "structure": {
+          "subordinateClauses": 1,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": [
+            {
+              "start": 14,
+              "end": 16
+            }
+          ]
+        }
+      },
+      {
+        "id": "1.2.s1",
+        "lesson": 1,
+        "page": 2,
+        "ref": "1.2.2",
+        "channel": "screen",
+        "text": "Open the pressure note if you need a reminder before the next question.",
+        "words": 13,
+        "syllables": 19,
+        "structure": {
+          "subordinateClauses": 1,
+          "passive": false,
+          "nominalisations": 1,
+          "frontLoaded": false,
+          "triggers": [
+            {
+              "start": 23,
+              "end": 25
+            }
+          ]
+        }
+      },
+      {
+        "id": "1.2.s3",
+        "lesson": 1,
+        "page": 2,
+        "ref": "1.2.4",
+        "channel": "screen",
+        "text": "If pressure rises during restart, pause the feed before opening the vent.",
+        "words": 12,
+        "syllables": 18,
+        "structure": {
+          "subordinateClauses": 1,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": [
+            {
+              "start": 0,
+              "end": 2
+            }
+          ]
+        }
+      },
+      {
+        "id": "1.4.n5",
+        "lesson": 1,
+        "page": 4,
+        "ref": "1.4.3",
+        "channel": "narration",
+        "text": "Stop the restart and call the lead Continue until the gauge rises",
+        "words": 12,
+        "syllables": 16,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.1.s1",
+        "lesson": 1,
+        "page": 1,
+        "ref": "1.1.2",
+        "channel": "screen",
+        "text": "Complete the plant isolation briefing before this course.",
+        "words": 8,
+        "syllables": 14,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 1,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.1.s2",
+        "lesson": 1,
+        "page": 1,
+        "ref": "1.1.2",
+        "channel": "screen",
+        "text": "That briefing teaches the lockout tags used here.",
+        "words": 8,
+        "syllables": 10,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.3.n4",
+        "lesson": 1,
+        "page": 3,
+        "ref": "1.3.2",
+        "channel": "narration",
+        "text": "Pause the feed Open the vent immediately",
+        "words": 7,
+        "syllables": 12,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.4.n3",
+        "lesson": 1,
+        "page": 4,
+        "ref": "1.4.3",
+        "channel": "narration",
+        "text": "The gauge is below the safe band.",
+        "words": 7,
+        "syllables": 8,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      },
+      {
+        "id": "1.5.s2",
+        "lesson": 1,
+        "page": 5,
+        "ref": "1.5.2",
+        "channel": "screen",
+        "text": "Bring it to the next shift handoff.",
+        "words": 7,
+        "syllables": 8,
+        "structure": {
+          "subordinateClauses": 0,
+          "passive": false,
+          "nominalisations": 0,
+          "frontLoaded": false,
+          "triggers": []
+        }
+      }
+    ],
+    "flagged": {
+      "passive": [],
+      "clauses": [],
+      "frontLoaded": [],
+      "nominal": []
+    },
+    "acronyms": [],
+    "vocabulary": {
+      "lessons": [
+        {
+          "screen": {
+            "words": 105,
+            "lessCommon": 7,
+            "rare": 2
+          },
+          "narration": {
+            "words": 153,
+            "lessCommon": 11,
+            "rare": 2
+          }
+        }
+      ],
+      "rare": [
+        {
+          "word": "lockout",
+          "zipf": 2.6,
+          "uses": 2,
+          "firstUse": "1.1.s2",
+          "ref": "1.1.2",
+          "lessons": [
+            1
+          ],
+          "glossed": false
+        },
+        {
+          "word": "handoff",
+          "zipf": 2.9,
+          "uses": 2,
+          "firstUse": "1.5.s2",
+          "ref": "1.5.2",
+          "lessons": [
+            1
+          ],
+          "glossed": false
+        }
+      ]
+    },
+    "places": {
+      "1.1.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 8,
+        "sourceRef": "lesson/lesson.prax/blocks/1",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 8,
+          "endLine": 8
+        },
+        "position": 1
+      },
+      "1.5.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 5,
+        "file": "lesson.prax",
+        "line": 51,
+        "sourceRef": "lesson/lesson.prax/blocks/16",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 51,
+          "endLine": 51
+        },
+        "position": 13
+      },
+      "1.1.3": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 10,
+        "sourceRef": "lesson/lesson.prax/blocks/2",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 10,
+          "endLine": 10
+        },
+        "position": 2
+      },
+      "1.4.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 39,
+        "sourceRef": "lesson/lesson.prax/blocks/12",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 39,
+          "endLine": 39
+        },
+        "position": 10
+      },
+      "1.2.3": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 18,
+        "sourceRef": "lesson/lesson.prax/blocks/6",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 18,
+          "endLine": 23
+        },
+        "position": 5
+      },
+      "1.2.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 16,
+        "sourceRef": "lesson/lesson.prax/blocks/5",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 16,
+          "endLine": 16
+        },
+        "position": 4
+      },
+      "1.2.4": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 21,
+        "sourceRef": "lesson/lesson.prax/blocks/6/data/items/0/children/0",
+        "parentRef": "lesson/lesson.prax/blocks/6",
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 21,
+          "endLine": 21
+        },
+        "position": 6
+      },
+      "1.4.3": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 41,
+        "sourceRef": "lesson/lesson.prax/blocks/13",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 41,
+          "endLine": 46
+        },
+        "position": 11
+      },
+      "1.3.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 29,
+        "sourceRef": "lesson/lesson.prax/blocks/9",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 29,
+          "endLine": 34
+        },
+        "position": 8
+      }
+    }
+  },
+  "emphasis": {
+    "lessons": [
+      {
+        "file": "lesson.prax",
+        "title": "Pump restart procedure",
+        "counts": {
+          "strong": 0,
+          "em": 0,
+          "mark": 0,
+          "u": 0,
+          "span.praxity-doodle": 0
+        },
+        "pages": [
+          {
+            "number": 1,
+            "spans": 0
+          },
+          {
+            "number": 2,
+            "spans": 0
+          },
+          {
+            "number": 3,
+            "spans": 0
+          },
+          {
+            "number": 4,
+            "spans": 0
+          },
+          {
+            "number": 5,
+            "spans": 0
+          }
+        ],
+        "emphasizedWords": 0,
+        "screenWords": 145,
+        "share": 0
+      }
+    ],
+    "spans": [],
+    "places": {}
+  },
+  "tasks": {
+    "model": "fixture-hand-coded",
+    "evidenceKind": "interpretation",
+    "countingUnit": "page presence",
+    "taxonomyVersion": "conole-task-families/1",
+    "annotations": [
+      {
+        "ref": "1.1.2",
+        "evidence": [
+          {
+            "ref": "1.1.2",
+            "channel": "screen",
+            "quote": "Complete the plant isolation briefing before this course."
+          }
+        ],
+        "taskTypes": [
+          "assimilative"
+        ],
+        "explanation": "The prerequisite briefing is requested outside this course.",
+        "work": "outside",
+        "assessmentPurpose": "none"
+      },
+      {
+        "ref": "1.1.3",
+        "evidence": [
+          {
+            "ref": "1.1.3",
+            "channel": "screen",
+            "quote": "For a routine restart, verify the isolation tag"
+          }
+        ],
+        "taskTypes": [
+          "assimilative"
+        ],
+        "explanation": "The learner reads the stated sequence before the checks.",
+        "work": "inside",
+        "assessmentPurpose": "none"
+      },
+      {
+        "ref": "1.2.2",
+        "evidence": [
+          {
+            "ref": "1.2.2",
+            "channel": "screen",
+            "quote": "Open the pressure note if you need a reminder"
+          }
+        ],
+        "taskTypes": [
+          "assimilative"
+        ],
+        "explanation": "The learner may read an optional explanation behind an accordion.",
+        "work": "inside",
+        "assessmentPurpose": "none"
+      },
+      {
+        "ref": "1.3.2",
+        "evidence": [
+          {
+            "ref": "1.3.2",
+            "channel": "screen",
+            "quote": "Pressure rises during restart. What should you do first?"
+          },
+          {
+            "ref": "1.2.4",
+            "channel": "screen",
+            "quote": "If pressure rises during restart, pause the feed before opening the vent."
+          }
+        ],
+        "taskTypes": [
+          "experiential"
+        ],
+        "explanation": "The check asks the learner to choose a first action in a routine restart.",
+        "work": "inside",
+        "assessmentPurpose": "practice"
+      },
+      {
+        "ref": "1.4.2",
+        "evidence": [
+          {
+            "ref": "1.4.2",
+            "channel": "screen",
+            "quote": "Read this rule: if the gauge is below the marked safe band"
+          }
+        ],
+        "taskTypes": [
+          "assimilative"
+        ],
+        "explanation": "The learner reads the operating rule on the check page.",
+        "work": "inside",
+        "assessmentPurpose": "none"
+      },
+      {
+        "ref": "1.4.3",
+        "evidence": [
+          {
+            "ref": "1.4.3",
+            "channel": "screen",
+            "quote": "The gauge is below the safe band. What should you do?"
+          }
+        ],
+        "taskTypes": [
+          "experiential"
+        ],
+        "explanation": "The learner applies the stated gauge rule to a routine restart.",
+        "work": "inside",
+        "assessmentPurpose": "practice"
+      },
+      {
+        "ref": "1.5.2",
+        "evidence": [
+          {
+            "ref": "1.5.2",
+            "channel": "screen",
+            "quote": "Outside this course, fill in the restart worksheet"
+          }
+        ],
+        "taskTypes": [
+          "productive"
+        ],
+        "explanation": "The learner is asked to complete a worksheet outside the course; completion is not observed.",
+        "work": "outside",
+        "assessmentPurpose": "none"
+      }
+    ],
+    "pages": [
+      {
+        "key": "1.1",
+        "lesson": 1,
+        "title": "Before you start",
+        "ref": "1.1.1",
+        "taskTypes": [
+          "assimilative"
+        ],
+        "unknown": false,
+        "unsupported": false
+      },
+      {
+        "key": "1.2",
+        "lesson": 1,
+        "title": "Optional pressure note",
+        "ref": "1.2.1",
+        "taskTypes": [
+          "assimilative"
+        ],
+        "unknown": false,
+        "unsupported": false
+      },
+      {
+        "key": "1.3",
+        "lesson": 1,
+        "title": "Pressure check",
+        "ref": "1.3.1",
+        "taskTypes": [
+          "experiential"
+        ],
+        "unknown": false,
+        "unsupported": false
+      },
+      {
+        "key": "1.4",
+        "lesson": 1,
+        "title": "Gauge check",
+        "ref": "1.4.1",
+        "taskTypes": [
+          "assimilative",
+          "experiential"
+        ],
+        "unknown": false,
+        "unsupported": false
+      },
+      {
+        "key": "1.5",
+        "lesson": 1,
+        "title": "Worksheet",
+        "ref": "1.5.1",
+        "taskTypes": [
+          "productive"
+        ],
+        "unknown": false,
+        "unsupported": false
+      }
+    ],
+    "counts": {
+      "assimilative": 3,
+      "information handling": 0,
+      "communicative": 0,
+      "productive": 1,
+      "experiential": 2,
+      "adaptive": 0,
+      "unclassified": 0,
+      "unsupported": 0
+    },
+    "places": {
+      "1.1.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 8,
+        "sourceRef": "lesson/lesson.prax/blocks/1",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 8,
+          "endLine": 8
+        },
+        "position": 1
+      },
+      "1.1.3": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 10,
+        "sourceRef": "lesson/lesson.prax/blocks/2",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 10,
+          "endLine": 10
+        },
+        "position": 2
+      },
+      "1.2.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 16,
+        "sourceRef": "lesson/lesson.prax/blocks/5",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 16,
+          "endLine": 16
+        },
+        "position": 4
+      },
+      "1.3.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 29,
+        "sourceRef": "lesson/lesson.prax/blocks/9",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 29,
+          "endLine": 34
+        },
+        "position": 8
+      },
+      "1.2.4": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 21,
+        "sourceRef": "lesson/lesson.prax/blocks/6/data/items/0/children/0",
+        "parentRef": "lesson/lesson.prax/blocks/6",
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 21,
+          "endLine": 21
+        },
+        "position": 6
+      },
+      "1.4.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 39,
+        "sourceRef": "lesson/lesson.prax/blocks/12",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 39,
+          "endLine": 39
+        },
+        "position": 10
+      },
+      "1.4.3": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 41,
+        "sourceRef": "lesson/lesson.prax/blocks/13",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 41,
+          "endLine": 46
+        },
+        "position": 11
+      },
+      "1.5.2": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 5,
+        "file": "lesson.prax",
+        "line": 51,
+        "sourceRef": "lesson/lesson.prax/blocks/16",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 51,
+          "endLine": 51
+        },
+        "position": 13
+      },
+      "1.1.1": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 1,
+        "file": "lesson.prax",
+        "line": 6,
+        "sourceRef": "lesson/lesson.prax/blocks/0",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 6,
+          "endLine": 7
+        },
+        "position": 0
+      },
+      "1.2.1": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 2,
+        "file": "lesson.prax",
+        "line": 14,
+        "sourceRef": "lesson/lesson.prax/blocks/4",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 14,
+          "endLine": 15
+        },
+        "position": 3
+      },
+      "1.3.1": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 3,
+        "file": "lesson.prax",
+        "line": 27,
+        "sourceRef": "lesson/lesson.prax/blocks/8",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 27,
+          "endLine": 28
+        },
+        "position": 7
+      },
+      "1.4.1": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 4,
+        "file": "lesson.prax",
+        "line": 37,
+        "sourceRef": "lesson/lesson.prax/blocks/11",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 37,
+          "endLine": 38
+        },
+        "position": 9
+      },
+      "1.5.1": {
+        "lesson": 1,
+        "lessonTitle": "Pump restart procedure",
+        "page": 5,
+        "file": "lesson.prax",
+        "line": 49,
+        "sourceRef": "lesson/lesson.prax/blocks/15",
+        "parentRef": null,
+        "location": {
+          "file": "lesson.prax",
+          "startLine": 49,
+          "endLine": 50
+        },
+        "position": 12
+      }
+    }
+  },
+  "guides": {
+    "trace": [
+      {
+        "see": "Objectives stated but never practised or checked",
+        "could": "The objective may be assessed elsewhere in a larger programme, or the course may not yet give learners a chance to show it."
+      },
+      {
+        "see": "Long stretches of instruction with no activity or check",
+        "could": "A deliberate reading phase, or a place where learners go long without doing anything with what they read."
+      },
+      {
+        "see": "New concepts bunched on a few pages",
+        "could": "A glossary or overview page doing its job, or a heavy introduction the learner meets all at once."
+      }
+    ],
+    "anatomy": [
+      {
+        "see": "A lesson made almost entirely of text",
+        "could": "A reading or reference lesson, fitting for foundations; worth a second look if its objectives ask learners to do something."
+      },
+      {
+        "see": "Explore blocks carrying much of a lesson",
+        "could": "Content the learner can choose to open; well suited to optional depth, riskier for anything a later check needs."
+      },
+      {
+        "see": "Activities or checks only at the end of a lesson",
+        "could": "An end-of-lesson assessment design, or practice that could be spread through the lesson."
+      },
+      {
+        "see": "Long runs of pages without an activity or check",
+        "could": "A narrative or conceptual stretch, or a place where attention may drift; look at what the learner does next."
+      }
+    ],
+    "tasks": [
+      {
+        "see": "A page asks for more than one task type",
+        "could": "The learner may combine kinds of work on one page; inspect each quoted request before revising it."
+      },
+      {
+        "see": "Work requested outside the course",
+        "could": "The course states the task, while completion or participation may be recorded elsewhere or remain unseen."
+      },
+      {
+        "see": "Unclassified or unsupported pages",
+        "could": "The request may be ambiguous, or inspection may not expose enough text to classify it."
+      }
+    ],
+    "pace": [
+      {
+        "see": "Narration much longer than reading time",
+        "could": "Narration that adds explanation the screen leaves out, or a page learners will skip ahead of."
+      },
+      {
+        "see": "A few pages far longer than their neighbours",
+        "could": "Dense pages that could be split, or deliberate case studies and summaries."
+      },
+      {
+        "see": "A steep stretch of the running total",
+        "could": "Where the course takes the most time, which is where changes save learners the most minutes."
+      }
+    ],
+    "evidence": [
+      {
+        "see": "An objective group with no check or activity",
+        "could": "Knowledge the course introduces but does not ask learners to show, perhaps by design as prior or awareness-level knowledge."
+      },
+      {
+        "see": "One group with most of the evidence",
+        "could": "The course's core outcome, or practice concentrated on what is easiest to check."
+      }
+    ],
+    "flow": [
+      {
+        "see": "Checks whose instruction comes after them",
+        "could": "A pre-test or retrieval-first design, or a check placed before its teaching by mistake."
+      },
+      {
+        "see": "Evidence that traces back to few objectives",
+        "could": "Objectives that are broad enough to cover much, or objectives the evidence does not reach."
+      }
+    ],
+    "outcomes": [
+      {
+        "see": "Objectives mostly at Remember and Understand",
+        "could": "A foundations or awareness course, which may be the intent; check that activities do not ask for more than the objectives state, or less."
+      },
+      {
+        "see": "Objectives at Apply or above with only recall checks",
+        "could": "Checks that measure less than the objectives promise."
+      },
+      {
+        "see": "Most objectives Verbal information in Gagné's terms",
+        "could": "A course about knowing that; skills learners must perform need practice with feedback, not only statements."
+      },
+      {
+        "see": "Objectives that state an action but no conditions or standard",
+        "could": "Common and often fine; a standard is worth adding where the course must show learners reached a level."
+      }
+    ],
+    "availability": [
+      {
+        "see": "Needed instruction behind a click",
+        "could": "Content learners may never open; fine for optional depth, a risk when a check depends on it."
+      },
+      {
+        "see": "Needed instruction many minutes before the check",
+        "could": "Deliberate spacing that strengthens memory, or a gap long enough that learners need a recap first."
+      },
+      {
+        "see": "Needed instruction only in narration or a tooltip",
+        "could": "Information some learners never see; check that the screen carries it too."
+      },
+      {
+        "see": "Pre-assessments",
+        "could": "Checks that find out what learners already know; worth asking what the results change, such as letting learners skip ahead or pointing them to the right section."
+      },
+      {
+        "see": "Checks taught only after they are asked, not marked as pre-assessments",
+        "could": "A retrieval-first or discovery design, or a check placed before its teaching by mistake."
+      },
+      {
+        "see": "Checks with no instruction found",
+        "could": "Prior knowledge the course assumes, a scenario judgement that needs none, or a gap in the teaching."
+      }
+    ],
+    "concepts": [
+      {
+        "see": "A concept used before it is defined",
+        "could": "A preview or advance organiser, or a definition that arrives too late."
+      },
+      {
+        "see": "Defined concepts with no knowledge check",
+        "could": "Supporting ideas that need no check, or core ideas the course never asks learners to use."
+      },
+      {
+        "see": "A concept that appears once and never returns",
+        "could": "A passing mention, or an idea that needs revisiting to be remembered."
+      }
+    ],
+    "prerequisites": [
+      {
+        "see": "A concept that comes before what it builds on",
+        "could": "A spiral design that returns to it later, or an ordering to fix."
+      }
+    ],
+    "spacing": [
+      {
+        "see": "Long gaps between encounters with a concept",
+        "could": "Spacing that helps long-term memory, or a concept that fades before it is needed; it depends on how long learners must remember it."
+      },
+      {
+        "see": "Every encounter within a few minutes",
+        "could": "Massed practice that feels fluent but fades faster than spaced practice."
+      }
+    ],
+    "distinctions": [
+      {
+        "see": "A confusable pair with no stated difference or contrasting example",
+        "could": "A distinction learners already hold, or one they will blur; a side-by-side example is the usual remedy."
+      },
+      {
+        "see": "Pairs stated but never checked",
+        "could": "Distinctions the course explains but does not ask learners to make."
+      }
+    ],
+    "sentence-length": [
+      {
+        "see": "Many sentences past the dashed line",
+        "could": "Long sentences that load working memory, often lists or qualifications that read better split."
+      },
+      {
+        "see": "Narration sentences longer than on-screen ones",
+        "could": "Harder to follow by ear than on the page. Where learners can read along, as with the transcript Studio shows beside narrated slides, they can reread and it matters less; it matters most for learners who listen without looking."
+      }
+    ],
+    "readability": [
+      {
+        "see": "A lesson with few shared words between sentences",
+        "could": "Each sentence starts a new thread, as in lists of facts or bullet-like prose; learners must connect the ideas themselves. Fine for reference text, harder for an explanation."
+      },
+      {
+        "see": "Few causal or contrast connectives in an explanatory lesson",
+        "could": "Reasons and differences left implicit; a because or however can make the logic visible. Procedural steps need fewer."
+      },
+      {
+        "see": "A lesson high on several measures at once",
+        "could": "Long sentences, rare words and loose connections together are the clearest sign of text worth revising first."
+      },
+      {
+        "see": "A lesson several Flesch–Kincaid grades above the rest",
+        "could": "Longer sentences or longer words, which is all the formula counts: dense academic-style prose, or subject terms that are long but taught."
+      }
+    ],
+    "structure": [
+      {
+        "see": "Clusters of passive or front-loaded sentences",
+        "could": "Formal or legal source language carried over; the review list shows each sentence."
+      }
+    ],
+    "review": [
+      {
+        "see": "The same construction repeating in one lesson",
+        "could": "One writer's habit or one source's style, cheapest to fix together."
+      }
+    ],
+    "longest": [
+      {
+        "see": "Lists run together as one sentence",
+        "could": "Content that would read better as a bulleted list."
+      }
+    ],
+    "vocabulary": [
+      {
+        "see": "A lesson with many rare words",
+        "could": "Subject terminology the course teaches, which is fine when defined, or general wording that could be plainer."
+      },
+      {
+        "see": "Rare words with no glossary tooltip",
+        "could": "Terms learners may not know; check whether the text explains them nearby."
+      }
+    ],
+    "acronyms": [
+      {
+        "see": "Acronyms never spelled out",
+        "could": "Terms the audience already knows, or ones a newcomer cannot decode."
+      }
+    ],
+    "terms": [
+      {
+        "see": "Flags clustered in one lesson",
+        "could": "A lesson written for a more expert reader than the rest."
+      },
+      {
+        "see": "Unstated premises",
+        "could": "Steps in reasoning the writer knows and the learner may not; each flag quotes the words concerned."
+      }
+    ],
+    "emphasis": [
+      {
+        "see": "A high share of emphasised words",
+        "could": "Emphasis that no longer stands out; when much is bold, nothing is."
+      },
+      {
+        "see": "Emphasis on labels rather than concepts",
+        "could": "Formatting used for layout, which is fine, while key ideas go unmarked."
+      }
+    ],
+    "visuals": [
+      {
+        "see": "Several opportunities on one page",
+        "could": "A page carrying a process or comparison in prose that a diagram would make easier to follow."
+      }
+    ]
+  }
+}

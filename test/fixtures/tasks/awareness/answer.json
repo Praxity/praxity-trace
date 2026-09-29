@@ -1,0 +1,73 @@
+{
+  "view": "tasks",
+  "promptVersion": "tasks/2-projection-2",
+  "taxonomyVersion": "conole-task-families/1",
+  "courseHash": "b292ba504f0679442bd03bb583bc21216a1e0f3170c414f5ea9541e6d634387d",
+  "model": "fixture-hand-coded",
+  "annotations": [
+    {
+      "ref": "1.1.2",
+      "evidence": [
+        {
+          "ref": "1.1.2",
+          "channel": "screen",
+          "quote": "Open the two headings and read how the gate works."
+        }
+      ],
+      "taskTypes": [
+        "assimilative"
+      ],
+      "explanation": "The learner is asked to read reference prose inside the accordion.",
+      "work": "inside",
+      "assessmentPurpose": "none"
+    },
+    {
+      "ref": "1.2.2",
+      "evidence": [
+        {
+          "ref": "1.2.2",
+          "channel": "screen",
+          "quote": "Watch the short overview of the gate and the upstream gauge."
+        }
+      ],
+      "taskTypes": [
+        "assimilative"
+      ],
+      "explanation": "The learner is asked to watch an overview.",
+      "work": "inside",
+      "assessmentPurpose": "none"
+    },
+    {
+      "ref": "1.3.3",
+      "evidence": [
+        {
+          "ref": "1.3.3",
+          "channel": "screen",
+          "quote": "What does the upstream gauge show?"
+        }
+      ],
+      "taskTypes": [
+        "unknown"
+      ],
+      "explanation": "This recall question is a diagnostic check; the six task families do not identify a distinct handling task here.",
+      "work": "inside",
+      "assessmentPurpose": "diagnostic"
+    },
+    {
+      "ref": "1.4.2",
+      "evidence": [
+        {
+          "ref": "1.4.2",
+          "channel": "screen",
+          "quote": "Read this summary: the gate controls flow"
+        }
+      ],
+      "taskTypes": [
+        "assimilative"
+      ],
+      "explanation": "The learner is asked to read a short reference summary.",
+      "work": "inside",
+      "assessmentPurpose": "none"
+    }
+  ]
+}

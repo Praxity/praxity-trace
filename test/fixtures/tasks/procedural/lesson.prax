@@ -1,0 +1,51 @@
+---
+title: Pump restart procedure
+lang: en
+---
+
+## Before you start
+
+Complete the plant isolation briefing before this course. That briefing teaches the lockout tags used here.
+
+For a routine restart, verify the isolation tag, inspect the pressure gauge, then ask the lead to release the pump.
+
+---
+
+## Optional pressure note
+
+Open the pressure note if you need a reminder before the next question.
+
+### Pressure note
+as: accordion
+
+If pressure rises during restart, pause the feed before opening the vent.
+
+close: accordion
+
+---
+
+## Pressure check
+
+### Pressure rises during restart. What should you do first?
+as: choice
+
+(x) Pause the feed
+( ) Open the vent immediately
+
+---
+
+## Gauge check
+
+Read this rule: if the gauge is below the marked safe band, stop the restart and call the lead.
+
+### The gauge is below the safe band. What should you do?
+as: choice
+
+(x) Stop the restart and call the lead
+( ) Continue until the gauge rises
+
+---
+
+## Worksheet
+
+Outside this course, fill in the restart worksheet with the isolation tag, gauge reading and lead's name. Bring it to the next shift handoff.

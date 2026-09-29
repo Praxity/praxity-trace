@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+*.log
+
+# Private courses and generated reports stay local.
+corpus/local/
+out/
