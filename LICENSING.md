@@ -1,66 +1,51 @@
 # Praxity Trace licensing
 
-Praxity Trace is **community source**, not open source. The `LICENSE` file is
-authoritative; this page explains the intended boundary in everyday language.
-The licence uses the unmodified
-[PolyForm Perimeter License 1.0.1](https://polyformproject.org/licenses/perimeter/1.0.1)
-plus the narrow Praxity Community Permission for qualifying free public forks
-and services.
+Praxity Trace is source-available under the unmodified
+[PolyForm Perimeter License 1.0.1](https://polyformproject.org/licenses/perimeter/1.0.1).
+The `LICENSE` file is authoritative. This page explains it in everyday language.
 
-## Free uses
+## Free to use
 
-You may use and modify Praxity Trace without charge for:
+Use and change Praxity Trace without charge, at home and at work. That includes
+personal projects, teaching and research, nonprofit and government work,
+internal use at any company, and paid client work where Praxity Trace is one of the
+tools you use to do the job.
 
-- personal projects;
-- teaching, learning, and research;
-- nonprofit and governmental work;
-- internal use by any organization, including a for-profit company;
-- analyzing courses you are paid to develop, when Praxity Trace is an internal
-  development tool rather than the paid deliverable;
-- public source forks distributed without charge, under the same terms, and
-  with the required attribution;
-- genuinely free public services that visibly credit Praxity Trace and publish
-  the source for their deployed modifications. A free service may receive
-  general sponsorship that does not change access, results, or priority.
+## What the licence rules out
 
-Examples: a company runs it in CI; an agency analyzes a course it is building for
-a customer; a university uses it in class; a nonprofit offers a free credited
-hosted instance and publishes its modifications.
+You may not use Praxity Trace to provide others with a product that competes with it.
+The licence's test is whether a product, which can be a good or a service, is
+marketed as a substitute for what Praxity Trace does. Selling, hosting, repackaging or
+white-labelling Praxity Trace falls in that category, and so does a service sold
+mainly as Praxity Trace's function.
 
-## Uses requiring separate permission
+If your business adds its own work on top, such as course design, content or
+training, you don't need to ask. If it mainly resells what Praxity Trace does, talk to
+me first. I'm glad to work together when improvements and test results flow
+back into Praxity Trace.
 
-Contact the project before:
+Want to embed Praxity Trace in your product or service, or run a free public fork or
+service? Contact me at [hello@arielharlap.com](mailto:hello@arielharlap.com).
+I usually say yes to free public projects.
 
-- charging for access to Praxity Trace or its hosted results;
-- selling a dedicated course-analysis service powered substantially by it;
-- repackaging, reselling, renting, or white-labelling it;
-- embedding it as substantial course-analysis functionality in a paid product;
-- operating a nominally free version primarily as a funnel for a paid course-analysis
-  offering;
-- funding a public service through paid advertising or requiring users to let
-  the service reuse their content or data for another purpose; or
-- selling faster processing, higher limits, extra features, or priority.
+## Earlier versions
 
-Commercial permission may involve attribution, contribution, partnership,
-payment, or another negotiated exchange. It need not be exclusively monetary.
-
-Commercial-licensing contact: **[hello@arielharlap.com](mailto:hello@arielharlap.com)**
+Versions up to and including v0.1.1 were released under PolyForm Perimeter
+1.0.1 with the Praxity Community Permission 1.0. Copies of those versions keep
+those terms.
 
 ## Attribution and trademarks
 
-The required public attribution is:
+When you mention it, please credit it as:
 
 > **Praxity Trace by Ariel Harlap**
 >
 > <https://github.com/Praxity/praxity-trace>
 
-“Work with Ariel” is not required attribution. Praxity Trace, other Praxity
-names, marks, and logos remain reserved. Forks may identify their origin but may
-not impersonate or imply endorsement by the official project.
+Praxity Trace, other Praxity names, marks, and logos remain reserved.
+Forks may identify their origin but may not impersonate or imply endorsement by the official project.
 
 ## Your content and reports
 
-Praxity Trace does not claim ownership of the courses you analyze. Reports from
-Praxity Trace, public forks, and free public services retain the Praxity Trace
-attribution. Analysis runs locally. Model-assisted views send only the bundle you
+Praxity Trace does not claim ownership of the courses you analyze. Analysis runs locally. Model-assisted views send only the bundle you
 prepare to a model reviewer that you invoke separately.

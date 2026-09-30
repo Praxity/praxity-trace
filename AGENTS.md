@@ -66,6 +66,7 @@ Test fixtures are synthetic or come from `prax-format/examples` (CC0). Real
 client and evidence courses go in `corpus/local/`, which Git ignores. Keep
 their content out of commits, fixtures, docs and issue text.
 
-The licence stack matches Praxity Check. Code copied from Check keeps working
+Praxity Trace is source-available under the unmodified
+[PolyForm Perimeter License 1.0.1](https://polyformproject.org/licenses/perimeter/1.0.1). Code copied from Check keeps working
 under the same terms; code from Studio, Rubato or other repositories needs its
 licence checked first.

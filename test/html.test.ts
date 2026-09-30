@@ -58,6 +58,11 @@ test("report and prepare accept an HTML directory through the CLI", async () => 
 		const input = join(fixtures, "studio");
 		await run(process.execPath, ["src/cli.ts", "report", input, "--out", join(output, "report")], { cwd: resolve(import.meta.dirname, "..") });
 		assert.ok((await stat(join(output, "report", "report.html"))).size > 0);
+		const html = await readFile(join(output, "report", "report.html"), "utf8");
+		assert.match(html, /Tabler/);
+		assert.match(html, /Permission is hereby granted/);
+		assert.match(html, /Copyright \(c\) 2020-2026 Paweł Kuna/);
+		assert.match(html, /SOFTWARE\.\n-->/);
 		const report = JSON.parse(await readFile(join(output, "report", "report.json"), "utf8"));
 		assert.equal(report.source.schema, "praxity-html/0");
 		await run(process.execPath, ["src/cli.ts", "prepare", "concepts", input, "--out", join(output, "bundle")], { cwd: resolve(import.meta.dirname, "..") });

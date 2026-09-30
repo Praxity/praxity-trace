@@ -8,10 +8,9 @@ Canonical attribution: **Praxity Trace by Ariel Harlap**
 
 Project: <https://github.com/Praxity/praxity-trace>
 
-Praxity Trace is community source software that shows learning designers how a
-course is built: its composition, sequence, concepts, objectives and language.
-See `LICENSE` and `LICENSING.md` for permitted uses and commercial-licensing
-requirements.
+Praxity Trace is source-available under the unmodified
+[PolyForm Perimeter License 1.0.1](https://polyformproject.org/licenses/perimeter/1.0.1).
+The `LICENSE` file is authoritative. This page explains it in everyday language.
 
 ## Contributors
 
@@ -25,8 +24,7 @@ alone is not used to infer copyright ownership or contributor credit.
 The licence includes the unmodified
 [PolyForm Perimeter License 1.0.1](https://polyformproject.org/licenses/perimeter/1.0.1),
 copyright PolyForm Project Inc. The PolyForm Project separately permits reuse
-of its licence texts. The Praxity Community Permission is specific to Praxity
-Trace.
+of its licence texts.
 
 ## Third-party data
 

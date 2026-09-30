@@ -2,6 +2,7 @@
 	"name": "praxity-trace",
 	"version": "0.1.1",
 	"private": true,
+	"license": "SEE LICENSE IN LICENSE",
 	"type": "module",
 	"description": "Design diagnostics for learning courses",
 	"bin": {
