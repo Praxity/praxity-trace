@@ -138,7 +138,7 @@ const LABEL = 230;
 const PLOT = 700;
 const ROW = 18;
 
-/** Symbols follow CONTEXT.md: one meaning per symbol across the report. */
+/** Symbols follow GLOSSARY.md: one meaning per symbol across the report. */
 function mark(role: Role, x: number, y: number, title: string, page: string | null = null): string {
 	const tip = `<title>${title}</title>`;
 	const at = page ? ` data-page="${page}"` : "";

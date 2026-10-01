@@ -2,7 +2,7 @@ import type { Block, Course, SourceLocation, TypedNarration, TypedAssessment } f
 import { contentBlocks, pageKey } from "./places.ts";
 import { countWords, narrations, type PreviewLine, previewLines, narrationText, wordCount } from "./text.ts";
 
-/** A question with a right answer (CONTEXT.md): a correct option or a matching pair. */
+/** A question with a right answer (GLOSSARY.md): a correct option or a matching pair. */
 export function isKnowledgeCheck(block: Block): boolean | null {
 	if (block.type !== "assessment") return false;
 	if (block.ref) return block.assessment?.correctness === "keyed" ? true : null;

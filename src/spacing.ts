@@ -86,7 +86,7 @@ export function renderSpacing(view: SpacingView): string {
 					const tip = `<title>${esc(row.name)}\n${ROLE_LABEL[encounter.role]} at minute ${Math.round(encounter.minute)}</title>`;
 					const cx = x(encounter.minute);
 					const at = encounter.page ? ` data-page="${encounter.page}"` : "";
-					// Symbols follow CONTEXT.md, as in the concept lanes.
+					// Symbols follow GLOSSARY.md, as in the concept lanes.
 					return encounter.role === "defined"
 						? `<circle class="c-defined"${at} cx="${cx}" cy="${y}" r="4.5">${tip}</circle>`
 						: encounter.role === "checked"
