@@ -7,6 +7,8 @@ description: Chart a Praxity Studio course or static HTML export as a report of 
 
 Trace describes a course and leaves judgment to the designer. Report what the views show. Label your own reading as interpretation and keep it separate.
 
+With a portable artifact, replace `praxity-trace` in the commands below with `node "<artifact>/src/cli.ts"`. Use Node >=24.18 supplied by your host. Quote paths that contain spaces.
+
 1. Choose an input. For a Studio project, run `praxity inspect <course-dir> --schema 1 > course.json` and use `course.json`. For a static HTML export or an unzipped SCORM package, use its directory. `<course-dir>` is the folder that contains `course.yaml`. The `praxity` launcher comes from Studio or Rubato's tools directory.
 2. For each model view you need (`alignment`, `tasks`, `concepts`, `terms`, `visuals`, `distinctions`), run `praxity-trace prepare <view> <input> --out <bundle>`. Read `<bundle>/prompt.md` and `<bundle>/course.md`, then write `<bundle>/answer.json` exactly as the prompt specifies. Cite only refs that appear in `course.md`. For `tasks`, follow the [task-coding guide](../docs/task-coding-guide.md): classify requested work, quote its instruction and record assessment purpose separately.
 3. Run `praxity-trace report <input> --out <dir>`, adding `--alignment`, `--tasks`, `--concepts`, `--terms`, `--visuals` and `--distinctions` with each prepared `answer.json`. When `report` rejects an answer, it names the field to fix. A course-hash mismatch means the course changed, so prepare a new bundle.
