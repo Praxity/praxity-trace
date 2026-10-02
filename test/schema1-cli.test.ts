@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { parseFragment } from "parse5";
@@ -9,7 +10,7 @@ import { locateBlocks } from "../src/places.ts";
 import { parseConcepts, PROMPT_VERSION } from "../src/concepts.ts";
 
 const fixture = readFileSync(new URL("fixtures/examples.schema1.inspect.json", import.meta.url), "utf8");
-const scratch = "/tmp/codex-schema1";
+const scratch = join(tmpdir(), "codex-schema1");
 function directory() {
 	mkdirSync(scratch, { recursive: true });
 	return mkdtempSync(join(scratch, "trace-test-"));
