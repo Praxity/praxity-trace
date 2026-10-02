@@ -138,7 +138,18 @@ async function build(directory) {
 	for (const name of Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies }).sort()) {
 		await dependency(name, root, join("node_modules", name));
 	}
-	if ([...copiedDirectories].some((source) => inside(source, directory))) {
+	let ancestor = dirname(directory);
+	let physicalOutput;
+	for (;;) {
+		try {
+			physicalOutput = join(await realpath(ancestor), relative(ancestor, directory));
+			break;
+		} catch (error) {
+			if (error.code !== "ENOENT") throw error;
+			ancestor = dirname(ancestor);
+		}
+	}
+	if ([...copiedDirectories].some((source) => inside(source, physicalOutput))) {
 		throw new Error(`Output cannot be inside a copied source directory: ${directory}`);
 	}
 	const git = (...args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
