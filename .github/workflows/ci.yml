@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  public-files:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Keep internal notes out of the public repository
+        shell: bash
+        run: |
+          tracked=$(git ls-files --cached --ignored --exclude-standard)
+          if [ -n "$tracked" ]; then
+            echo "::error::These tracked files match .gitignore. Move internal notes to the private research repository."
+            echo "$tracked"
+            exit 1
+          fi

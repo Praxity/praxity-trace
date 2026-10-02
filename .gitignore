@@ -5,3 +5,11 @@ node_modules/
 # Private courses and generated reports stay local.
 corpus/local/
 out/
+
+# Internal notes live in a private research repository, not here.
+# CI fails if any tracked file matches .gitignore.
+docs/research/
+docs/plans/
+docs/experiments/
+experiments/
+backlog.md
