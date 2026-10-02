@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cp, lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
@@ -76,7 +76,7 @@ syncBuiltinESMExports();
 `;
 
 test("portable artifact inventories unchanged payload and runs after relocation with checkout and networking denied", async (t) => {
-	const scratch = await mkdtemp(join(tmpdir(), "trace portable package "));
+	const scratch = await realpath(await mkdtemp(join(tmpdir(), "trace portable package ")));
 	t.after(() => rm(scratch, { recursive: true, force: true }));
 	assert.ok(!resolve(scratch).startsWith(resolve(root)), "Relocation must be outside the checkout");
 	const first = join(scratch, "first location with spaces");
@@ -146,7 +146,10 @@ test("portable artifact inventories unchanged payload and runs after relocation 
 	const guard = join(inputRoot, "deny-network.mjs");
 	await writeFile(guard, networkGuard);
 	const env: NodeJS.ProcessEnv = { PATH: "", ...(process.platform === "win32" ? { SystemRoot: process.env.SystemRoot } : {}) };
-	const restrictions = ["--permission", `--allow-fs-read=${relocated}`, `--allow-fs-read=${inputRoot}`, `--allow-fs-read=${output}`, `--allow-fs-write=${output}`, "--import", pathToFileURL(guard).href];
+	// POSIX module resolution walks ancestors; macOS temporary paths live under /private.
+	const readable = process.platform === "win32" ? scratch : join(sep, scratch.split(sep).filter(Boolean)[0]!);
+	assert.ok(!resolve(root).startsWith(`${readable}${sep}`), "The readable temporary tree must exclude the checkout");
+	const restrictions = ["--permission", `--allow-fs-read=${readable}`, `--allow-fs-write=${output}`, "--import", pathToFileURL(guard).href];
 	const entry = join(relocated, inventory.entry);
 	const cli = (args: string[], expected = 0) => run([...restrictions, entry, ...args], scratch, expected, env);
 	const probe = run([...restrictions, "--input-type=module", "--eval", `import { readFileSync } from 'node:fs'; try { readFileSync(${JSON.stringify(join(root, "package.json"))}); process.exit(9); } catch (error) { if (error.code !== 'ERR_ACCESS_DENIED') throw error; console.log(error.code); }`], scratch, 0, env);
@@ -230,4 +233,9 @@ test("packager validates arguments and fails before writing when a runtime depen
 	const nested = join(fake, "src", "embedded artifact");
 	assert.match(run([join(fake, "scripts/package.mjs"), "--output", nested], scratch, 1).stderr, /inside a copied source directory/);
 	await assert.rejects(lstat(nested), { code: "ENOENT" });
+	const alias = join(scratch, "source alias");
+	await symlink(join(fake, "src"), alias, process.platform === "win32" ? "junction" : "dir");
+	const aliased = join(alias, "new parent", "embedded artifact");
+	assert.match(run([join(fake, "scripts/package.mjs"), "--output", aliased], scratch, 1).stderr, /inside a copied source directory/);
+	await assert.rejects(lstat(join(alias, "new parent")), { code: "ENOENT" });
 });
