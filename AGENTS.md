@@ -1,5 +1,7 @@
 # Praxity Trace
 
+If `AGENTS.local.md` exists, read it before starting. It holds maintainer context and is not part of the repository.
+
 Trace is design diagnostics for learning courses, the course equivalent of a
 performance trace. It reads a course and draws views that show a learning
 designer how the course is built, so they can decide what to revise. Its sibling
