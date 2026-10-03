@@ -3,13 +3,16 @@ import { readFile, mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { parseCourse } from "../src/inspect.ts";
-import { parseTasks, prepareTasks, renderTasks, TASKS_STYLE, tasksView } from "../src/tasks.ts";
+import { courseHash, parseCourse } from "../src/inspect.ts";
+import { parseTasks, PROMPT_VERSION, prepareTasks, renderTasks, TASKS_STYLE, tasksView } from "../src/tasks.ts";
 
 const fixture = async (name: string) => {
 	const root = new URL(`fixtures/tasks/${name}/`, import.meta.url);
 	const course = parseCourse(await readFile(new URL("inspect.json", root), "utf8"));
-	const json = await readFile(new URL("answer.json", root), "utf8");
+	const frozen = await readFile(new URL("answer.json", root), "utf8");
+	assert.throws(() => parseTasks(frozen, course), /expected view/);
+	// The preserved historical coding supplies synthetic test cases; every quote is revalidated.
+	const json = JSON.stringify({ ...JSON.parse(frozen), promptVersion: `${PROMPT_VERSION}-projection-2`, courseHash: courseHash(course), model: "synthetic-test" });
 	return { course, json, answer: parseTasks(json, course) };
 };
 
@@ -57,8 +60,8 @@ test("tasks bundle and table expose the coding rule, every quote and page status
 	const manifest = JSON.parse(await readFile(join(directory, "manifest.json"), "utf8"));
 	const prompt = await readFile(join(directory, "prompt.md"), "utf8");
 	assert.equal(manifest.taxonomyVersion, "conole-task-families/1");
-	assert.equal(manifest.promptVersion, "tasks/2-projection-2");
-	assert.match(prompt, /"promptVersion": "tasks\/2-projection-2"/);
+	assert.equal(manifest.promptVersion, "tasks/3-projection-2");
+	assert.match(prompt, /"promptVersion": "tasks\/3-projection-2"/);
 	assert.match(prompt, /adaptive = change a model or simulation/);
 	const view = tasksView(course, answer);
 	const html = renderTasks(view);

@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { parseFragment, type DefaultTreeAdapterMap } from "parse5";
 import { GUIDES, isViewId } from "../src/guides.ts";
-import { parseCourse } from "../src/inspect.ts";
-import { languageView, lengthReference, renderSentences, renderWords } from "../src/language.ts";
+import { readHtmlCourse } from "../src/html.ts";
+import { parseCourse, type Course } from "../src/inspect.ts";
+import { LANGUAGE_STYLE, languageView, lengthReference, renderSentences, renderWords } from "../src/language.ts";
+import { locateBlocks } from "../src/places.ts";
 import { SECTIONS } from "../src/sections.ts";
 
 const course = parseCourse(JSON.stringify({
@@ -127,4 +131,196 @@ test("a rare plural joins its rare singular, summing uses, and a lone plural sta
 	assert.equal(joined?.uses, 2);
 	assert.ok(!rare.some((word) => word.word === "flibbertigibbets"));
 	assert.ok(rare.some((word) => word.word === "quokkas" && !word.forms));
+});
+
+/** Each row of one lesson in a rendered table, as the text of its cells. */
+const lessonRows = (rendered: string, label: string, lesson: number) =>
+	[...(rendered.split(`aria-label="${label}"`)[1]?.split("</table>")[0] ?? "").matchAll(new RegExp(`<tr data-lesson="${lesson}" role="row">([\\s\\S]*?)</tr>`, "g"))]
+		.map((row) => [...(row[1] ?? "").matchAll(/<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/g)].map((cell) => (cell[1] ?? "").replace(/<[^>]+>/g, "").trim()))
+		.filter((cells) => cells.length > 1);
+const lantern = parseCourse(readFileSync(new URL("./fixtures/lantern-marsh/inspect.json", import.meta.url), "utf8"));
+/** Lantern Marsh with every media transcript set to `value`, or removed when null. */
+const retranscribed = (value: string | null): Course => {
+	const copy = structuredClone(lantern);
+	for (const item of locateBlocks(copy)) for (const media of item.block.media ?? []) media.transcript = value === null ? null : { value, format: "plain" };
+	return copy;
+};
+
+test("courses without transcript text keep two channels and the earlier wording", () => {
+	assert.deepEqual(Object.keys(view.lessons[0]!.channels), ["screen", "narration"]);
+	assert.deepEqual(Object.keys(view.vocabulary!.lessons[0]!), ["screen", "narration"]);
+	// The sentence-length guide already suggests a transcript; it is shared advice, not a transcript measure.
+	assert.doesNotMatch(html.replace(/<details class="method guide">[\s\S]*?<\/details>/g, ""), /transcript/i);
+	for (const text of [
+		"On-screen text and narration are measured separately.",
+		"It includes on-screen and narration sentences. The examples list up to 12 longest sentences across the course; identical on-screen and narration text on the same page appears once.",
+		"n means narration. Lists combine on-screen and narration sentences, so their counts sum both channels.",
+		"Shared words: adjacent sentences on the same page, on screen or in narration, that share",
+		"Runs of two to six capital letters, on screen, in tooltips and in narration.",
+		'aria-label="Sentence lengths in words for each lesson, on screen and in narration."',
+		'height="108"',
+		"How long are the sentences, on screen and in narration?",
+		"sentences (dot area)",
+	]) assert.ok(html.includes(text), text);
+	assert.doesNotMatch(html, /<rect class="sentence/);
+	assert.equal(lessonRows(html, "Sentences by length", 1).length, 2);
+	// A blank transcript is no transcript.
+	assert.equal(languageView(retranscribed("  ")).lessons[3]!.channels.transcript, undefined);
+});
+
+test("Lantern Marsh media transcripts form a third channel, measured like narration, and leave the other channels unchanged", () => {
+	const measured = languageView(lantern);
+	const plain = languageView(retranscribed(null));
+	// L4: "A short high tone sounds. A quiet gap follows. A second short high tone sounds. No speech is present."
+	assert.deepEqual(measured.lessons[3]!.channels.transcript, { ...measured.lessons[3]!.channels.transcript!, sentences: 4, words: 19, lengths: [4, 4, 5, 6], medianLength: 5 });
+	// L6: "An amber panel moves from the left edge towards a white lantern disc. It stops halfway across the disc. The final state is amber. No speech is present."
+	assert.deepEqual(measured.lessons[5]!.channels.transcript, { ...measured.lessons[5]!.channels.transcript!, sentences: 4, words: 28, lengths: [4, 5, 6, 13], medianLength: 6 });
+	assert.deepEqual(measured.lessons.map((lesson) => lesson.channels.transcript?.sentences), [0, 0, 0, 4, 0, 4, 0, 0, 0]);
+	measured.lessons.forEach((lesson, index) => {
+		assert.deepEqual(lesson.channels.screen, plain.lessons[index]!.channels.screen);
+		assert.deepEqual(lesson.channels.narration, plain.lessons[index]!.channels.narration);
+		assert.deepEqual(measured.vocabulary!.lessons[index]!.screen, plain.vocabulary!.lessons[index]!.screen);
+		assert.deepEqual(measured.vocabulary!.lessons[index]!.narration, plain.vocabulary!.lessons[index]!.narration);
+	});
+	// Amber twice and lantern once sit between Zipf 3 and 4.
+	assert.deepEqual(measured.vocabulary!.lessons[5]!.transcript, { words: 28, lessCommon: 3, rare: 0 });
+	assert.deepEqual(measured.vocabulary!.lessons[3]!.transcript, { words: 19, lessCommon: 0, rare: 0 });
+});
+
+test("Lantern Marsh transcript rows appear in every language table and in the sentence-length chart", () => {
+	const measured = languageView(lantern);
+	const rendered = renderSentences(measured) + renderWords(measured);
+	assert.deepEqual(lessonRows(rendered, "Sentences by length", 4).map((row) => row.at(-8)), ["On screen", "Narration", "Transcript"]);
+	assert.deepEqual(lessonRows(rendered, "Sentences by length", 1).map((row) => row.at(-8)), ["On screen", "Narration", "Transcript"]);
+	assert.deepEqual(lessonRows(rendered, "Sentences by length", 4)[2], ["Transcript", "4", "4", "0", "0", "0", "5", "6"]);
+	assert.deepEqual(lessonRows(rendered, "Sentences by length", 6)[2], ["Transcript", "4", "3", "1", "0", "0", "6", "13"]);
+	assert.deepEqual(lessonRows(rendered, "Text profile by lesson", 4)[2], ["Transcript", "19", "5", "0", "–", "–", "–", "–", "–"]);
+	assert.deepEqual(lessonRows(rendered, "Sentence structure by lesson", 4)[2], ["Transcript", "4", "0", "0", "0", "0", "0"]);
+	assert.deepEqual(lessonRows(rendered, "Word familiarity by lesson", 6)[2], ["Transcript", "28", "107", "0"]);
+	for (const label of ["Sentences by length", "Text profile by lesson", "Word familiarity by lesson"]) {
+		const body = rendered.split(`aria-label="${label}"`)[1]!.split("</table>")[0]!;
+		assert.equal([...body.matchAll(/<th scope="rowgroup" rowspan="3"/g)].length, 9, label);
+	}
+	assert.equal([...rendered.matchAll(/<td class="num" rowspan="3" role="cell" data-label="Distinct rare words">/g)].length, 9);
+	const chart = rendered.split('aria-label="Sentence lengths by lesson"')[1]!.split("</svg>")[0]!;
+	assert.match(chart, /height="568"/);
+	assert.match(chart, /aria-label="Sentence lengths in words for each lesson, on screen, in narration and in transcripts\."/);
+	const lessonFour = [...chart.matchAll(/<g data-lesson="4">([\s\S]*?)<\/g>/g)].map((group) => group[1]!);
+	assert.equal(lessonFour.length, 3);
+	assert.match(lessonFour[2]!, />Transcript<\/text>/);
+	// A filled square with the area of the circle for the same count, centred on the length: side = √π × radius.
+	const squares = (group: string) => [...group.matchAll(/<rect class="sentence transcript" ([^>]*)><title>([^<]+)<\/title><\/rect>/g)].map((match) => `${match[1]} ${match[2]}`);
+	assert.deepEqual(squares(lessonFour[2]!), [
+		'x="331.9" y="247.2" width="5.5" height="5.5" 2 sentences of 4 words',
+		'x="351.4" y="248.1" width="3.9" height="3.9" 1 sentence of 5 words',
+		'x="370.1" y="248.1" width="3.9" height="3.9" 1 sentence of 6 words',
+	]);
+	const lessonSix = [...chart.matchAll(/<g data-lesson="6">([\s\S]*?)<\/g>/g)].map((group) => group[1]!);
+	assert.deepEqual(squares(lessonSix[2]!), [
+		'x="332.7" y="368.1" width="3.9" height="3.9" 1 sentence of 4 words',
+		'x="351.4" y="368.1" width="3.9" height="3.9" 1 sentence of 5 words',
+		'x="370.1" y="368.1" width="3.9" height="3.9" 1 sentence of 6 words',
+		'x="500.7" y="368.1" width="3.9" height="3.9" 1 sentence of 13 words',
+	]);
+	assert.doesNotMatch(chart, /<circle class="sentence transcript"/);
+	assert.match(lessonFour[2]!, /<title>Median 5 words<\/title>/);
+	assert.match(rendered, /<span class="key sentence-transcript"><\/span>Transcript<\/span>/);
+	// Filled dark grey, never the orange reserved for things to look at, nor the narration blue.
+	assert.match(LANGUAGE_STYLE, /svg \.sentence\.transcript\{fill:var\(--ink\)\}/);
+	assert.match(LANGUAGE_STYLE, /\.key\.sentence-transcript\{background:var\(--ink\);width:7px;height:7px\}/);
+	assert.doesNotMatch(LANGUAGE_STYLE.split("\n").flatMap((line) => line.split("}")).filter((rule) => rule.includes("transcript")).join("}"), /--look|--accent/);
+	for (const text of [
+		"On-screen text, narration and transcripts are measured separately.",
+		"They follow the same counting rules as narration and stay a separate channel. Trace does not time them, because it has no playback length for the media.",
+		"Studio's inspect output does not include caption track contents",
+		"It includes on-screen, narration and transcript sentences.",
+		"n means narration and t a transcript.",
+		"on screen, in tooltips, in narration and in transcripts.",
+		"How long are the sentences, on screen, in narration and in transcripts?",
+		"sentences (mark area)",
+	]) assert.ok(rendered.includes(text), text);
+	assert.doesNotMatch(rendered, /on screen and in narration\?|dot area/);
+});
+
+test("transcript sentences carry t ids and the media block as their source pointer in review lists, rare words and acronyms", () => {
+	const course = retranscribed(null);
+	locateBlocks(course).find((item) => item.ref === "4.2.2")!.block.media![0]!.transcript = { value: "The gauge was checked by a flibbertigibbet near the XQZ post. No speech is present.", format: "plain" };
+	const measured = languageView(course);
+	const passive = measured.flagged.passive.find((sentence) => sentence.channel === "transcript");
+	assert.deepEqual(passive && { id: passive.id, ref: passive.ref, lesson: passive.lesson, page: passive.page, text: passive.text, words: passive.words }, { id: "4.2.t1", ref: "4.2.2", lesson: 4, page: 2, text: "The gauge was checked by a flibbertigibbet near the XQZ post.", words: 11 });
+	assert.deepEqual({ file: measured.places["4.2.2"]!.file, line: measured.places["4.2.2"]!.line }, { file: "04-bells.prax", line: 18 });
+	const rare = measured.vocabulary!.rare.find((word) => word.word === "flibbertigibbet");
+	assert.deepEqual(rare && { firstUse: rare.firstUse, ref: rare.ref, lessons: rare.lessons }, { firstUse: "4.2.t1", ref: "4.2.2", lessons: [4] });
+	assert.deepEqual(measured.acronyms.find((item) => item.acronym === "XQZ"), { acronym: "XQZ", uses: 1, firstUse: "4.2.2", expandedAt: null, usedBeforeExpansion: true });
+	assert.match(renderSentences(measured), /<li id="4\.2\.t1" data-lesson="4"><q>The gauge <mark>was<\/mark> <mark>checked<\/mark> by a flibbertigibbet near the XQZ post\.<\/q> <span class="file"><code>4\.2\.t1<\/code> · transcript · /);
+});
+
+test("caption track text from exported HTML is a transcript, not narration", async () => {
+	const scorm = languageView(await readHtmlCourse(fileURLToPath(new URL("./fixtures/html/scorm", import.meta.url))));
+	assert.deepEqual(scorm.lessons[0]!.channels.transcript, { ...scorm.lessons[0]!.channels.transcript!, sentences: 1, words: 3, lengths: [3] });
+	assert.equal(scorm.lessons[0]!.channels.narration.words, 0);
+	assert.equal(scorm.lessons[1]!.channels.transcript!.sentences, 0);
+	const caption = scorm.longest.find((sentence) => sentence.channel === "transcript");
+	assert.deepEqual(caption && { id: caption.id, ref: caption.ref, text: caption.text }, { id: "1.1.t1", ref: "1.1.2", text: "A caption sentence." });
+	assert.deepEqual(lessonRows(renderSentences(scorm), "Sentences by length", 1)[2], ["Transcript", "1", "1", "0", "0", "0", "3", "3"]);
+});
+
+test("a transcript square sits above the median halo at the same length, so a lone sentence stays visible", async () => {
+	const scorm = languageView(await readHtmlCourse(fileURLToPath(new URL("./fixtures/html/scorm", import.meta.url))));
+	const chart = renderSentences(scorm).split('aria-label="Sentence lengths by lesson"')[1]!.split("</svg>")[0]!;
+	const row = [...chart.matchAll(/<g data-lesson="1">([\s\S]*?)<\/g>/g)].map((group) => group[1]!)[2]!;
+	assert.match(row, />Transcript<\/text>/);
+	// Halo, then median line, then the square: the 6px halo would otherwise paint over the 3.9px square at the same x.
+	const marks = [...row.matchAll(/<(line|rect) class="([^"]+)"[^>]*>(?:<title>([^<]+)<\/title>)?/g)].map((match) => `${match[2]}${match[3] ? ` ${match[3]}` : ""}`);
+	assert.deepEqual(marks, ["median-halo", "median Median 3 words", "sentence transcript 1 sentence of 3 words"]);
+	// Screen and narration rows keep their marks below the median.
+	for (const lesson of [...chart.matchAll(/<g data-lesson="\d+">([\s\S]*?)<\/g>/g)].map((group) => group[1]!).filter((group) => !group.includes(">Transcript</text>") && group.includes("median-halo"))) {
+		assert.ok(lesson.lastIndexOf("<circle") < lesson.indexOf("median-halo"), lesson);
+	}
+});
+
+test("code in media transcripts stays out of vocabulary and acronyms", () => {
+	for (const format of ["plain", "markdown", "html"] as const) {
+		const code = format === "html" ? "Use <code>flibbertigibbet</code> and <code>XQZ</code>." : "Use `flibbertigibbet` and `XQZ`.";
+		const sample = retranscribed(code);
+		for (const item of locateBlocks(sample)) for (const media of item.block.media ?? []) if (media.transcript) media.transcript.format = format;
+		const measured = languageView(sample);
+		assert.equal(measured.vocabulary!.lessons[3]!.transcript!.words, 2, format);
+		assert.ok(!measured.vocabulary!.rare.some((word) => word.word === "flibbertigibbet"), format);
+		assert.ok(!measured.acronyms.some((item) => item.acronym === "XQZ"), format);
+	}
+});
+
+test("nonblank transcript text without a sentence still adds an empty transcript channel", () => {
+	const dots = languageView(retranscribed("..."));
+	const plain = languageView(retranscribed(null));
+	assert.deepEqual(dots.lessons.map((lesson) => lesson.channels.transcript?.sentences), [0, 0, 0, 0, 0, 0, 0, 0, 0]);
+	assert.deepEqual(dots.lessons[3]!.channels.transcript, { sentences: 0, words: 0, medianLength: null, p90Length: null, longWordShare: null, grade: null, lengths: [], structure: null, cohesion: { adjacentPairs: 0, overlapping: 0, causal: 0, contrastive: 0 } });
+	assert.deepEqual(dots.vocabulary!.lessons[3]!.transcript, { words: 0, lessCommon: 0, rare: 0 });
+	assert.deepEqual(dots.lessons.map((lesson) => ({ ...lesson, channels: { screen: lesson.channels.screen, narration: lesson.channels.narration } })), plain.lessons);
+	const rendered = renderSentences(dots) + renderWords(dots);
+	assert.deepEqual(lessonRows(rendered, "Sentences by length", 4)[2], ["Transcript", "0", "0", "0", "0", "0", "–", "–"]);
+	assert.deepEqual(lessonRows(rendered, "Word familiarity by lesson", 4)[2], ["Transcript", "0", "0", "0"]);
+	const chart = rendered.split('aria-label="Sentence lengths by lesson"')[1]!.split("</svg>")[0]!;
+	assert.match(chart, /height="568"/);
+	assert.doesNotMatch(chart, /<rect class="sentence/);
+	assert.match(rendered, /<span class="key sentence-transcript"><\/span>Transcript<\/span>/);
+});
+
+test("HTML transcript paragraphs end sentences without punctuation", () => {
+	const html = retranscribed(null);
+	locateBlocks(html).find((item) => item.ref === "4.2.2")!.block.media![0]!.transcript = { value: "<p>Walk across the road</p><p>Watch the light</p>", format: "html" };
+	const transcript = languageView(html).lessons[3]!.channels.transcript!;
+	assert.deepEqual(transcript, { ...transcript, sentences: 2, words: 7, lengths: [3, 4] });
+});
+
+test("plain transcript angle brackets stay literal words in counts and source-pointed examples", () => {
+	const plain = retranscribed(null);
+	locateBlocks(plain).find((item) => item.ref === "4.2.2")!.block.media![0]!.transcript = { value: "The <signal> was shown.", format: "plain" };
+	const measured = languageView(plain);
+	assert.deepEqual(measured.lessons[3]!.channels.transcript, { ...measured.lessons[3]!.channels.transcript!, sentences: 1, words: 4, lengths: [4] });
+	const pick = (sentence: { id: string; ref: string; text: string; words: number } | undefined) => sentence && { id: sentence.id, ref: sentence.ref, text: sentence.text, words: sentence.words };
+	// "was shown" is a possible passive pattern, so the sentence is listed with its source pointer.
+	assert.deepEqual(pick(measured.flagged.passive.find((sentence) => sentence.channel === "transcript")), { id: "4.2.t1", ref: "4.2.2", text: "The <signal> was shown.", words: 4 });
+	assert.match(renderSentences(measured), /<li id="4\.2\.t1" data-lesson="4"><q>The &#60;signal&#62; <mark>was<\/mark> <mark>shown<\/mark>\.<\/q>/);
 });

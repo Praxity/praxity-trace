@@ -237,7 +237,7 @@ test("concept prerequisites validate ids and report order and cycles", async () 
 	assert.match(html, /class="dep late">Missing \(never defined\)<\/span>/);
 	assert.match(html, /class="dep cycle">/);
 	assert.match(html, /prerequisite links come in order/);
-	assert.throws(() => parseConcepts(answer({ promptVersion: "concepts/2" }), course), /promptVersion "concepts\/3"/);
+	assert.throws(() => parseConcepts(answer({ promptVersion: "concepts/2" }), course), /promptVersion "concepts\/4"/);
 	assert.throws(() => parseConcepts(answer({ concepts: [{ ...concepts[0], prerequisites: ["C9"] }] }), course), /not a concept id/);
 	assert.throws(() => parseConcepts(answer({ concepts: [{ ...concepts[0], prerequisites: ["C1"] }] }), course), /cannot refer to its own concept/);
 });

@@ -8,7 +8,7 @@ import { buildPlaces, lessonTags, esc, pageKey, type Places, wheres } from "./pl
  * states the difference, shows contrasting examples, and asks learners to tell them apart.
  * Interleaved, discriminating examples help learners classify new cases (Kornell and Bjork, 2008).
  */
-export const PROMPT_VERSION = "distinctions/1";
+export const PROMPT_VERSION = "distinctions/2";
 
 export interface Distinction {
 	a: string;

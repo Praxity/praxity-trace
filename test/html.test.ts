@@ -40,7 +40,8 @@ test("SCORM manifest sets lesson order and semantic HTML becomes blocks", async 
 	assert.deepEqual(course.lessons.map((lesson) => lesson.file), ["second.html", "first.html"]);
 	assert.equal(course.course.locale, "fr");
 	assert.deepEqual(course.lessons[0]?.pages[0]?.blocks.map((block) => block.type), ["heading", "video", "assessment"]);
-	assert.equal(course.lessons[0]?.pages[0]?.blocks[1]?.data.narration, "A caption sentence.");
+	assert.equal(course.lessons[0]?.pages[0]?.blocks[1]?.data.narration, undefined);
+	assert.deepEqual(course.lessons[0]?.pages[0]?.blocks[1]?.data.transcripts, [{ text: "A caption sentence.", origin: "caption-track", kind: "video" }]);
 	assert.deepEqual(course.lessons[1]?.pages.map((page) => page.title), ["Start", "Second topic"]);
 	assert.deepEqual(course.lessons[1]?.pages.flatMap((page) => page.blocks.map((block) => block.type)), ["heading", "text", "text", "heading", "table"]);
 	assert.equal(new Set(course.lessons[1]?.pages.flatMap((page) => page.blocks.map((block) => block.id))).size, 5);

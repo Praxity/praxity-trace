@@ -1,0 +1,5 @@
+# Keep supplied media prose in a transcript channel
+
+Authored audio/video transcripts and readable HTML caption tracks are useful course evidence, including descriptions of demonstrations with no speech. Trace measures this prose in a separate transcript channel, anchored to its media block, so it cannot inflate on-screen words, narration estimates or course timing. Inspect JSON supplies authored transcripts but no caption-track contents; HTML supplies local readable VTT cues. Neither establishes playback duration.
+
+Terms, learner-task and visual-opportunity quotes validate against the cited channel. Alignment retains transcript instruction links and their source text. Concept occurrences keep one ref and role per block across all text channels: the view tracks encounters with an idea, so adding a channel field would split the same encounter without answering its question. All bundle prompt versions change with the shared guidance; the schema 1 interpretation fingerprint advances from `trace-inspect/2` to `trace-inspect/3`.

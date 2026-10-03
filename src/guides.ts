@@ -46,7 +46,7 @@ export const GUIDES = {
 	availability: [
 		{ see: "Needed instruction behind a click", could: "Check whether the page prompts learners to open the instruction before answering." },
 		{ see: "Needed instruction many minutes before the check", could: "Check whether learners can find or recall instruction taught much earlier.", mode: "table" },
-		{ see: "Needed instruction only in narration or a tooltip", could: "Open the source and check whether learners can also read the instruction on screen or in a script." },
+		{ see: "Needed instruction only in narration, a transcript or a tooltip", could: "Open the source and check whether learners can also find the instruction on screen or beside the media." },
 		{ see: "Pre-assessments", could: "Inspect what the results change, such as which pages learners see next." },
 		{ see: "Checks taught only after they are asked, not marked as pre-assessments", could: "Open the check and later instruction to confirm whether that order is intended." },
 		{ see: "Checks with no instruction found", could: "Read the check and look for the knowledge or reasoning it requires in the cited course material." },

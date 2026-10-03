@@ -126,7 +126,7 @@ export function withPageNarration(page: Page): Page {
 
 /** Identifies the course revision: changes whenever any lesson source changes. */
 export function courseHash(course: Course): string {
-	if (course.schema === "praxity-inspect/1") return createHash("sha256").update(`trace-inspect/2\0${course.revision}`).digest("hex");
+	if (course.schema === "praxity-inspect/1") return createHash("sha256").update(`trace-inspect/3\0${course.revision}`).digest("hex");
 	return createHash("sha256")
 		.update(course.lessons.map((lesson) => `${lesson.file}\0${lesson.sha256}`).join("\n"))
 		.digest("hex");
@@ -264,5 +264,5 @@ function parseTypedCourse(root: Record<string, unknown>): Course {
 }
 
 export const TYPED_LIMITS = "Partial text projection: unsupported blocks may contain additional text or media. Correct answers and scoring are unknown; assessments are not automatically classified as activities or knowledge checks. Media details and audio durations are unknown. Narration time is estimated from enabled resolved scripts; disabled and unlinked scripts are excluded. Feedback is separate from on-screen prose counts. Reading and course timing omit unprojected content and media playback.";
-export const EXPANDED_LIMITS = "Partial text projection: unsupported blocks may contain additional prose or media. Assessment correctness and scoring reflect authored source and course/lesson defaults, not workspace settings; open or unsupported correctness stays unknown. Media sources and asset status are known, but remote contents, caption-track prose, and audio/video playback lengths are not measured. Stored narration durations are sidecar-recorded alignment endpoints, not measured full-file durations; narration time remains a script estimate at 150 words per minute. Disabled and unlinked scripts are excluded from spoken counts. Feedback, glossary definitions, media alternatives and authored transcripts are separate from on-screen prose. Reading and course timing omit unprojected content and media playback.";
+export const EXPANDED_LIMITS = "Partial text projection: unsupported blocks may contain additional prose or media. Assessment correctness and scoring reflect authored source and course/lesson defaults, not workspace settings; open or unsupported correctness stays unknown. Media sources and asset status are known, but remote contents, caption-track prose, and audio/video playback lengths are not measured. Stored narration durations are sidecar-recorded alignment endpoints, not measured full-file durations; narration time remains a script estimate at 150 words per minute. Disabled and unlinked scripts are excluded from spoken counts. Feedback, glossary definitions, media alternatives and transcripts are separate from on-screen prose. Transcript prose has its own channel and adds no narration or playback time. Reading and course timing omit unprojected content and media playback.";
 export const typedLimits = (projectionVersion?: number) => projectionVersion === 2 ? EXPANDED_LIMITS : TYPED_LIMITS;

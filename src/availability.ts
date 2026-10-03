@@ -1,3 +1,4 @@
+import type { Channel } from "./alignment.ts";
 import type { AlignmentView } from "./alignment-view.ts";
 import { type LessonAnatomy, pageClock, roleOf } from "./anatomy.ts";
 
@@ -12,7 +13,7 @@ import { blockTexts, feedbackText, type Feedback } from "./text.ts";
  * A pre-assessment, placed before its teaching on purpose, is its own case and not a concern.
  * Built from the alignment review's instruction links; the most available instruction decides.
  */
-export const AVAILABLE = ["same-page", "earlier-page", "behind-click", "tooltip", "narration", "pre", "after", "none"] as const;
+export const AVAILABLE = ["same-page", "earlier-page", "behind-click", "tooltip", "transcript", "narration", "pre", "after", "none"] as const;
 export type Available = (typeof AVAILABLE)[number];
 
 export const AVAILABLE_LABEL: Record<Available, string> = {
@@ -21,6 +22,7 @@ export const AVAILABLE_LABEL: Record<Available, string> = {
 	"behind-click": "Behind a click",
 	tooltip: "In a glossary tooltip only",
 	narration: "In narration only",
+	transcript: "In a transcript only",
 	pre: "Pre-assessment, taught after",
 	after: "Only after the check",
 	none: "No instruction found",
@@ -43,7 +45,7 @@ export interface AvailabilityView {
 		minutesBefore: number | null;
 		/** Every block the alignment review found teaching what the check needs. */
 		instruction: string[];
-		instructionLinks: Array<{ ref: string; channel: "screen" | "tooltip" | "narration"; after: boolean; available: Available; text: string }>;
+		instructionLinks: Array<{ ref: string; channel: Channel; after: boolean; available: Available; text: string }>;
 		feedback: Feedback;
 	}>;
 	lessons: number[];
@@ -71,6 +73,7 @@ export function availabilityView(course: Course, alignment: AlignmentView, anato
 		};
 		const kind = (support: (typeof check.support)[number]): Available => {
 			if (support.after) return "after";
+			if (support.channel === "transcript") return "transcript";
 			if (support.channel === "narration") return "narration";
 			if (support.channel === "tooltip") return "tooltip";
 			if (insideExplore(support.ref)) return "behind-click";
@@ -81,7 +84,7 @@ export function availabilityView(course: Course, alignment: AlignmentView, anato
 		const instruction = check.support.map((support) => support.ref);
 		const instructionLinks = check.support.map(support => {
 			const text = blockTexts(index.block(support.ref)!.block);
-			return { ref: support.ref, channel: support.channel, after: support.after, available: kind(support), text: support.channel === "screen" ? text.screen : support.channel === "tooltip" ? text.tooltips.map(tip => `${tip.term}: ${tip.text}`).join(" ") : text.narration.join(" ") };
+			return { ref: support.ref, channel: support.channel, after: support.after, available: kind(support), text: support.channel === "screen" ? text.screen : support.channel === "tooltip" ? text.tooltips.map(tip => `${tip.term}: ${tip.text}`).join(" ") : text[support.channel].join(" ") };
 		});
 		const feedback = feedbackText(index.block(check.ref)!.block);
 		if (check.pre) return { ref: check.ref, lesson: at?.lesson ?? 0, page: at?.page ?? check.page, question: check.question, available: "pre" as const, source: null, minutesBefore: null, instruction, instructionLinks, feedback };
@@ -154,7 +157,7 @@ export function renderAvailability(view: AvailabilityView, positions = ""): stri
 		level: 3,
 		title: "Instruction for knowledge checks",
 		question: "Where is the instruction each knowledge check needs?",
-		lead: `<p class="rule">${look} of ${view.checks.length} checks fall in the orange instruction categories${pre ? `; ${pre} ${pre === 1 ? "is a pre-assessment" : "are pre-assessments"}` : ""}. Instruction links are generated interpretations.</p>${method("<p class=\"rule\">Pre-assessments have their own category. Otherwise, where several passages are linked, the first available category counts in this order: on the same page, on an earlier page, behind a click, glossary tooltip only, narration only, then after the check. Ties use the latest passage in course order. No instruction found means the review linked none. Minutes before measures estimated course time between the instruction page and the check page.</p>")}`,
+		lead: `<p class="rule">${look} of ${view.checks.length} checks fall in the orange instruction categories${pre ? `; ${pre} ${pre === 1 ? "is a pre-assessment" : "are pre-assessments"}` : ""}. Instruction links are generated interpretations.</p>${method("<p class=\"rule\">Pre-assessments have their own category. Otherwise, where several passages are linked, the first available category counts in this order: on the same page, on an earlier page, behind a click, glossary tooltip only, transcript only, narration only, then after the check. Ties use the latest passage in course order. No instruction found means the review linked none. Minutes before measures estimated course time between the instruction page and the check page.</p>")}`,
 		controls: positions
 			? segmented("availability-view", "Chart shown", [
 					{ value: "where", label: "Where each check's instruction is", icon: "layout-rows", checked: true },

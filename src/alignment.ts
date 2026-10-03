@@ -4,7 +4,7 @@ import type { Course } from "./inspect.ts";
 import { BLOOM, type Bloom, FINK, type Fink, GAGNE, GAGNE_HELP, type Gagne, KNOWLEDGE, KNOWLEDGE_HELP, type Knowledge } from "./outcomes.ts";
 
 
-export const PROMPT_VERSION = "alignment/13";
+export const PROMPT_VERSION = "alignment/14";
 
 const PROMPT = `# Alignment review
 
@@ -25,7 +25,7 @@ Write \`answer.json\` in this folder, matching this shape exactly:
       "purpose": "knowledge | survey | reflection | worksheet",
       "pre": false,
       "objectives": ["O1"],
-      "support": [{ "ref": "<ref>", "channel": "screen | tooltip | narration" }]
+      "support": [{ "ref": "<ref>", "channel": "screen | tooltip | narration | transcript" }]
     }
   ],
   "overlaps": [{ "objectives": ["O1", "O6"], "note": "<what they share, in one sentence>" }],
@@ -39,7 +39,7 @@ Rules:
 2. \`checks\`: one entry for every assessment block in \`manifest.json\`'s \`checks\` list, with \`purpose\` \`knowledge\` when an answer can be right or wrong, \`survey\` when it asks for feedback on the course or training, and \`reflection\` when it is an open prompt asking learners to predict, explain, discuss, plan or reflect. Add one entry for every reflection prompt (\`purpose: "reflection"\`) and every activity that asks learners to use a worksheet (\`purpose: "worksheet"\`); these can be any block.
 3. \`pre\`: true only for a knowledge check the course places before its teaching on purpose, to find out what learners already know or to prime them: a pre-test, a "what do you already know?" question, a warm-up the course says is not graded. Otherwise false, including for a check that comes before its teaching without saying why.
 4. \`objectives\` on a check: the stated objectives this check gives evidence for. Use an empty list when none fits.
-5. \`support\`: the fewest blocks, anywhere in the course, that teach what a learner needs to answer correctly. Use \`channel: "screen"\` when the needed information is visible, \`"tooltip"\` when it is only in a tooltip, and \`"narration"\` when it is only in narration. Use an empty list when the course never teaches it. Give support for knowledge checks only. Glossary tooltips are an intended way to teach definitions; tooltip-only support is not a gap.
+5. \`support\`: the fewest blocks, anywhere in the course, that teach what a learner needs to answer correctly. Use \`channel: "screen"\` when the needed information is visible, \`"tooltip"\` when it is only in a tooltip, and \`"narration"\` when it is only in narration, and \`"transcript"\` when supplied media prose teaches it. Use an empty list when the course never teaches it. Give support for knowledge checks only. Glossary tooltips are an intended way to teach definitions; tooltip-only support is not a gap.
 6. \`overlaps\`: groups of two or more stated objectives whose intended learning substantially overlaps, such as a course outcome restated in a module or two modules promising the same capability. Say in one sentence what they share. Use an empty list when none overlap.
 7. \`interpretation\`: up to five short observations about the pattern of objectives, checks and support, each citing refs in \`refs\`. Write the text for a designer: name lessons and pages in words, never as refs. Describe; do not grade or rewrite.
 8. Output valid JSON only. Every ref must appear in \`course.md\`.
@@ -53,7 +53,7 @@ export async function prepareAlignment(course: Course, directory: string): Promi
 	});
 }
 
-export type Channel = "screen" | "tooltip" | "narration";
+export type Channel = "screen" | "tooltip" | "narration" | "transcript";
 export type Purpose = "knowledge" | "survey" | "reflection" | "worksheet";
 
 export interface AlignmentAnswer {
@@ -84,7 +84,7 @@ export interface AlignmentAnswer {
 
 const FINK_SET = new Set<string>(FINK);
 const PURPOSES = new Set<string>(["knowledge", "survey", "reflection", "worksheet"]);
-const CHANNELS = new Set<string>(["screen", "tooltip", "narration"]);
+const CHANNELS = new Set<string>(["screen", "tooltip", "narration", "transcript"]);
 
 /** Rejects answers for another course revision or citing refs the course does not have. */
 /** Words quoted from an objective for each part of a performance objective (Mager): null when not stated. */
@@ -160,7 +160,7 @@ export function parseAlignment(json: string, course: Course): AlignmentAnswer {
 			support: list(item.support, `${at}.support`).map((entry, j) => {
 				const support = record(entry, `${at}.support[${j}]`);
 				if (typeof support.channel !== "string" || !CHANNELS.has(support.channel)) {
-					problem(`${at}.support[${j}].channel must be screen, tooltip or narration`);
+					problem(`${at}.support[${j}].channel must be screen, tooltip, narration or transcript`);
 				}
 				return { ref: ref(support.ref, `${at}.support[${j}].ref`), channel: support.channel as Channel };
 			}),

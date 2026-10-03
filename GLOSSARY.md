@@ -57,8 +57,12 @@ _Avoid_: interaction, activity (for this meaning)
 _Avoid_: learning activity, practice, response, engagement
 
 **Instruction**:
-Where the course teaches what a check or activity needs: on screen, in narration, or both.
+Where the course teaches what a check or activity needs: on screen, in a tooltip, in narration or in a transcript.
 _Avoid_: teaching support, where the teaching sits
+
+**Transcript**:
+Supplied prose for an audio or video demonstration, authored as a transcript or read from a caption track. It can describe sounds and movement as well as speech.
+_Avoid_: narration (for this meaning), measured speech
 
 ## Evidence
 
@@ -105,7 +109,8 @@ One meaning per symbol across every view:
 | Activity | open blue square |
 | Knowledge check | filled blue square |
 | Concept defined | filled dark circle |
+| Transcript sentence (channel plot only) | filled dark-grey square |
 | Concept example, mention or recap | small filled grey circle |
 | Something to look at | orange (never used for an ordinary category) |
 
-Pages read "3.9" (lesson 3, page 9), a convention the report head states once; sentence ids extend it as "3.9.s2" (n for narration). Lessons read "L3", and lesson headings "L3 · Title".
+Pages read "3.9" (lesson 3, page 9), a convention the report head states once; sentence ids extend it as "3.9.s2" (n for narration, t for transcript). Lessons read "L3", and lesson headings "L3 · Title".
