@@ -126,7 +126,7 @@ export function withPageNarration(page: Page): Page {
 
 /** Identifies the course revision: changes whenever any lesson source changes. */
 export function courseHash(course: Course): string {
-	if (course.schema === "praxity-inspect/1") return createHash("sha256").update(`trace-inspect/4\0${course.revision}`).digest("hex");
+	if (course.schema === "praxity-inspect/1") return createHash("sha256").update(`trace-inspect/3\0${course.revision}`).digest("hex");
 	return createHash("sha256")
 		.update(course.lessons.map((lesson) => `${lesson.file}\0${lesson.sha256}`).join("\n"))
 		.digest("hex");

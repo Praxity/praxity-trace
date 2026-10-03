@@ -50,11 +50,10 @@ test("schema 0 authored media prose uses the same transcript interface and keeps
 	assert.deepEqual(previewLines([block], "Page"), [{ kind: "heading", text: "A recording" }]);
 });
 
-test("sentence boundary interpretation rejects the earlier schema 1 hash without changing reviewer evidence", async () => {
+// Answers cite block refs, not sentence ids, so sentence boundaries keep the fingerprint and answers.
+test("sentence boundaries keep the schema 1 fingerprint and reviewer evidence", async () => {
 	const course = await fixture();
-	const earlier = createHash("sha256").update(`trace-inspect/3\0${course.revision}`).digest("hex");
-	assert.notEqual(courseHash(course), earlier);
-	assert.throws(() => readAnswer(JSON.stringify({ view: "terms", promptVersion: `${TERMS_VERSION}-projection-2`, courseHash: earlier }), course, "terms", TERMS_VERSION), /different course revision/);
+	assert.equal(courseHash(course), createHash("sha256").update(`trace-inspect/3\0${course.revision}`).digest("hex"));
 	const flattened = structuredClone(course);
 	for (const item of locateBlocks(flattened)) {
 		for (const script of item.block.data.typedNarrations as Array<{ value: string }>) script.value = script.value.replace(/\s+/g, " ").trim();
@@ -180,7 +179,7 @@ test("all shared-guide prompts advance, and stale versions or interpretation fin
 		assert.throws(() => readAnswer(JSON.stringify({ view: "recommendations", promptVersion: "recommendations/2-projection-2", courseHash: courseHash(course) }), course, "recommendations", "recommendations/3"), /expected view/);
 		const oldHash = createHash("sha256").update(`trace-inspect/2\0${course.revision}`).digest("hex");
 		assert.notEqual(courseHash(course), oldHash);
-		assert.equal(courseHash(course), createHash("sha256").update(`trace-inspect/4\0${course.revision}`).digest("hex"));
+		assert.equal(courseHash(course), createHash("sha256").update(`trace-inspect/3\0${course.revision}`).digest("hex"));
 		assert.throws(() => readAnswer(JSON.stringify({ view: "terms", promptVersion: "terms/2-projection-2", courseHash: oldHash }), course, "terms", "terms/2"), /different course revision/);
 	} finally { await rm(dir, { recursive: true, force: true }); }
 });
