@@ -20,7 +20,7 @@ const tableBody = (label: string) => html.split(`aria-label="${label}"`)[1]?.spl
 
 test("language lesson filters tag both rows of each screen/narration pair and every sentence", () => {
 	for (const label of ["Sentences by length", "Text profile by lesson", "Sentence structure by lesson", "Word familiarity by lesson"]) {
-		assert.deepEqual([...tableBody(label).matchAll(/<tr data-lesson="(\d+)">/g)].map((match) => match[1]), label === "Sentence structure by lesson" ? ["1", "1", "1", "2", "2", "2"] : ["1", "1", "2", "2"], label);
+		assert.deepEqual([...tableBody(label).matchAll(/<tr data-lesson="(\d+)" role="row">/g)].map((match) => match[1]), label === "Sentence structure by lesson" ? ["1", "1", "1", "2", "2", "2"] : ["1", "1", "2", "2"], label);
 	}
 	const longest = html.split('<ol class="longest">')[1]?.split("</ol>")[0] ?? "";
 	assert.equal([...longest.matchAll(/<li data-lesson="[12]">/g)].length, view.longest.length);
@@ -64,7 +64,7 @@ test("merged sentence views keep examples below their data and retire the separa
 	assert.match(renderSentences(view), /<summary>Possible passive patterns · 2<\/summary>/);
 	const french = renderSentences(languageView({ ...course, course: { ...course.course, locale: "fr" } }));
 	assert.match(french, /Sentence examples need English/);
-	assert.match(french, /<td class="num" data-label="Sentences">1<\/td><td colspan="5">Not measured for this language/);
+	assert.match(french, /<td class="num" role="cell" data-label="Sentences">1<\/td><td colspan="5" role="cell">Not measured for this language/);
 	assert.doesNotMatch(french, /<details class="review-group">/);
 	assert.match(french, /<ol class="longest">/);
 	for (const id of ["review", "longest"]) {
@@ -76,8 +76,8 @@ test("merged sentence views keep examples below their data and retire the separa
 });
 
 test("language rows retain all known lessons for rare words and acronym source pointers", () => {
-	assert.match(tableBody("Rare words"), /<tr data-lessons="1 2"><th scope="row">flibbertigibbet<\/th>/);
-	assert.match(tableBody("Acronyms"), /<tr data-lessons="1 2"><th scope="row">XYZ<\/th>/);
+	assert.match(tableBody("Rare words"), /<tr data-lessons="1 2" role="row"><th scope="row" role="rowheader" data-label="Word">flibbertigibbet<\/th>/);
+	assert.match(tableBody("Acronyms"), /<tr data-lessons="1 2" role="row"><th scope="row" role="rowheader" data-label="Acronym">XYZ<\/th>/);
 });
 
 test("word familiarity keeps Zipf values and frequency thresholds inside method disclosures", () => {

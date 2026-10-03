@@ -9,7 +9,7 @@ import { languageView } from "../src/language.ts";
 import { lessonHeading, where } from "../src/places.ts";
 import { buildReport, renderHtml } from "../src/report.ts";
 import { FLOW_SCRIPT } from "../src/flow.ts";
-import { MODES_SCRIPT } from "../src/modes.ts";
+import { MODES_SCRIPT, reflowTables } from "../src/modes.ts";
 import { SCROLL_HINT_SCRIPT } from "../src/scrollhint.ts";
 import { THEME_SCRIPT } from "../src/theme.ts";
 import { traceView } from "../src/trace.ts";
@@ -21,6 +21,67 @@ const report = buildReport(
 	traceView(course, shape.lessons, {}), languageView(course), emphasisView(course),
 );
 const html = renderHtml(report);
+
+test("every report table has its own nonempty caption", async () => {
+	const { parse } = await import("parse5");
+	type Node = import("parse5").DefaultTreeAdapterMap["node"];
+	const text = (node: Node): string => "value" in node ? node.value : "childNodes" in node ? node.childNodes.map(text).join("") : "";
+	let tables = 0;
+	function walk(node: Node) {
+		if ("tagName" in node && node.tagName === "table") {
+			tables++;
+			const caption = node.childNodes.find(child => "tagName" in child && child.tagName === "caption");
+			assert.ok(caption && text(caption).trim(), `Table ${tables} needs a caption`);
+		}
+		if ("childNodes" in node) node.childNodes.forEach(walk);
+	}
+	walk(parse(html));
+	assert.ok(tables > 5, "Exercise the report's table views");
+});
+
+test("reflowed tables keep explicit roles and label each cell by its logical column", () => {
+	const head = `<thead><tr><th scope="colgroup" colspan="2">Now</th><th scope="col" rowspan="2">Total<br>"s"</th></tr><tr><th scope="col">Lesson</th><th scope="col">Channel</th></tr></thead>`;
+	const body = `<tbody><tr><th scope="rowgroup" rowspan="2">L1</th><th scope="row">On screen</th><td class="num">3</td></tr><tr><th scope="row">Narration</th><td>4</td></tr></tbody><tbody><tr><td colspan="2">Both</td><td>7</td></tr><tr><td colspan="3">A note across the row</td></tr></tbody>`;
+	const chart = `<table aria-hidden="true"><tbody><tr><td>1</td></tr></tbody></table>`;
+	assert.equal(
+		reflowTables(`<p>Before</p><table class="t"><caption>Totals</caption>${head}${body}</table>${chart}`),
+		`<p>Before</p><table class="t" role="table"><caption>Totals</caption>` +
+			`<thead role="rowgroup"><tr role="row"><th scope="colgroup" colspan="2" role="columnheader">Now</th><th scope="col" rowspan="2" role="columnheader">Total<br>"s"</th></tr><tr role="row"><th scope="col" role="columnheader">Lesson</th><th scope="col" role="columnheader">Channel</th></tr></thead>` +
+			`<tbody role="rowgroup"><tr role="row"><th scope="rowgroup" rowspan="2" role="rowheader" data-label="Now · Lesson">L1</th><th scope="row" role="rowheader" data-label="Now · Channel">On screen</th><td class="num" role="cell" data-label="Total &#34;s&#34;">3</td></tr>` +
+			`<tr role="row"><th scope="row" role="rowheader" data-label="Now · Channel">Narration</th><td role="cell" data-label="Total &#34;s&#34;">4</td></tr></tbody>` +
+			`<tbody role="rowgroup"><tr role="row"><td colspan="2" role="cell" data-label="Now">Both</td><td role="cell" data-label="Total &#34;s&#34;">7</td></tr><tr role="row"><td colspan="3" role="cell">A note across the row</td></tr></tbody></table>${chart}`,
+	);
+	assert.equal(reflowTables("<p>No tables</p>"), "<p>No tables</p>");
+	assert.throws(() => reflowTables(`<table><tbody><tr><td data-label="Mine">1</td></tr></tbody></table>`), /reflowTables owns data-label/);
+});
+
+test("every Table-mode cell carries its column label and one shared rule stacks them", async () => {
+	const { parse } = await import("parse5");
+	type Node = import("parse5").DefaultTreeAdapterMap["node"];
+	type Element = import("parse5").DefaultTreeAdapterMap["element"];
+	const attr = (node: Element, name: string) => node.attrs.find((item) => item.name === name)?.value;
+	const tables: Element[] = [];
+	(function walk(node: Node, chart: boolean) {
+		const element = "tagName" in node ? node : null;
+		const inChart = chart || (element !== null && (attr(element, "class") === "mode-chart" || attr(element, "aria-hidden") === "true"));
+		if (element?.tagName === "table" && !inChart) tables.push(element);
+		if ("childNodes" in node) node.childNodes.forEach((child) => walk(child, inChart));
+	})(parse(html), false);
+	assert.ok(tables.length > 5, "Exercise the report's table views");
+	for (const table of tables) {
+		assert.equal(attr(table, "role"), "table");
+		const cells = table.childNodes.filter((node): node is Element => "tagName" in node && node.tagName === "tbody")
+			.flatMap((body) => body.childNodes.filter((node): node is Element => "tagName" in node))
+			.flatMap((row) => row.childNodes.filter((node): node is Element => "tagName" in node && (node.tagName === "td" || node.tagName === "th")));
+		for (const cell of cells) {
+			assert.equal(attr(cell, "role"), cell.tagName === "th" ? "rowheader" : "cell");
+			if (!attr(cell, "colspan")) assert.ok(attr(cell, "data-label"), `${attr(table, "class")} body cell needs a column label`);
+		}
+	}
+	// One owner for the narrow layout: renderers no longer hide header rows or write their own labels.
+	assert.equal(html.split(`content:attr(data-label) ": " / ""`).length - 1, 1);
+	assert.doesNotMatch(html, /thead\{position:absolute/);
+});
 
 test("each inlined browser script parses", () => {
 	for (const script of [FLOW_SCRIPT, MODES_SCRIPT, SCROLL_HINT_SCRIPT, THEME_SCRIPT]) {
@@ -129,14 +190,14 @@ test("pace has one course-wide cumulative chart and running totals in its table"
 	assert.match(html, /data-view="anatomy"/);
 	assert.match(html, /Cumulative<br>reading s/);
 	assert.match(html, /Cumulative<br>narration s/);
-	assert.match(html, new RegExp(`<td class="num">${totalReading}</td><td class="num">${totalNarration}</td></tr>`));
+	assert.match(html, new RegExp(`<td class="num" role="cell" data-label="Cumulative reading s">${totalReading}</td><td class="num" role="cell" data-label="Cumulative narration s">${totalNarration}</td></tr>`));
 	const nextLesson = shape.lessons[1];
 	assert.ok(nextLesson?.pace[0]);
 	const paceTable = html.split('aria-label="Pace times by page"')[1] ?? "";
 	const nextRow = paceTable.split(`data-page="2.${nextLesson.pace[0].number}"`)[1]?.split("</tr>")[0] ?? "";
 	const courseReading = Math.round(shape.lessons[0]!.pace.reduce((sum, page) => sum + page.readingSeconds, nextLesson.pace[0].readingSeconds));
 	const courseNarration = Math.round(shape.lessons[0]!.pace.reduce((sum, page) => sum + page.narrationSeconds, nextLesson.pace[0].narrationSeconds));
-	assert.match(nextRow, new RegExp(`<td class="num">${courseReading}</td><td class="num">${courseNarration}</td>`));
+	assert.match(nextRow, new RegExp(`<td class="num" role="cell" data-label="Cumulative reading s">${courseReading}</td><td class="num" role="cell" data-label="Cumulative narration s">${courseNarration}</td>`));
 });
 
 test("anatomy summary stays in both modes and explore blocks are not activities", () => {
@@ -146,7 +207,7 @@ test("anatomy summary stays in both modes and explore blocks are not activities"
 	const chartAt = html.indexOf('<div class="mode-chart">', anatomyStart);
 	assert.ok(summary > anatomyStart && summary < chartAt);
 	assert.match(html.slice(anatomyStart, chartAt), /Blocks, words and time by lesson/);
-	assert.match(html.slice(anatomyStart, chartAt), /<th scope="col" class="num"><abbr class="defined" tabindex="0" title="Content the learner opens[^"]*">Explore<\/abbr><\/th>/);
+	assert.match(html.slice(anatomyStart, chartAt), /<th scope="col" class="num" role="columnheader"><abbr class="defined" tabindex="0" title="Content the learner opens[^"]*">Explore<\/abbr><\/th>/);
 	assert.match(html.slice(chartAt), /<text class="lane"[^>]*>Explore<title>/);
 	const sample = parseCourse(JSON.stringify({
 		ok: true, schema: "praxity-inspect/0", studioVersion: "0.2.0", course: { title: "Roles", locale: "en" },
@@ -181,7 +242,7 @@ test("a view renders its heading row, an icon switch and both representations", 
 	assert.match(html, /<h2 id="pace">Pace<\/h2><p class="view-question">How long\?<\/p>/);
 	assert.match(html, /name="mode-pace" value="chart" aria-label="Chart" checked/);
 	assert.match(html, /<div class="mode-chart"><svg><\/svg><\/div>/);
-	assert.match(html, /<div class="mode-table"><table><\/table><\/div>/);
+	assert.match(html, /<div class="mode-table"><table role="table"><\/table><\/div>/);
 	assert.doesNotMatch(viewBlock({ id: "t", level: 3, title: "T", table: "<table></table>" }), /seg-mode/);
 });
 
@@ -257,8 +318,8 @@ test("the section list names every view once, and the report draws exactly the v
 });
 
 test("course trace rows name their lessons, so the lesson filter can hide them", () => {
-	const trace = html.match(/<table class="blocks trace-table">[\s\S]*?<\/table>/)?.[0] ?? "";
-	const traceRows = [...trace.matchAll(/<tr( [^>]*)?><th scope="row">/g)].map((match) => match[1] ?? "");
+	const trace = html.match(/<table class="blocks trace-table" role="table">[\s\S]*?<\/table>/)?.[0] ?? "";
+	const traceRows = [...trace.matchAll(/<tr( [^>]*)?><th scope="row"[^>]*>/g)].map((match) => match[1] ?? "");
 	assert.ok(traceRows.length > 3);
 	for (const attributes of traceRows) assert.match(attributes, /data-lesson="[1-9]\d*"/);
 });
@@ -295,7 +356,7 @@ test("shared table sizing fits content, preserves prose and mobile reflow, and s
 	assert.match(html, /:is\(\.objectives,\.objective-groups,\.evidence-table,\.terms,\.visuals\)\{width:100%\}/);
 	assert.doesNotMatch(html, /thead th.num\{[^}]*width:1%/);
 	assert.match(html, /\.table-wrap,\.scroll\{overflow-x:auto/);
-	assert.match(html, /@media\(max-width:600px\)\{\.trace-table/);
+	assert.match(html, /@media \(max-width:600px\)\{\ntable\[role=table\],table\[role=table\] :is\(thead,tbody,tfoot,tr,th,td\)\{display:block/);
 	assert.match(html, /\.viz-root a\{color:inherit;text-decoration:none\}/);
 	assert.match(html, /\.viz-root a:focus-visible\{outline:2px solid var\(--accent\)/);
 });

@@ -1,13 +1,19 @@
 import { inlineClient } from "./client.ts";
 /**
  * Wide charts and tables scroll sideways. A faded edge and an arrow on the side with more to see
- * tell the reader it is there. Keyboard users already scroll the focusable region with the arrow
- * keys, so the buttons are for pointers and stay out of the tab order.
+ * tell the reader it is there. The region supports arrow keys; named buttons also let keyboard and
+ * pointer users scroll by most of a region at a time.
  */
 export function scrollHintClient() {
   const update = (frame: HTMLElement, region: HTMLElement) => {
     const left = region.scrollLeft > 2;
     const right = region.scrollLeft + region.clientWidth < region.scrollWidth - 2;
+    // An arrow disappears at the edge. Keep keyboard focus in its scroll region when it does.
+    if ((!left && document.activeElement === frame.querySelector('.scroll-arrow.left')) ||
+        (!right && document.activeElement === frame.querySelector('.scroll-arrow.right'))) {
+      if (!region.hasAttribute('tabindex')) region.tabIndex = 0;
+      region.focus();
+    }
     frame.classList.toggle('more-left', left);
     frame.classList.toggle('more-right', right);
   };
@@ -15,8 +21,7 @@ export function scrollHintClient() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'scroll-arrow ' + side;
-    button.tabIndex = -1;
-    button.setAttribute('aria-hidden', 'true');
+    button.setAttribute('aria-label', 'Scroll ' + side);
     // Tabler chevron: a text glyph sits on its baseline and never centres in the circle.
     button.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + (side === 'left' ? 'M15 6l-6 6l6 6' : 'M9 6l6 6l-6 6') + '"/></svg>';
     button.addEventListener('click', () => region.scrollBy({ left: (side === 'left' ? -0.8 : 0.8) * region.clientWidth, behavior: 'smooth' }));
@@ -44,5 +49,6 @@ export const SCROLL_HINT_STYLE = `
 .scroll-arrow.left{left:.25rem}.scroll-arrow.right{right:.25rem}
 .scroll-frame.more-left>.scroll-arrow.left,.scroll-frame.more-right>.scroll-arrow.right{display:grid}
 .scroll-arrow:hover{border-color:var(--ink-2)}
+.scroll-arrow:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.scroll-frame::before,.scroll-frame::after{transition:none}}
 `;

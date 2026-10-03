@@ -134,7 +134,7 @@ function kindMatrix(view: TermsView): string {
 			.join("");
 		return `<tr ${lessonTags(view.places, view.flags.filter((flag) => flag.kind === kind).map((flag) => flag.ref))}><th scope="row">${KIND_LABEL[kind]}</th>${cells}<td class="num">${view.flags.filter((flag) => flag.kind === kind).length}</td></tr>`;
 	}).join("");
-	return `<table class="matrix levels"><thead><tr><th scope="col">Kind</th>${view.lessons
+	return `<table class="matrix levels"><caption class="sr">Flagged terms by kind and lesson</caption><thead><tr><th scope="col">Kind</th>${view.lessons
 		.map((title, index) => `<th scope="col" class="num" title="${esc(title)}">L${index + 1}</th>`)
 		.join("")}<th scope="col" class="num">Flags</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -146,7 +146,7 @@ function flagTable(view: TermsView): string {
 				`<tr ${lessonTags(view.places, [flag.ref, ...(flag.explainedAt ? [flag.explainedAt] : [])])}><th scope="row"><mark>${esc(flag.span)}</mark></th><td>${kindName(flag.kind)}</td><td>${esc(flag.note)}</td><td class="where">${where(view.places, flag.ref)} <span class="channel">${flag.channel === "screen" ? "on screen" : "narration"}</span></td><td class="where">${flag.explainedAt ? where(view.places, flag.explainedAt) : "–"}</td></tr>`,
 		)
 		.join("");
-	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Flagged terms and references"><table class="blocks terms"><thead><tr><th scope="col">Words</th><th scope="col">Kind</th><th scope="col">What the learner needs</th><th scope="col">Where</th><th scope="col">Explained at</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Flagged terms and references"><table class="blocks terms"><caption class="sr">Flagged terms and references</caption><thead><tr><th scope="col">Words</th><th scope="col">Kind</th><th scope="col">What the learner needs</th><th scope="col">Where</th><th scope="col">Explained at</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 export function renderTerms(view: TermsView): string {

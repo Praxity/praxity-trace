@@ -221,7 +221,7 @@ function flowTable(view: FlowView, objectiveLessons: Record<string, number[]>): 
 	const body = [...rows.values()]
 		.map((row) => `<tr data-lessons="${(objectiveLessons[row.objective] ?? []).join(" ")}"><th scope="row"><span class="objective-id">${esc(row.objective)}</span> ${esc(text(row.objective))}</th><td>${flowLabel(view, row.evidence)}</td><td>${row.status === "no-evidence" ? "–" : flowLabel(view, STATUS_LABEL[row.status])}</td><td class="num">${row.count}</td></tr>`)
 		.join("");
-	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Constructive alignment pairs"><table class="blocks"><thead><tr><th scope="col">Objective group</th><th scope="col">Evidence</th><th scope="col">Instruction</th><th scope="col" class="num">Pairs</th></tr></thead><tbody>${body}</tbody></table></div>`;
+	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Constructive alignment pairs"><table class="blocks"><caption class="sr">Constructive alignment pairs</caption><thead><tr><th scope="col">Objective group</th><th scope="col">Evidence</th><th scope="col">Instruction</th><th scope="col" class="num">Pairs</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
 /** Hover previews a node's or band's paths; click pins them; Escape or a click on empty space clears. */

@@ -102,7 +102,7 @@ test("implied links are omitted only from the chart, with every orange link reta
 		} else {
 			assert.match(svg, /<path class="dep-arc late"[^>]*><title>Concept 3 builds on Concept 1/);
 		}
-		assert.match(html, /<th scope="row">Concept 3<\/th><td>[\s\S]*?<td><span class="dep">Concept 2<\/span>, <span class="dep(?: late)?">Concept 1/);
+		assert.match(html, /<th scope="row" role="rowheader" data-label="Concept">Concept 3<\/th><td role="cell" data-label="Defined">[\s\S]*?<td role="cell" data-label="Builds on"><span class="dep">Concept 2<\/span>, <span class="dep(?: late)?">Concept 1/);
 		assert.match(html, /chart omits links implied by longer chains except orange links; the table retains every link/);
 	}
 });
