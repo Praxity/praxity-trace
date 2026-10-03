@@ -135,6 +135,8 @@ test("spelling exceptions and other word families keep their existing frequencie
 		["cally", 2.2],
 		["dally", 2.4],
 		["lively", 3.8],
+		["summarily", 2.2],
+		["publically", 2.3],
 		["gingerly", 2.4],
 		["homely", 2.6],
 		["firmly", 3.9],
