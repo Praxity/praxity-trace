@@ -1,0 +1,72 @@
+---
+title: Choose a reply path
+lang: en
+---
+
+## A reply at Moth Bend
+
+By the end of this lesson, you can choose a reply that preserves the current amber hold and follow the resulting route to a handoff.
+
+Mira is at Moth Bend. The station shows amber at visit five. Another keeper asks whether they may send the routine reply. A fresh instruction has not arrived. Choose an answer on the next page. The course routes you to a brief consequence, then rejoins the handoff page.
+
+The [hold]{A current instruction to wait before sending the routine reply.} stays in force until a fresh instruction replaces it.
+
+--- Choose your reply
+
+## Choose your reply
+
+Mira asks, "Can Last Reed send its routine reply now?" Use the current shutter state, not the answer you wish were true.
+
+### What do you tell Mira?
+as: choice
+name: route-reply
+scored: false
+attempts: 1
+
+(x) Keep the hold until a fresh instruction arrives
+feedback: Amber keeps the routine reply on hold. Continue to see the quiet path.
+( ) Send the routine reply now
+feedback: This would cross the current hold. Continue to see the repeat path.
+
+when: @route-reply.result is "correct"
+then: jump @quiet-path
+
+when: @route-reply.result is "incorrect"
+then: jump @repeat-path
+
+--- Quiet path
+id: quiet-path
+name: quiet-path
+
+var: rejoin = true
+
+## Quiet path
+
+Mira records your reply and keeps the amber shutter in place. Last Reed waits. The next keeper receives one consistent instruction.
+
+This path follows the current hold. It does not tell us when the fresh instruction will arrive. Record that uncertainty before continuing to the shared handoff.
+
+when: rejoin is true
+then: jump @shared-handoff
+
+--- Repeat path
+id: repeat-path
+name: repeat-path
+
+## Repeat path
+
+Mira notices that your reply would release Last Reed while the amber shutter still calls for a hold. She asks you to state the visible shutter condition again.
+
+Revise your reply in the ledger. Keep the earlier wording as a record of the correction. Both paths now continue to the same handoff; a correction is part of that record.
+
+--- Shared handoff
+id: shared-handoff
+name: shared-handoff
+
+## Shared handoff
+
+Complete the handoff with a station name, visit number, shutter state and next action. For this visit, the next action is to wait for a fresh instruction.
+
+On paper, write what you would say to the incoming keeper. If you took the repeat path, mention the corrected reply. If you took the quiet path, state what remains unknown. There is no keyed answer for this handoff.
+
+Compare your wording with a partner. Can they tell which instruction is current?

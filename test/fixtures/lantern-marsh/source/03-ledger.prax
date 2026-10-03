@@ -1,0 +1,60 @@
+---
+title: Keep a useful ledger
+lang: en
+---
+
+## Record a visit
+
+By the end of this lesson, you can write a station entry that separates an observation from a keeper's interpretation.
+
+Every visit entry has a station name, a visit number and the shutter state you saw. Put uncertain explanations in a separate note. "Amber at visit four" is an observation. "Perhaps the next keeper is late" is an interpretation. Both can be useful, but the next keeper must know which is which.
+
+A [visit number]{A consecutive number assigned to each keeper's arrival at a station.} counts arrivals, not minutes.
+
+--- Compare two entries
+
+## Compare two entries
+
+### What was seen
+as: tab
+
+Station: Moth Bend. Visit: four. Shutter: amber. The west bell rope hung loose.
+
+### What it might mean
+
+The keeper may have left the bell rope loose after testing it. We have not asked that keeper yet.
+
+### What happens next
+
+Ask the keeper about the rope, then add their reply as a new note. Keep the original observation.
+
+close: tab
+
+If the station plate is wet enough that you can read only the final word, and your pocket map places two stations beside the same bend, stop long enough to compare the boardwalk fork with the route sketch before recording a name that another keeper might later treat as certain.
+
+--- Choose an observation
+
+## Choose an observation
+
+You find the shutter halfway across the lantern. Nobody has explained why it is there.
+
+### Which entry records only what you saw?
+as: choice
+points: 2
+
+(x) Amber shutter at visit four
+feedback: This states the visible shutter state and visit number.
+( ) The keeper forgot to open the shutter
+feedback: Forgetting is an explanation you have not checked.
+( ) The route will close soon
+feedback: Closure is a prediction, not the visible state.
+
+--- Rewrite your note
+
+## Rewrite your note
+
+Write a short ledger entry for a fictional station visit. Include one visible detail and one possible explanation. Put them on separate lines.
+
+Underline the words that a second keeper could confirm by looking at the station. Circle the words that would require a conversation or another visit. Your marks may differ from your partner's. Explain the difference and decide whether to revise the entry.
+
+Save the entry for the handoff lesson. You will need its station name and visit number.

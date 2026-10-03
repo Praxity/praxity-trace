@@ -1,0 +1,371 @@
+version: 1
+lessons:
+  01-route.prax:
+    enabled: true
+    segments:
+      - anchor:
+          kind: pageTitle
+          page: 1
+          label: "Read the route"
+          source: "Read the route"
+        script: "Read each station name before you read its instruction. Keep the route ledger in station order."
+      - anchor:
+          kind: pageTitle
+          page: 2
+          label: "Follow the sketch"
+          source: "Follow the sketch"
+        script: "Trace the outward path with your finger. The dotted path brings you back when the boardwalk closes."
+      - anchor:
+          kind: pageTitle
+          page: 3
+          label: "Name or instruction"
+          source: "Name or instruction"
+        script: "A station name identifies a place. An instruction describes an action at that place."
+      - anchor:
+          kind: pageTitle
+          page: 4
+          label: "Make a pocket map"
+          source: "Make a pocket map"
+        script: "Make a map another keeper can use. Ask them where they hesitated, then revise the drawing."
+      - anchor:
+          kind: block
+          type: text
+          page: 3
+          label: "Mira writes \"Moth Bend, hold the amber shutter\" in her pocket book. The words before the comma identify the station. The remaining words tell the keeper what to do."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>Mira writes &quot;Moth Bend, hold the amber shutter&quot; in her pocket book. The words before the comma identify the station. The remaining words tell the keeper what to do.</p>\"}}"
+        script: "This optional spoken reminder is disabled for the name check."
+        disabled: true
+  02-shutters.prax:
+    enabled: true
+    segments:
+      - anchor:
+          kind: pageTitle
+          page: 1
+          label: "Three shutter states"
+          source: "Three shutter states"
+        script: "Clear permits a routine reply. Amber holds that reply. Covered supplies no current instruction."
+      - anchor:
+          kind: pageTitle
+          page: 2
+          label: "Turn the signal cards"
+          source: "Turn the signal cards"
+        script: "Turn a card after reading its front. Explain the action in your own words before checking the back."
+      - anchor:
+          kind: pageTitle
+          page: 3
+          label: "A covered lantern"
+          source: "A covered lantern"
+        script: "A previous clear entry does not tell you what a covered lantern means today."
+      - anchor:
+          kind: pageTitle
+          page: 4
+          label: "Explain a signal"
+          source: "Explain a signal"
+        script: "Explain your invented signal to a partner. Check what they understood from your description."
+  03-ledger.prax:
+    enabled: true
+    segments:
+      - anchor:
+          kind: pageTitle
+          page: 1
+          label: "Record a visit"
+          source: "Record a visit"
+        script: "Record what you saw first. Put possible explanations in a separate note so another keeper can distinguish them."
+      - anchor:
+          kind: pageTitle
+          page: 2
+          label: "Compare two entries"
+          source: "Compare two entries"
+        script: "The tabs separate observation, interpretation and the next action. Keep the original observation when you add a reply."
+      - anchor:
+          kind: pageTitle
+          page: 3
+          label: "Choose an observation"
+          source: "Choose an observation"
+        script: "Choose the entry that describes a visible state rather than an explanation or prediction."
+      - anchor:
+          kind: pageTitle
+          page: 4
+          label: "Rewrite your note"
+          source: "Rewrite your note"
+        script: "Underline what another keeper could confirm by looking. Circle what still needs a conversation."
+  04-bells.prax:
+    enabled: true
+    segments:
+      - anchor:
+          kind: pageTitle
+          page: 1
+          label: "Listen for spacing"
+          source: "Listen for spacing"
+        script: "This practice uses a synthetic bell pattern. Describe tones and quiet gaps without assigning a route instruction."
+      - anchor:
+          kind: pageTitle
+          page: 2
+          label: "Hear the practice bell"
+          source: "Hear the practice bell"
+        script: "The transcript describes the same two tones and gap as the audio. Choose the form you can use."
+      - anchor:
+          kind: pageTitle
+          page: 3
+          label: "Count the tones"
+          source: "Count the tones"
+        script: "The gap separates two tones. It does not add a third tone."
+      - anchor:
+          kind: pageTitle
+          page: 4
+          label: "Describe a rhythm"
+          source: "Describe a rhythm"
+        script: "Compare an intended rhythm with a partner description. Record where your meanings differed."
+  05-branch.prax:
+    enabled: true
+    segments:
+      - anchor:
+          kind: pageTitle
+          page: 1
+          label: "A reply at Moth Bend"
+          source: "A reply at Moth Bend"
+        script: "The station currently shows amber. Choose a reply that keeps the current instruction clear."
+      - anchor:
+          kind: pageTitle
+          page: 2
+          label: "Choose your reply"
+          source: "Choose your reply"
+        script: "Choose your reply, then continue. Your answer determines which consequence page you visit."
+      - anchor:
+          kind: pageTitle
+          page: 3
+          label: "Quiet path"
+          source: "Quiet path"
+        script: "The quiet path preserves the current hold. Record the uncertainty before the shared handoff."
+      - anchor:
+          kind: pageTitle
+          page: 4
+          label: "Repeat path"
+          source: "Repeat path"
+        script: "The repeat path asks for a correction. Keep both the earlier reply and the corrected instruction in the record."
+      - anchor:
+          kind: pageTitle
+          page: 5
+          label: "Shared handoff"
+          source: "Shared handoff"
+        script: "Both paths meet here. Tell the incoming keeper what is current and what remains unknown."
+  06-shutter-motion.prax:
+    enabled: true
+    segments:
+      - anchor:
+          kind: pageTitle
+          page: 1
+          label: "Describe the motion"
+          source: "Describe the motion"
+        script: "Describe movement separately from the final shutter state. The ledger records the settled state."
+      - anchor:
+          kind: pageTitle
+          page: 2
+          label: "Watch or read"
+          source: "Watch or read"
+        script: "The synthetic animation stops at amber. The transcript and captions describe that same change."
+      - anchor:
+          kind: pageTitle
+          page: 3
+          label: "Record the final state"
+          source: "Record the final state"
+        script: "Wait until movement ends, then name the final visible state."
+      - anchor:
+          kind: pageTitle
+          page: 4
+          label: "Draw before and after"
+          source: "Draw before and after"
+        script: "Use two drawings to separate movement from the settled state. Check whether the final drawing stands alone."
+  07-repair.prax:
+    enabled: true
+    segments:
+      - anchor:
+          kind: pageTitle
+          page: 1
+          label: "Start with the record"
+          source: "Start with the record"
+        script: "Begin with a position check. The new visit gets a new entry even when an old entry says amber."
+      - anchor:
+          kind: pageTitle
+          page: 2
+          label: "Separate the checks"
+          source: "Separate the checks"
+        script: "These checks answer different questions. Record position before deciding what caused a slip."
+      - anchor:
+          kind: pageTitle
+          page: 3
+          label: "Select the first check"
+          source: "Select the first check"
+        script: "Describe whether the panel stays or slips. The cause still needs another check."
+      - anchor:
+          kind: pageTitle
+          page: 4
+          label: "Plan a second visit"
+          source: "Plan a second visit"
+        script: "Plan questions that a second visit could answer. Name the information that would change your interpretation."
+  08-handoff.prax:
+    enabled: true
+    segments:
+      - anchor:
+          kind: pageTitle
+          page: 1
+          label: "Make the current entry clear"
+          source: "Make the current entry clear"
+        script: "Name the current visit and instruction. Preserve any correction and carry unresolved questions forward."
+      - anchor:
+          kind: pageTitle
+          page: 2
+          label: "Compare handoff notes"
+          source: "Compare handoff notes"
+        script: "Compare the notes. A short handoff can still identify the station, visit and next action."
+      - anchor:
+          kind: pageTitle
+          page: 3
+          label: "Find the missing detail"
+          source: "Find the missing detail"
+        script: "The visit number distinguishes otherwise identical entries from different arrivals."
+      - anchor:
+          kind: pageTitle
+          page: 4
+          label: "Rehearse a handoff"
+          source: "Rehearse a handoff"
+        script: "Rehearse your handoff with another keeper. Check which details they can repeat without looking at your ledger."
+  09-fieldbook.prax:
+    enabled: false
+    segments:
+      - anchor:
+          kind: pageTitle
+          page: 1
+          label: "Choose what to carry"
+          source: "Choose what to carry"
+        disabled: true
+      - anchor:
+          kind: block
+          type: heading
+          page: 1
+          label: "Choose what to carry"
+          source: "{\"type\":\"heading\",\"data\":{\"level\":2,\"content\":\"<p>Choose what to carry</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 1
+          label: "By the end of this lesson, you can assemble a fieldbook that supports route visits and name the limits of its instructions."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>By the end of this lesson, you can assemble a fieldbook that supports route visits and name the limits of its instructions.</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 1
+          label: "This lesson has no narration. Work at your own reading pace. Bring together your route map, signal notes and handoff entry. These pieces describe the invented west route. They do not provide rules for a real marsh, workplace or emergency."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>This lesson has no narration. Work at your own reading pace. Bring together your route map, signal notes and handoff entry. These pieces describe the invented west route. They do not provide rules for a real marsh, workplace or emergency.</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 1
+          label: "A [fieldbook]{A keeper's personal collection of route sketches, signal notes and visit reminders.} helps you find the information you already checked. It cannot replace a fresh station instruction."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>A <span class=\\\"inline-tooltip-trigger\\\" data-tooltip-content=\\\"A keeper's personal collection of route sketches, signal notes and visit reminders.\\\">fieldbook</span> helps you find the information you already checked. It cannot replace a fresh station instruction.</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: pageTitle
+          page: 2
+          label: "Arrange your pages"
+          source: "Arrange your pages"
+        disabled: true
+      - anchor:
+          kind: block
+          type: heading
+          page: 2
+          label: "Arrange your pages"
+          source: "{\"type\":\"heading\",\"data\":{\"level\":2,\"content\":\"<p>Arrange your pages</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 2
+          label: "Put the route sketch first so you can find the station name before recording a visit. Keep clear, amber and covered meanings together on a second page. Mark invented practice signals as practice."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>Put the route sketch first so you can find the station name before recording a visit. Keep clear, amber and covered meanings together on a second page. Mark invented practice signals as practice.</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 2
+          label: "Choose a handoff entry that names a visit and carries an unresolved question. Preserve any correction. Put this entry after the signal notes so you can find it during a handoff."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>Choose a handoff entry that names a visit and carries an unresolved question. Preserve any correction. Put this entry after the signal notes so you can find it during a handoff.</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 2
+          label: "Try reading the fieldbook with one hand covering the page titles. If a page becomes hard to identify, add a useful label rather than more decoration."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>Try reading the fieldbook with one hand covering the page titles. If a page becomes hard to identify, add a useful label rather than more decoration.</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: pageTitle
+          page: 3
+          label: "Check the fieldbook limit"
+          source: "Check the fieldbook limit"
+        disabled: true
+      - anchor:
+          kind: block
+          type: heading
+          page: 3
+          label: "Check the fieldbook limit"
+          source: "{\"type\":\"heading\",\"data\":{\"level\":2,\"content\":\"<p>Check the fieldbook limit</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 3
+          label: "Your fieldbook says clear permits a routine reply. You arrive at a covered lantern with no fresh instruction. The fieldbook describes the meaning of clear. It cannot supply the current instruction at this covered station."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>Your fieldbook says clear permits a routine reply. You arrive at a covered lantern with no fresh instruction. The fieldbook describes the meaning of clear. It cannot supply the current instruction at this covered station.</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 3
+          label: "Write two questions you would ask the route keeper before you act. Explain what your fieldbook already tells you and what you still need to establish. This is a reflection with no answer key."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>Write two questions you would ask the route keeper before you act. Explain what your fieldbook already tells you and what you still need to establish. This is a reflection with no answer key.</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 3
+          label: "Compare your questions with a partner. Where did each of you draw the boundary between a saved convention and a current station instruction?"
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>Compare your questions with a partner. Where did each of you draw the boundary between a saved convention and a current station instruction?</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: pageTitle
+          page: 4
+          label: "Leave a question for tomorrow"
+          source: "Leave a question for tomorrow"
+        disabled: true
+      - anchor:
+          kind: block
+          type: heading
+          page: 4
+          label: "Leave a question for tomorrow"
+          source: "{\"type\":\"heading\",\"data\":{\"level\":2,\"content\":\"<p>Leave a question for tomorrow</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 4
+          label: "Review the fieldbook you assembled. Choose one page that another keeper could use without your explanation. Choose another that still depends on something you remember. Revise the second page."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>Review the fieldbook you assembled. Choose one page that another keeper could use without your explanation. Choose another that still depends on something you remember. Revise the second page.</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 4
+          label: "Write a final reflection about an unresolved question from the course. Say what information would answer it and where you would look for that information on the invented route."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>Write a final reflection about an unresolved question from the course. Say what information would answer it and where you would look for that information on the invented route.</p>\"}}"
+        disabled: true
+      - anchor:
+          kind: block
+          type: text
+          page: 4
+          label: "Keep this question with the fieldbook. A useful record makes uncertainty visible while preserving the instruction that is current."
+          source: "{\"type\":\"text\",\"data\":{\"content\":\"<p>Keep this question with the fieldbook. A useful record makes uncertainty visible while preserving the instruction that is current.</p>\"}}"
+        disabled: true

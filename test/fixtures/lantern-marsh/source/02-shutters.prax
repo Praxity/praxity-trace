@@ -1,0 +1,70 @@
+---
+title: Read the shutter signals
+lang: en
+---
+
+## Three shutter states
+
+By the end of this lesson, you can interpret the clear and hold shutter states and explain when to leave a shutter covered.
+
+The station lantern has a clear opening and an amber shutter. Clear means the next station may send its routine reply. Amber means hold the routine reply until the keeper gives a fresh instruction. A covered lantern carries no current instruction. Never borrow yesterday's meaning for a covered lantern.
+
+A [fresh instruction]{An instruction recorded during the current station visit.} includes the station name and the keeper's visit number.
+
+--- Turn the signal cards
+
+## Turn the signal cards
+
+Read the front of each card. Turn it over to check the action attached to that state. These cards teach the marsh convention; colours in other places may mean something else.
+
+### Clear opening
+as: card
+layout: slides
+
+The opening shows an unobstructed white disc.
+
+card: back
+
+The next station may send its routine reply. Record clear in the route ledger.
+
+### Amber shutter
+
+The amber panel covers half the disc.
+
+card: back
+
+Hold the routine reply. Wait for a fresh instruction from this visit.
+
+### Covered lantern
+
+An opaque panel covers the whole disc.
+
+card: back
+
+No current instruction is visible. Ask the keeper to identify the station state.
+
+close: card
+
+--- A covered lantern
+
+## A covered lantern
+
+Last Reed's lantern is covered. An old ledger entry says clear. You cannot tell whether the cover is deliberate or whether the keeper has not yet started the visit.
+
+### What should you do before sending a reply?
+as: choice
+
+(x) Ask for the current station state
+feedback: A covered lantern supplies no current instruction.
+( ) Use the old clear entry
+feedback: An earlier visit cannot supply a fresh instruction.
+( ) Treat every cover as amber
+feedback: Covered and amber have different meanings.
+
+--- Explain a signal
+
+## Explain a signal
+
+Work with a partner. One person points to a signal card; the other explains what the next keeper may do. Swap roles after two cards.
+
+Use a blank card to invent a new signal for your own fictional route. Describe the signal and its meaning, then ask your partner what they understood. Do not add this invented signal to the west route ledger. The exercise asks you to explain a convention, not to guess a hidden answer.

@@ -171,7 +171,7 @@ td.where{white-space:nowrap;color:var(--ink-2)}.channel{display:block;font-size:
 .table-wrap:focus-visible,.scroll:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* Disclosures */
 .report-content .method>summary{font-size:.85rem}
-.report-content summary{cursor:pointer;color:var(--ink-2);font-size:.9rem;list-style:none;display:inline-flex;align-items:center;gap:.4rem}
+.report-content summary{cursor:pointer;color:var(--ink-2);font-size:.9rem;list-style:none;display:inline-flex;align-items:center;gap:.4rem;min-width:24px;min-height:24px}
 .report-content summary::-webkit-details-marker{display:none}
 .report-content summary:not(.icon-button)::before{content:"";width:.4rem;height:.4rem;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .12s;margin-right:.1rem}
 .report-content details[open]>summary:not(.icon-button)::before{transform:rotate(45deg)}
@@ -420,6 +420,8 @@ const compare = (a: string, b: string) => {
   return Number.isFinite(x) && Number.isFinite(y) ? x - y : collator.compare(a, b);
 };
 document.querySelectorAll<HTMLTableElement>('.report-content .table-wrap > table').forEach(table => {
+  // Decorative chart tables are hidden from assistive technology and must not gain controls.
+  if (table.closest('[aria-hidden="true"]')) return;
   const body = table.tBodies[0];
   const heads = [...(table.tHead?.rows[0]?.cells ?? [])];
   if (!body || body.rows.length <= 6 || table.tHead?.rows.length !== 1 || body.querySelector('[rowspan], [colspan], tr.group-start')) return;
