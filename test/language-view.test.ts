@@ -9,7 +9,7 @@ import { parseFragment, type DefaultTreeAdapterMap } from "parse5";
 import { GUIDES, isViewId } from "../src/guides.ts";
 import { readHtmlCourse } from "../src/html.ts";
 import { parseCourse, type Course } from "../src/inspect.ts";
-import { LANGUAGE_STYLE, languageView, lengthReference, renderSentences, renderWords, sentences } from "../src/language.ts";
+import { LANGUAGE_STYLE, languageView, lengthReference, renderSentences, renderWords, sentences, zipfOf } from "../src/language.ts";
 import { locateBlocks } from "../src/places.ts";
 import { SECTIONS } from "../src/sections.ts";
 import { blockTexts, narrations, narrationText, visibleStrings, wordCount } from "../src/text.ts";
@@ -96,6 +96,78 @@ test("word familiarity keeps Zipf values and frequency thresholds inside method 
 	assert.match(html, /uncommon means Zipf 3 to below 4/);
 	assert.match(html, /rare means below Zipf 3/);
 	assert.ok(view.vocabulary?.rare.some((word) => typeof word.zipf === "number" || word.zipf === null));
+});
+
+test("mapped -ly adverbs use a higher frequency from their adjective", () => {
+	// Literal values from the shipped TUBELEX lexicon, one example per suffix.
+	const expected: Array<[string, number]> = [
+		["meaningfully", 4.3],
+		["carelessly", 3.2],
+		["precariously", 3.1],
+		["decisively", 3.4],
+		["foolishly", 3.7],
+		["emotionally", 4.7],
+		["historically", 4.5],
+		["involuntarily", 3.1],
+		["understandably", 3.7],
+		["visibly", 4.4],
+		["evidently", 3.9],
+		["reluctantly", 3.5],
+	];
+	assert.deepEqual(expected.map(([word]) => [word, zipfOf(word)]), expected);
+});
+
+test("-ically prefers -ical when present and uses -ic only when -ical is absent", () => {
+	// Electrical is 4.2, electric is 4.6. Dramatical is absent, dramatic is 4.3.
+	assert.deepEqual([zipfOf("electrically"), zipfOf("dramatically")], [4.2, 4.3]);
+});
+
+test("adjective matching preserves a higher adverb frequency and requires a shipped adjective", () => {
+	// Basically is 5.5, basic is 5.0. Economically is 3.7, economical is 3.4.
+	assert.deepEqual([zipfOf("basically"), zipfOf("economically")], [5.5, 3.7]);
+	// Capably is absent but capable is 4.4; ghostful is absent despite ghost being 4.5.
+	assert.deepEqual([zipfOf("capably"), zipfOf("ghostfully")], [4.4, null]);
+});
+
+test("spelling exceptions and other word families keep their existing frequencies", () => {
+	const expected: Array<[string, number | null]> = [
+		["accidently", 2.2],
+		["cally", 2.2],
+		["dally", 2.4],
+		["lively", 3.8],
+		["summarily", 2.2],
+		["publically", 2.3],
+		["gingerly", 2.4],
+		["homely", 2.6],
+		["firmly", 3.9],
+		["fully", 4.9],
+		["rebutted", 2.3],
+		["unassuming", 2.7],
+		["recourse", 2.9],
+		["clearest", 2.9],
+		["nonmeaningfully", null],
+		["non-meaningfully", null],
+		["meaningfullyly", null],
+	];
+	assert.deepEqual(expected.map(([word]) => [word, zipfOf(word)]), expected);
+});
+
+test("adverb frequency changes word counts while rare words retain their source pointers", () => {
+	const measured = languageView(parseCourse(JSON.stringify({
+		ok: true, schema: "praxity-inspect/0", studioVersion: "0.2.0",
+		course: { title: "Adverb frequency", locale: "en" },
+		lessons: [{ file: "adverbs.prax", title: "Adverbs", sha256: "x", pages: [{ id: "p1", number: 1, title: "Page", blocks: [
+			{ id: "b1", type: "text", line: 12, data: { content: "We act meaningfully and move gingerly.", narration: "We act precariously and move involuntarily." } },
+		] }] }],
+	})));
+	assert.deepEqual(measured.vocabulary?.lessons[0], {
+		screen: { words: 6, lessCommon: 0, rare: 1 },
+		narration: { words: 6, lessCommon: 2, rare: 0 },
+	});
+	assert.deepEqual(measured.vocabulary?.rare, [{
+		word: "gingerly", zipf: 2.4, uses: 1, firstUse: "1.1.s1", ref: "1.1.1", lessons: [1], glossed: false,
+	}]);
+	assert.deepEqual({ file: measured.places["1.1.1"]?.file, line: measured.places["1.1.1"]?.line }, { file: "adverbs.prax", line: 12 });
 });
 
 
