@@ -32,7 +32,7 @@ In `report.json`, `language.lessons[].channels.transcript` holds transcript sent
 
 Terms flags, Tasks evidence and Visuals opportunities accept `screen`, `narration` or `transcript`; their quotes must occur in the cited channel. Alignment support also accepts `tooltip` and preserves transcript instruction links. `availability.checks[].available` and `availability.checks[].instructionLinks[].available` can be `transcript`, labelled "In a transcript only" without orange. Concepts keep one occurrence and role per block across channels.
 
-Prepare fresh answers after this contract change: old prompt versions are rejected, and schema 1 freshness uses `trace-inspect/3`. Copy the current `promptVersion` and `courseHash` from the bundle manifest, including its `-projection-2` suffix when present.
+Schema 1 freshness uses `trace-inspect/4`, which also accounts for paragraph and item sentence boundaries. Prepare fresh answers for this interpretation; prompt versions remain unchanged because reviewer course text is unchanged. Copy the current `promptVersion` and `courseHash` from the bundle manifest, including its `-projection-2` suffix when present.
 
 ## Designer comments
 

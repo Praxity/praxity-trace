@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { blockTexts, narrations, narrationText, STOP_WORDS, stripTags, tooltips, transcriptStrings, transcripts, visibleStrings } from "./text.ts";
+import { blockTexts, narrations, narrationText, STOP_WORDS, stripTags, TAG, tooltips, transcriptStrings, transcripts, visibleStrings } from "./text.ts";
 import { gunzipSync } from "node:zlib";
 
 import type { Course } from "./inspect.ts";
@@ -316,13 +316,17 @@ export function syllables(word: string): number {
 }
 
 /**
- * Splits prose into sentences. Paragraphs and list items end a sentence even without punctuation,
+ * Splits prose into sentences. Blank-line paragraphs and structural items end a sentence even without punctuation,
  * and so does a closing bracket, colon or semicolon followed by a capital: that is how a list read
  * aloud separates its items.
  */
 export function sentences(text: string): string[] {
+	// HTML whitespace wraps source code, not paragraphs; its elements carry the boundaries.
+	const html = Boolean(text.match(TAG));
 	return text
-		.split(/<\/(?:p|li|h\d|dd|dt|td)>|<br\s*\/?>/i)
+		.replace(/\r\n?/g, "\n")
+		.split(/<\/(?:p|li|h\d|dd|dt|td|th)>|<br\s*\/?>/i)
+		.flatMap(segment => html ? [segment] : segment.split(/\n[ \t]*\n/))
 		// Inline tags sit inside words and before punctuation; other tags separate text.
 		.map((segment) => stripTags(segment.replace(/<\/?(?:a|abbr|b|code|em|i|kbd|mark|q|s|small|span|strong|sub|sup|u)\b[^>]*>/gi, "")).replace(/\s+/g, " ").trim())
 		.filter(Boolean)
@@ -794,7 +798,7 @@ export function renderSentences(view: LanguageView): string {
 	const first = medians[0], last = medians.at(-1);
 	const profileLead = first && last && first.words !== last.words ? `<p class="rule">Median on-screen sentence length ranges from ${first.words} words in L${first.lesson} to ${last.words} in L${last.lesson}.</p>` : "";
 	return `<section aria-labelledby="sentences">
-${sectionHead("sentences", "Sentences", "How demanding are the sentences to read, and to follow when spoken?", `<p class="rule">${withTranscripts ? "On-screen text, narration and transcripts are measured separately." : "On-screen text and narration are measured separately."}</p>${method(`<p class="rule">Prose only: on-screen headings, checks, buttons and data displays are left out, though narration attached to them counts, and source pages are left out entirely. A sentence ends at a full stop, question or exclamation mark, at the end of a paragraph or list item, or where a closing bracket, colon or semicolon is followed by a capital letter, as list items read aloud are.</p>${withTranscripts ? `<p class="rule">Transcripts are the transcripts written for audio and video in the course and, in exported HTML, the text of caption track files. They follow the same counting rules as narration and stay a separate channel. Trace does not time them, because it has no playback length for the media. Studio's inspect output does not include caption track contents, so a course read from inspect JSON contributes no caption text.</p>` : ""}`, "What counts as a sentence")}`)}
+${sectionHead("sentences", "Sentences", "How demanding are the sentences to read, and to follow when spoken?", `<p class="rule">${withTranscripts ? "On-screen text, narration and transcripts are measured separately." : "On-screen text and narration are measured separately."}</p>${method(`<p class="rule">Prose only: on-screen headings, checks, buttons and data displays are left out, though narration attached to them counts, and source pages are left out entirely. A sentence ends at a full stop, question or exclamation mark, at a paragraph end, marked by a blank line in plain text or an HTML paragraph boundary, or a boundary between structural items, including list items, headings, option labels, table cells and card titles, or where a closing bracket, colon or semicolon is followed by a capital letter, as list items read aloud are. A single line break in wrapped prose does not end a sentence; an HTML br does.</p>${withTranscripts ? `<p class="rule">Transcripts are the transcripts written for audio and video in the course and, in exported HTML, the text of caption track files. They follow the same counting rules as narration and stay a separate channel. Caption cue boundaries and line wraps do not end a sentence, because one sentence can span several cues. Trace does not time them, because it has no playback length for the media. Studio's inspect output does not include caption track contents, so a course read from inspect JSON contributes no caption text.</p>` : ""}`, "What counts as a sentence")}`)}
 ${viewBlock({ id: "sentence-length", level: 3, title: "Sentence length", question: `How long are the sentences, ${withTranscripts ? "on screen, in narration and in transcripts" : "on screen and in narration"}?`, lead: `<p class="rule">${reference === null ? "There are no sentences to plot." : `The dashed reference is ${reference} words. Sentences of ${cap} words or more sit at ${cap}+.`}</p>${method(`<p class="rule">The reference is the mean sentence length plus two standard deviations, rounded to the nearest word. ${withTranscripts ? "It includes on-screen, narration and transcript sentences. The examples list up to 12 longest sentences across the course; identical text in two channels on the same page appears once." : "It includes on-screen and narration sentences. The examples list up to 12 longest sentences across the course; identical on-screen and narration text on the same page appears once."} The lesson filter shows matching examples from that list.</p>`)}`, chart: `${legend([["sentence-screen", "On screen"], ["sentence-narration", "Narration"], ...(withTranscripts ? [["sentence-transcript", "Transcript"] as [string, string]] : []), ["median-key", "Median"]], ` <span class="legend-item"><svg width="132" height="20" aria-hidden="true">${[1, 5, 10]
 		.map((count, index) => `<circle class="sentence screen" cx="${10 + index * 40}" cy="10" r="${radius(count).toFixed(1)}"/><text class="page-label" x="${22 + index * 40}" y="14">${count}</text>`)
 		.join("")}</svg> sentences (${withTranscripts ? "mark" : "dot"} area)</span>`)}${strip(view)}`, table: lengthTable(view), after: `<h4>Longest sentences</h4>${longestList(view)}` })}
