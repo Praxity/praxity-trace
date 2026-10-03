@@ -16,8 +16,8 @@ const fixture = join(root, "test/fixtures");
 const sha256 = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 const portable = (path: string) => path.split(sep).join("/");
 
-function run(args: string[], cwd: string, expected = 0, env?: NodeJS.ProcessEnv) {
-	const result = spawnSync(process.execPath, args, { cwd, encoding: "utf8", env, timeout: 30_000, maxBuffer: 8 * 1024 * 1024 });
+function run(args: string[], cwd: string, expected = 0, env?: NodeJS.ProcessEnv, executable = process.execPath) {
+	const result = spawnSync(executable, args, { cwd, encoding: "utf8", env, timeout: 30_000, maxBuffer: 8 * 1024 * 1024 });
 	assert.ifError(result.error);
 	assert.equal(result.status, expected, result.stderr || result.stdout);
 	return result;
@@ -192,6 +192,31 @@ test("portable artifact inventories unchanged payload and runs after relocation 
 			assert.match(courseText, /A short & nested © note 🙂/);
 			assert.doesNotMatch(courseText, /Hidden definition/);
 		}
+	}
+});
+
+const electron = process.env.TRACE_ELECTRON;
+test("packaged report matches plain Node under Electron in Node mode", { skip: electron ? false : "Set TRACE_ELECTRON to an Electron executable" }, async (t) => {
+	const scratch = await mkdtemp(join(tmpdir(), "trace electron package "));
+	t.after(() => rm(scratch, { recursive: true, force: true }));
+	// Stage outside node_modules, where Node refuses to strip TypeScript.
+	const artifact = join(scratch, "portable artifact with spaces");
+	const packaged = JSON.parse(run([packager, "--output", artifact], scratch).stdout);
+	const inventory = JSON.parse(await readFile(packaged.inventory, "utf8"));
+	const input = join(scratch, "studio");
+	await cp(join(fixture, "html/studio"), input, { recursive: true });
+	const output = join(scratch, "report");
+	const args = [join(artifact, inventory.entry), "report", input, "--out", output];
+	const env: NodeJS.ProcessEnv = { PATH: "", ...(process.platform === "win32" ? { SystemRoot: process.env.SystemRoot } : {}) };
+	const nodeResult = run(args, scratch, 0, env);
+	assert.equal(nodeResult.stderr, "", "Plain Node must produce no warnings");
+	const nodeReports = await Promise.all(["report.json", "report.html"].map((file) => readFile(join(output, file))));
+	await rm(output, { recursive: true });
+	const electronResult = run(args, scratch, 0, { ...env, ELECTRON_RUN_AS_NODE: "1" }, electron!);
+	assert.equal(electronResult.stderr, nodeResult.stderr, "Electron must produce no warnings");
+	assert.equal(electronResult.stdout, nodeResult.stdout);
+	for (const [index, file] of ["report.json", "report.html"].entries()) {
+		assert.deepEqual(await readFile(join(output, file)), nodeReports[index], `${file} must match byte for byte`);
 	}
 });
 
