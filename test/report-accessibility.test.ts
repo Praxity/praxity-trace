@@ -26,6 +26,7 @@ const reportFixtures = [
 	["projection2", "examples.projection2.inspect.json"],
 	["html-export", "html/studio"],
 	["lantern-marsh", "lantern-marsh/inspect.json"],
+	["objective-levels", "objective-levels/inspect.json"],
 	["all-model-views", null],
 ] as const;
 
@@ -33,7 +34,18 @@ async function reportFixture(directory: string, name: string, inputPath: string 
 	const fixtures = join(sourceRoot, "test/fixtures");
 	if (inputPath !== null) {
 		const output = join(directory, name);
-		cli(["report", join(fixtures, inputPath), "--out", output]);
+		const input = join(fixtures, inputPath);
+		const answers: string[] = [];
+		if (name === "objective-levels") {
+			const bundle = join(directory, "answers", name);
+			cli(["prepare", "alignment", input, "--out", bundle]);
+			const manifest = JSON.parse(await readFile(join(bundle, "manifest.json"), "utf8"));
+			const payload = JSON.parse(await readFile(join(fixtures, "objective-levels/answer.json"), "utf8"));
+			const answer = join(bundle, "answer.json");
+			await writeFile(answer, JSON.stringify({ ...payload, promptVersion: manifest.promptVersion, courseHash: manifest.courseHash }));
+			answers.push("--alignment", answer);
+		}
+		cli(["report", input, "--out", output, ...answers]);
 		return join(output, "report.html");
 	}
 	// Read real fixture text through its owner. Every quote is accepted by the production parsers.

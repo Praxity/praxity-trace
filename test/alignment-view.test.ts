@@ -162,11 +162,14 @@ test("an objective the verb list cannot place takes the generated level, marked 
 	const [built, explained] = view.objectives;
 	assert.equal(built?.bloom, "Create");
 	assert.equal(built?.bloomSource, "generated");
+	assert.equal(built?.bloomDiffers, false);
 	assert.equal(explained?.bloom, "Understand");
 	assert.equal(explained?.bloomSource, "verb");
+	assert.equal(explained?.bloomDiffers, true);
 	const html = renderAlignment(view);
 	assert.match(html, /Create <abbr class="defined level-source"[^>]*>generated<\/abbr>/);
-	assert.match(html, /Understand <abbr class="defined level-source"[^>]*>or Apply<\/abbr>/);
+	assert.match(html, /Listed: Understand/);
+	assert.match(html, /Reviewer: Apply/);
 });
 
 test("objectives show by lesson under Bloom or Fink, switched in the heading row", async () => {

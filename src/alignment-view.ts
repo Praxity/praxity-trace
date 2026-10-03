@@ -7,12 +7,14 @@ export interface ObjectiveLevels {
 	bloomSource?: "verb" | "generated" | null;
 	verbBloom?: Bloom | null;
 	modelBloom?: Bloom | null;
+	/** A single listed verb level and the reviewer's whole-objective level differ. */
+	bloomDiffers?: boolean;
 	levelReason?: string | null;
 }
 import { type AlignmentAnswer, type Channel, type Performance, type Purpose } from "./alignment.ts";
 
 import type { Course } from "./inspect.ts";
-import { buildPlaces, clip, courseAxis, esc, type LessonSpan, locateBlocks, pageKey, type Places, short, wheres } from "./places.ts";
+import { buildPlaces, clip, courseAxis, esc, type LessonSpan, locateBlocks, pageKey, type Places, short, sourceOf, wheres } from "./places.ts";
 import { absence, generated, generatedSummary, legend, method, sectionHead, segmented, viewBlock } from "./modes.ts";
 
 export interface AlignmentView {
@@ -91,6 +93,7 @@ export function alignmentView(course: Course, answer: AlignmentAnswer): Alignmen
 			bloomSource: fromVerb.bloom ? ("verb" as const) : modelBloom ? ("generated" as const) : null,
 			verbBloom: fromVerb.bloom,
 			modelBloom,
+			bloomDiffers: fromVerb.bloom !== null && modelBloom !== null && fromVerb.bloom !== modelBloom,
 			levelReason: objective.levelReason ?? null,
 		};
 	});
@@ -281,32 +284,67 @@ function taxonomyByLesson(view: AlignmentView): string {
 	const LABEL = 170, COL = Math.max(56, Math.min(120, 720 / Math.max(1, lessons.length))), ROW = 30, TOP = 8, DOT = 5, GAP = 12;
 	const levelsOf = (objective: AlignmentView["objectives"][number], taxonomy: Taxonomy): string[] =>
 		taxonomy === "fink" ? objective.fink : taxonomy === "gagne" ? (objective.gagne ? [objective.gagne] : []) : objective.bloom ? [objective.bloom] : [];
+	const lessonOf = (objective: AlignmentView["objectives"][number]) => view.places[objective.ref]?.lesson ?? 0;
+	const reviewed = (objective: AlignmentView["objectives"][number]) => (objective.bloomDiffers ? ` · Reviewer: ${objective.modelBloom} (generated)` : "");
 	const describe = (objective: AlignmentView["objectives"][number]) =>
-		`${objective.id} · ${objective.text} · Bloom: ${objective.bloom ?? "unclassified"}${objective.bloomSource === "generated" ? " (generated)" : ""} · Fink: ${objective.fink.join(", ") || "–"} · Gagné: ${objective.gagne ?? "–"}`;
+		`${objective.id} · ${objective.text} · Bloom: ${objective.bloom ?? "unclassified"}${objective.bloomSource === "generated" ? " (generated)" : ""}${reviewed(objective)} · Fink: ${objective.fink.join(", ") || "–"} · Gagné: ${objective.gagne ?? "–"}`;
+	// A reviewer level that differs from the listed one gets its own band right of the lesson's other dots,
+	// wide enough for its direct label, so its connector and label cross no other mark. Lessons with no
+	// difference keep the plain column. The width per character is an estimate for 11 px system-ui.
+	const reviewerLabel = (objective: AlignmentView["objectives"][number]) => `${objective.id} Reviewer: ${objective.modelBloom}`;
+	const BAND_PAD = 8, LABEL_GAP = DOT + 5;
+	const band = (objective: AlignmentView["objectives"][number]) => BAND_PAD + LABEL_GAP + Math.ceil(reviewerLabel(objective).length * 6.4) + 12;
 	const chart = (taxonomy: Taxonomy, levels: readonly string[], ordered: boolean) => {
 		const unplaced = view.objectives.filter((objective) => levelsOf(objective, taxonomy).length === 0);
 		const rows = [...levels, ...(unplaced.length ? ["Unclassified"] : [])];
 		const height = TOP + rows.length * ROW + 24;
-		const width = LABEL + lessons.length * COL + 8;
+		// Only the Bloom chart has a listed level to compare a reviewer level with.
+		const differs = (objective: AlignmentView["objectives"][number]) => taxonomy === "bloom" && objective.bloomDiffers === true;
+		let left = LABEL;
+		const columns = lessons.map((lesson) => {
+			const bands = view.objectives.filter((objective) => lessonOf(objective) === lesson && differs(objective));
+			const column = { lesson, x: left, bands, width: COL + bands.reduce((sum, objective) => sum + band(objective), 0) };
+			left += column.width;
+			return column;
+		});
+		const width = left + 8;
 		// Ordered taxonomies read upward from the lowest level; Fink's dimensions are not a hierarchy.
 		const y = (index: number) => TOP + (ordered ? rows.length - 1 - index : index) * ROW + ROW / 2;
 		let out = "";
 		rows.forEach((level, index) => {
 			out += `<line class="grid" x1="${LABEL}" x2="${width}" y1="${y(index)}" y2="${y(index)}"/><text class="lane" x="${LABEL - 10}" y="${y(index) + 4}" text-anchor="end">${esc(level)}</text>`;
 		});
-		lessons.forEach((lesson, column) => {
-			const cx = LABEL + column * COL + COL / 2;
-			out += `<text class="page-label" x="${cx}" y="${height - 6}" text-anchor="middle">L${lesson}</text>`;
+		const dotAt = (objective: AlignmentView["objectives"][number], x: number, cy: number, second: boolean) => {
+			const place = view.places[objective.ref];
+			return `<circle class="taxo-dot${second ? " second" : ""}" cx="${x.toFixed(1)}" cy="${cy.toFixed(1)}" r="${DOT}"${place ? ` data-page="${pageKey(place.lesson, place.page)}"` : ""}><title>${esc(describe(objective))}</title></circle>`;
+		};
+		columns.forEach(({ lesson, x: start, bands, width: span }) => {
+			const cx = start + COL / 2;
+			out += `<text class="page-label" x="${start + span / 2}" y="${height - 6}" text-anchor="middle">L${lesson}</text>`;
 			rows.forEach((level, index) => {
-				const here = view.objectives.filter((objective) => (view.places[objective.ref]?.lesson ?? 0) === lesson && (level === "Unclassified" ? levelsOf(objective, taxonomy).length === 0 : levelsOf(objective, taxonomy).includes(level)));
+				const here = view.objectives.filter((objective) => lessonOf(objective) === lesson && !differs(objective) && (level === "Unclassified" ? levelsOf(objective, taxonomy).length === 0 : levelsOf(objective, taxonomy).includes(level)));
 				const perLine = Math.max(1, Math.floor((COL - 8) / GAP));
 				here.forEach((objective, k) => {
 					const line = Math.floor(k / perLine), inLine = k % perLine, count = Math.min(perLine, here.length - line * perLine);
-					const x = cx + (inLine - (count - 1) / 2) * GAP;
-					const place = view.places[objective.ref];
-					out += `<circle class="taxo-dot${taxonomy === "fink" && objective.fink[0] !== level ? " second" : ""}" cx="${x.toFixed(1)}" cy="${(y(index) + line * 9 - (here.length > perLine ? 4 : 0)).toFixed(1)}" r="${DOT}"${place ? ` data-page="${pageKey(place.lesson, place.page)}"` : ""}><title>${esc(describe(objective))}</title></circle>`;
+					out += dotAt(objective, cx + (inLine - (count - 1) / 2) * GAP, y(index) + line * 9 - (here.length > perLine ? 4 : 0), taxonomy === "fink" && objective.fink[0] !== level);
 				});
 			});
+			// The solid dot stays at the listed level, the verb-list measurement; the open grey circle at the
+			// reviewer's level is an interpretation, joined to it and labelled where it sits.
+			let bandStart = start + COL;
+			for (const objective of bands) {
+				const x = bandStart + BAND_PAD;
+				bandStart += band(objective);
+				const listed = y(rows.indexOf(objective.bloom ?? "")), reviewer = y(rows.indexOf(objective.modelBloom ?? ""));
+				const place = view.places[objective.ref];
+				const at = `data-ref="${esc(objective.ref)}"${place ? ` data-page="${pageKey(place.lesson, place.page)}"` : ""}`;
+				const title = `<title>${esc(`${objective.id} · ${objective.text}\nListed: ${objective.bloom}, from the verb list\nReviewer: ${objective.modelBloom}, generated by ${view.model}${objective.levelReason ? ` · ${objective.levelReason}` : ""}${place ? `\n${place.lessonTitle}, page ${place.page} · ${sourceOf(place)}` : ""}`)}</title>`;
+				const toward = Math.sign(reviewer - listed);
+				out += dotAt(objective, x, listed, false);
+				out += `<line class="bloom-difference connector" ${at} x1="${x}" x2="${x}" y1="${(listed + toward * (DOT + 1)).toFixed(1)}" y2="${(reviewer - toward * (DOT + 1)).toFixed(1)}">${title}</line>`;
+				out += `<circle class="bloom-difference reviewer" ${at} cx="${x}" cy="${reviewer.toFixed(1)}" r="${DOT}">${title}</circle>`;
+				out += `<text class="bloom-difference-label" ${at} x="${x + LABEL_GAP}" y="${(reviewer + 4).toFixed(1)}">${title}${esc(reviewerLabel(objective))}<tspan class="generated-word" x="${x + LABEL_GAP}" dy="11">generated</tspan></text>`;
+			}
 		});
 		return `<div class="taxo" data-taxonomy="${taxonomy}"><div class="scroll" tabindex="0" role="region" aria-label="Objectives by lesson and ${TAXONOMY_NAME[taxonomy]}"><svg width="${width}" height="${height}" role="img" aria-label="${view.objectives.length} objectives by lesson and ${TAXONOMY_NAME[taxonomy]}; the table view lists each objective with all three.">${out}</svg></div></div>`;
 	};
@@ -317,14 +355,21 @@ function taxonomyByLesson(view: AlignmentView): string {
 
 /** Objectives by lesson and level for each framework: does demand rise across the course? */
 
-/** A level and where it came from: the verb list, or the model's reading of verb and object. */
-function levelCell(level: string | null, source: "verb" | "generated" | null, fromVerb: string | null, fromModel: string | null, reason: string | null, model: string, candidates: string[] = []): string {
-	if (level === null) return `<span class="unclassified">Unclassified</span>`;
-	const why = reason ? ` ${reason}.` : "";
-	const listed = candidates.length > 1 ? `The verb lists place this verb at ${candidates.slice(0, -1).join(", ")} or ${candidates.at(-1)}, so the object decides.` : "No verb list places this verb.";
-	if (source === "generated") return `${level} <abbr class="defined level-source" tabindex="0" title="${esc(`${listed} Estimated by ${model} from the verb and its object.${why}`)}">generated</abbr>`;
-	if (fromModel && fromModel !== fromVerb) return `${level} <abbr class="defined level-source" tabindex="0" title="${esc(`The verb list says ${fromVerb}; ${model} reads the whole objective as ${fromModel}.${why}`)}">or ${fromModel}</abbr>`;
-	return level;
+/**
+ * A Bloom level and where it came from: the verb list, or the model's reading of verb and object. When
+ * the two differ, the listed level stays the measurement and the reviewer's level follows as a generated
+ * note with its reason and source pointer.
+ */
+function levelCell(objective: AlignmentView["objectives"][number], view: AlignmentView): string {
+	const { bloom: level, levelReason: reason, bloomCandidates: candidates = [] } = objective;
+	if (!level) return `<span class="unclassified">Unclassified</span>`;
+	if (objective.bloomSource === "generated") {
+		const listed = candidates.length > 1 ? `The verb lists place this verb at ${candidates.slice(0, -1).join(", ")} or ${candidates.at(-1)}, so the object decides.` : "No verb list places this verb.";
+		return `${level} <abbr class="defined level-source" tabindex="0" title="${esc(`${listed} Estimated by ${view.model} from the verb and its object.${reason ? ` ${reason}.` : ""}`)}">generated</abbr>`;
+	}
+	if (!objective.bloomDiffers) return level;
+	const place = view.places[objective.ref];
+	return `Listed: ${level}<div class="level-review">Reviewer: ${esc(objective.modelBloom ?? "")} ${generated(view.model, "generated")}</div>${reason ? `<div class="level-reason">${esc(reason)}</div>` : ""}${place ? `<span class="file">${esc(sourceOf(place))}</span>` : ""}`;
 }
 
 /** A category with its definition on hover and focus, or a dash. */
@@ -348,7 +393,7 @@ function objectiveTable(view: AlignmentView): string {
 	const rows = view.objectives
 		.map(
 			(objective) =>
-				`<tr data-lesson="${view.places[objective.ref]?.lesson ?? ""}"><th scope="row"><span class="group-member"><span class="oid">${esc(objective.id)}</span><span class="otext">${esc(objective.text)}</span></span></th><td class="where">${plainLocation(view, objective.ref)}</td><td>${levelCell(objective.bloom, objective.bloomSource ?? null, objective.verbBloom ?? null, objective.modelBloom ?? null, objective.levelReason ?? null, view.model, objective.bloomCandidates ?? [])}</td><td>${defined(objective.knowledge ?? null, (value) => KNOWLEDGE_HELP[value as keyof typeof KNOWLEDGE_HELP])}</td><td>${defined(objective.gagne ?? null, (value) => GAGNE_HELP[value as keyof typeof GAGNE_HELP])}</td><td>${esc(objective.fink.join(", ") || "–")}</td><td>${performanceCell(objective.performance)}</td><td class="num">${count(objective.id, ["knowledge"])}</td><td class="num">${count(objective.id, ["reflection", "worksheet"])}</td></tr>`,
+				`<tr data-lesson="${view.places[objective.ref]?.lesson ?? ""}"><th scope="row"><span class="group-member"><span class="oid">${esc(objective.id)}</span><span class="otext">${esc(objective.text)}</span></span></th><td class="where">${plainLocation(view, objective.ref)}</td><td>${levelCell(objective, view)}</td><td>${defined(objective.knowledge ?? null, (value) => KNOWLEDGE_HELP[value as keyof typeof KNOWLEDGE_HELP])}</td><td>${defined(objective.gagne ?? null, (value) => GAGNE_HELP[value as keyof typeof GAGNE_HELP])}</td><td>${esc(objective.fink.join(", ") || "–")}</td><td>${performanceCell(objective.performance)}</td><td class="num">${count(objective.id, ["knowledge"])}</td><td class="num">${count(objective.id, ["reflection", "worksheet"])}</td></tr>`,
 		)
 		.join("");
 	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Objectives with their levels"><table class="blocks objectives"><caption class="sr">Objectives with their levels</caption><thead><tr><th scope="col">Objective</th><th scope="col">Stated at</th><th scope="col">Bloom</th><th scope="col">Knowledge</th><th scope="col">Gagné</th><th scope="col">Fink</th><th scope="col"><abbr class="defined" tabindex="0" title="Whether the objective states an observable action, the conditions and a standard (Mager). Hover a cell for the words it quotes.">Performance</abbr></th><th scope="col" class="num">Knowledge checks</th><th scope="col" class="num">Activities</th></tr></thead><tbody>${rows}</tbody></table></div>`;
@@ -365,7 +410,7 @@ function outcomeReview(view: AlignmentView): string {
 			{ value: "fink", label: "Fink: kinds of significant learning", icon: "flower" },
 			{ value: "gagne", label: "Gagné: kind of capability intended", icon: "category" },
 		]),
-		lead: `<p class="rule">Each dot is one objective, in the lesson that states it.</p>${method(`<p class="rule">Bloom levels come from the objective's leading verb where published verb lists place it at one level (Stanny 2016; Hodge and Tauber, <i>Community Nutrition</i>; after Anderson and Krathwohl 2001). Common verbs such as explain and identify sit at several levels; for those, and for unlisted verbs, an ${generated(view.model, "interpretation")} of the verb and its object decides. Fink dimensions and Gagné capabilities are generated. They are kinds of learning rather than levels; each chart puts its foundations at the bottom, as the frameworks present them. An objective with two Fink dimensions appears in both rows, the second paler.</p>`, "How levels are assigned")}`,
+		lead: `<p class="rule">Each dot is one objective, in the lesson that states it.${view.objectives.some((objective) => objective.bloomDiffers) ? " Under Bloom, an open grey circle joined to a dot marks the reviewer's different reading of that objective." : ""}</p>${method(`<p class="rule">Bloom levels come from the objective's leading verb where published verb lists place it at one level (Stanny 2016; Hodge and Tauber, <i>Community Nutrition</i>; after Anderson and Krathwohl 2001). Common verbs such as explain and identify sit at several levels; for those, and for unlisted verbs, an ${generated(view.model, "interpretation")} of the verb and its object decides. When a verb lists at one level and the reviewer reads the whole objective at another, the report shows both. The chart keeps the dot at the listed level, which is the verb-list measurement, and joins it to an open grey circle at the reviewer's level, which is an interpretation. Table mode gives the reviewer's reason. Fink dimensions and Gagné capabilities are generated. They are kinds of learning rather than levels; each chart puts its foundations at the bottom, as the frameworks present them. An objective with two Fink dimensions appears in both rows, the second paler.</p>`, "How levels are assigned")}`,
 		chart: taxonomyByLesson(view),
 		table: objectiveTable(view),
 	});
@@ -409,6 +454,11 @@ tr.no-evidence>th[scope=row]{box-shadow:inset 4px 0 0 var(--look)}
 svg .taxo-dot{fill:var(--ink-2);stroke:var(--surface);stroke-width:1.5}svg .taxo-dot.second{opacity:.4}
 .view:has(input[name=taxonomy][value=bloom]:checked) .taxo:not([data-taxonomy=bloom]),.view:has(input[name=taxonomy][value=fink]:checked) .taxo:not([data-taxonomy=fink]),.view:has(input[name=taxonomy][value=gagne]:checked) .taxo:not([data-taxonomy=gagne]){display:none}
 .level-source{font-size:.75rem;color:var(--ink-2);margin-left:.25rem}.unclassified{color:var(--muted)}
+.level-review{margin-top:.2rem;color:var(--ink-2)}.level-review .generated{font-size:.75rem;margin-left:.25rem}.level-reason{font-size:.8rem;color:var(--ink-2)}
+svg .bloom-difference.connector{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:3 2}
+svg .bloom-difference.reviewer{fill:var(--surface);stroke:var(--muted);stroke-width:1.5}
+svg .bloom-difference-label{font-size:11px;fill:var(--ink-2);paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round}
+svg .bloom-difference-label .generated-word{font-size:10px;fill:var(--muted)}
 .matrix .group-also{display:block;font-size:.8rem;color:var(--ink-2);margin-top:.15rem;padding-left:2.4rem}.matrix .oid-ref{font-weight:600}
 .matrix .otext.clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .objective-groups tr.group-start>*{border-top:1px solid var(--axis)}

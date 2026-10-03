@@ -105,6 +105,7 @@ One meaning per symbol across every view:
 | Meaning | Symbol |
 |---|---|
 | Objective stated | open grey diamond |
+| Reviewer's differing Bloom level, in the Bloom chart | open grey circle joined to the listed-level dot |
 | Instruction (taught) | open dark circle |
 | Activity | open blue square |
 | Knowledge check | filled blue square |

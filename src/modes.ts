@@ -10,7 +10,9 @@ export function absence(partial: boolean | undefined, complete: string, subject:
 	if (!partial) return format === "text" ? complete : esc(complete);
 	const text = `${subject} not found in the inspected content`;
 	if (format === "text") return `${text} (see coverage note)`;
-	return `${esc(text)} · <a href="#coverage">${format === "svg" ? "<tspan>coverage note</tspan>" : "coverage note"}</a>`;
+	// Charts have role="img", so keep their labels noninteractive; the table supplies the coverage link.
+	if (format === "svg") return `${esc(text)} · <tspan>coverage note</tspan>`;
+	return `${esc(text)} · <a href="#coverage">coverage note</a>`;
 }
 
 export function renderFeedback(feedback: Feedback): string {
