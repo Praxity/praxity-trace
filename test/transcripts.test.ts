@@ -50,6 +50,19 @@ test("schema 0 authored media prose uses the same transcript interface and keeps
 	assert.deepEqual(previewLines([block], "Page"), [{ kind: "heading", text: "A recording" }]);
 });
 
+// Answers cite block refs, not sentence ids, so sentence boundaries keep the fingerprint and answers.
+test("sentence boundaries keep the schema 1 fingerprint and reviewer evidence", async () => {
+	const course = await fixture();
+	assert.equal(courseHash(course), createHash("sha256").update(`trace-inspect/3\0${course.revision}`).digest("hex"));
+	const flattened = structuredClone(course);
+	for (const item of locateBlocks(flattened)) {
+		for (const script of item.block.data.typedNarrations as Array<{ value: string }>) script.value = script.value.replace(/\s+/g, " ").trim();
+		for (const media of item.block.media ?? []) if (media.transcript) media.transcript.value = media.transcript.value.replace(/\s+/g, " ").trim();
+	}
+	assert.equal(courseText(course), courseText(flattened));
+	assert.equal(blockTexts(locateBlocks(course).find(item => item.ref === "7.3.3")!.block).narration[0], "What should your first new entry describe? Whether the panel stays or slips after release Why the earlier keeper missed the fault The name of the failed fastening");
+});
+
 test("transcript source markup remains available for code exclusions without re-reading media fields", async () => {
 	const course = await fixture(), video = locateBlocks(course).find(item => item.block.type === "video")!.block;
 	const source = { ...video, media: [{ ...video.media![0]!, transcript: { value: "Use <code>ABC</code> before prose.", format: "html" as const } }] };

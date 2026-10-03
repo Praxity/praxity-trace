@@ -1,14 +1,18 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parseFragment, type DefaultTreeAdapterMap } from "parse5";
 import { GUIDES, isViewId } from "../src/guides.ts";
 import { readHtmlCourse } from "../src/html.ts";
 import { parseCourse, type Course } from "../src/inspect.ts";
-import { LANGUAGE_STYLE, languageView, lengthReference, renderSentences, renderWords } from "../src/language.ts";
+import { LANGUAGE_STYLE, languageView, lengthReference, renderSentences, renderWords, sentences } from "../src/language.ts";
 import { locateBlocks } from "../src/places.ts";
 import { SECTIONS } from "../src/sections.ts";
+import { blockTexts, narrations, narrationText, visibleStrings, wordCount } from "../src/text.ts";
 
 const course = parseCourse(JSON.stringify({
 	ok: true, schema: "praxity-inspect/0", studioVersion: "0.2.0",
@@ -139,6 +143,92 @@ const lessonRows = (rendered: string, label: string, lesson: number) =>
 		.map((row) => [...(row[1] ?? "").matchAll(/<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/g)].map((cell) => (cell[1] ?? "").replace(/<[^>]+>/g, "").trim()))
 		.filter((cells) => cells.length > 1);
 const lantern = parseCourse(readFileSync(new URL("./fixtures/lantern-marsh/inspect.json", import.meta.url), "utf8"));
+
+test("paragraph breaks end sentences, while wrapped prose stays one sentence", () => {
+	for (const newline of ["\n", "\r\n", "\r"]) {
+		assert.deepEqual(sentences(`Keep the${newline}panel steady${newline} \t${newline}Read the ledger`), ["Keep the panel steady", "Read the ledger"]);
+	}
+	assert.deepEqual(sentences("<p>Keep the\n\npanel steady</p>"), ["Keep the panel steady"]);
+});
+
+test("Lantern Marsh 7.3 derived narration keeps the prompt and each option as a sentence", () => {
+	const copy = structuredClone(lantern);
+	const choice = locateBlocks(copy).find(item => item.block.data.typedNarrations && narrations(item.block.data).some(script => script.script.startsWith("What should your first new entry describe?")))!;
+	const expected = [
+		"What should your first new entry describe?",
+		"Whether the panel stays or slips after release",
+		"Why the earlier keeper missed the fault",
+		"The name of the failed fastening",
+	];
+	const source = readFileSync(new URL("./fixtures/lantern-marsh/source/07-repair.prax", import.meta.url), "utf8");
+	for (const text of expected) assert.ok(source.includes(text));
+	assert.equal(choice.lessonNumber, 7);
+	assert.equal(choice.page, 3);
+	assert.deepEqual(sentences(narrationText(narrations(choice.block.data)[0]!)), expected);
+	// The final label has six words: The / name / of / the / failed / fastening.
+	assert.deepEqual(expected.map(wordCount), [7, 8, 7, 6]);
+	for (const lesson of copy.lessons) for (const page of lesson.pages) page.blocks = page.blocks.filter(block => block.ref === choice.block.ref);
+	assert.deepEqual(languageView(structuredClone(copy)).longest.toSorted((a, b) => a.id.localeCompare(b.id)).map(({ id, text, words }) => ({ id, text, words })), expected.map((text, i) => ({ id: `7.3.n${i + 1}`, text, words: [7, 8, 7, 6][i] })));
+	const measured = languageView(lantern);
+	assert.ok(measured.longest.some(sentence => sentence.channel === "narration"));
+	assert.ok(measured.longest.every(sentence => !sentence.text.includes("release Why") && !sentence.text.includes("fault The name")));
+});
+
+test("sidecar narration keeps paragraph boundaries through the shared text interface", () => {
+	const copy = structuredClone(lantern);
+	for (const item of locateBlocks(copy)) item.block.data.typedNarrations = [];
+	const block = copy.lessons[0]!.pages[0]!.blocks[0]!;
+	const sidecar = lantern.lessons[0]!.narration!.find(script => script.origin === "sidecar" && !script.disabled)!;
+	block.data.typedNarrations = [{ ...sidecar, value: "Keep the\npanel steady\n\nRead the ledger" }];
+	assert.deepEqual(languageView(copy).lessons[0]!.channels.narration.lengths, [3, 4]);
+	assert.deepEqual(blockTexts(block).narration, ["Keep the panel steady Read the ledger"]);
+});
+
+test("screen fields keep list items, headings, options, table cells and card titles separate in both schemas", () => {
+	const labels = ["Keep the panel steady", "Read the ledger", "Check the keeper", "Station name", "Latest signal"];
+	const legacy = { content: "<h2>Keep the panel steady</h2><ul><li>Read the ledger</li><li>Check the keeper</li></ul><table><tr><th>Station name</th><th>Latest signal</th></tr></table>", options: [{ text: "First choice" }, { text: "Second choice" }], items: [{ title: "First card", content: "First body" }, { title: "Second card", content: "Second body" }] };
+	const expected = [...labels, "First choice", "Second choice", "First card", "First body", "Second card", "Second body"];
+	const typed = { typedTexts: expected.map((value, i) => ({ ref: `text/${i}`, role: i === 0 || i === 7 || i === 9 ? "heading" : i === 5 || i === 6 ? "option" : "body", value, format: "plain", location: null })) };
+	for (const data of [legacy, typed]) {
+		assert.deepEqual(visibleStrings(data).flatMap(sentences), expected);
+		const sample = structuredClone(course);
+		sample.lessons = [sample.lessons[0]!];
+		sample.lessons[0]!.pages[0]!.blocks[0]!.data = data;
+		assert.deepEqual(languageView(sample).lessons[0]!.channels.screen.lengths, [2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 4]);
+	}
+	for (const format of ["plain", "markdown", "html"]) {
+		const data = { typedTexts: [{ ref: "text/1", role: "body", value: "Keep the\n\npanel steady", format, location: null }] };
+		assert.deepEqual(visibleStrings(data).flatMap(sentences), format === "html" ? ["Keep the panel steady"] : ["Keep the", "panel steady"]);
+	}
+});
+
+test("authored plain and Markdown transcript paragraphs end sentences in both schemas", () => {
+	for (const format of ["plain", "markdown"] as const) {
+		const sample = retranscribed(null);
+		locateBlocks(sample).find(item => item.ref === "4.2.2")!.block.media![0]!.transcript = { value: "Keep the\npanel steady\n\nRead the ledger", format };
+		assert.deepEqual(languageView(sample).lessons[3]!.channels.transcript!.lengths, [3, 4]);
+	}
+	const legacy = structuredClone(course);
+	legacy.lessons[0]!.pages[0]!.blocks[0]!.data = { transcript: "Keep the\npanel steady\n\nRead the ledger" };
+	assert.deepEqual(languageView(legacy).lessons[0]!.channels.transcript!.lengths, [3, 4]);
+});
+
+test("HTML exports keep structural screen items and narration segments separate, but join VTT cue prose", async () => {
+	const dir = await mkdtemp(join(tmpdir(), "trace-sentence-breaks-"));
+	try {
+		await writeFile(join(dir, "captions.vtt"), "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nKeep the\npanel\n\n00:00:01.000 --> 00:00:02.000\nsteady until release.\n");
+		await writeFile(join(dir, "index.html"), '<main><p>Keep the\n\npanel steady</p><ul><li>Keep the panel steady</li><li>Read the ledger</li></ul><video><track kind="captions" src="captions.vtt"></video></main>');
+		const ordinary = languageView(await readHtmlCourse(dir)).lessons[0]!.channels;
+		assert.deepEqual(ordinary.screen.lengths, [3, 4, 4]);
+		assert.deepEqual(ordinary.transcript!.lengths, [6]);
+		await writeFile(join(dir, "index.html"), `<script id="praxity-config" type="application/json">${JSON.stringify({ deckPages: [{ id: "p1", segments: [{ blockId: "b1", script: "Keep the panel steady" }, { blockId: "b1", script: "Read the ledger" }] }] })}</script><main><article class="deck-slide" data-deck-slide="p1"><div data-block-id="b1" data-block-type="text"><h2>Keep the panel steady</h2><ul><li>Read the ledger</li></ul><table><tr><th>Station name</th><th>Latest signal</th><td>First cell</td><td>Second cell</td></tr></table></div></article></main>`);
+		const deck = languageView(await readHtmlCourse(dir)).lessons[0]!.channels;
+		assert.deepEqual(deck.screen.lengths, [2, 2, 2, 2, 3, 4]);
+		assert.deepEqual(deck.narration.lengths, [3, 4]);
+		await writeFile(join(dir, "index.html"), '<main><article class="deck-slide"><div data-block-id="b1" data-block-type="text">Keep the\n\npanel steady</div></article></main>');
+		assert.deepEqual(languageView(await readHtmlCourse(dir)).lessons[0]!.channels.screen.lengths, [4]);
+	} finally { await rm(dir, { recursive: true, force: true }); }
+});
 /** Lantern Marsh with every media transcript set to `value`, or removed when null. */
 const retranscribed = (value: string | null): Course => {
 	const copy = structuredClone(lantern);
@@ -231,7 +321,9 @@ test("Lantern Marsh transcript rows appear in every language table and in the se
 	assert.doesNotMatch(LANGUAGE_STYLE.split("\n").flatMap((line) => line.split("}")).filter((rule) => rule.includes("transcript")).join("}"), /--look|--accent/);
 	for (const text of [
 		"On-screen text, narration and transcripts are measured separately.",
-		"They follow the same counting rules as narration and stay a separate channel. Trace does not time them, because it has no playback length for the media.",
+		"They follow the same counting rules as narration and stay a separate channel.",
+		"Caption cue boundaries and line wraps do not end a sentence, because one sentence can span several cues.",
+		"Trace does not time them, because it has no playback length for the media.",
 		"Studio's inspect output does not include caption track contents",
 		"It includes on-screen, narration and transcript sentences.",
 		"n means narration and t a transcript.",

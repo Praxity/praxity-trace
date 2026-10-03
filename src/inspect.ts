@@ -121,7 +121,7 @@ export function withPageNarration(page: Page): Page {
 	const [head, ...rest] = page.blocks;
 	if (!narration || !head) return page;
 	const own = typeof head.data.narration === "string" ? head.data.narration : "";
-	return { ...page, blocks: [{ ...head, data: { ...head.data, narration: own ? `${narration} ${own}` : narration } }, ...rest] };
+	return { ...page, blocks: [{ ...head, data: { ...head.data, narration: own ? `${narration}\n\n${own}` : narration } }, ...rest] };
 }
 
 /** Identifies the course revision: changes whenever any lesson source changes. */

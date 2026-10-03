@@ -11,7 +11,8 @@ import type { Block, TypedText, TypedNarration, FormattedText } from "./inspect.
 const escapeText = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function typedHtml(text: TypedText): string {
 	if (text.format === "plain") return escapeText(text.value);
-	const html = text.format === "markdown" ? markdownText(text.value).replace(/</g, "&lt;").replace(/>/g, "&gt;") : text.value;
+	// In HTML, source line breaks are whitespace even when the field has no element wrapper.
+	const html = text.format === "markdown" ? markdownText(text.value).replace(/</g, "&lt;").replace(/>/g, "&gt;") : text.value.replace(/\r\n?|\n/g, " ");
 	const fragment = parseFragment(html);
 	const prune = (node: DefaultTreeAdapterTypes.ParentNode) => {
 		node.childNodes = node.childNodes.filter(child => !("tagName" in child && ["script", "style", "template"].includes(child.tagName)));
@@ -209,7 +210,8 @@ export function previewText(text: string, limit = 200): string {
 // Studio strips a named list (SONIOX_AUDIO_TAGS in shared-blocks/src/narration.ts). Mirror that
 // list if a course's narration brackets ordinary words.
 // A cue stands alone; brackets attached to a word, as in readings[gauge], are code.
-const VOICE_CUE = /(?<![\w\]])\[[a-z][a-z ]*\]\s*/g;
+// A cue can sit at a paragraph end; remove its horizontal space without consuming that boundary.
+const VOICE_CUE = /(?<![\w\]])\[[a-z][a-z ]*\][ \t]*/g;
 
 /** What a narrator says: glossary and link syntax read as their words, voice cues such as [pause] left out. */
 export const spoken = (script: string) =>
@@ -217,7 +219,13 @@ export const spoken = (script: string) =>
 		.replace(RAW_TOOLTIP, "$1")
 		.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
 		.replace(/\*\*|__/g, "")
-		.replace(VOICE_CUE, "")
+		.split(/\r\n?|\n/)
+		.flatMap(line => {
+			const prose = line.replace(VOICE_CUE, "");
+			// A cue-only line is not an authored blank line; removing it must not create a paragraph.
+			return line.trim() && !prose.trim() ? [] : [prose];
+		})
+		.join("\n")
 		.replace(/[ \t]+/g, " ")
 		.trim();
 

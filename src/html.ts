@@ -83,7 +83,7 @@ function studioBlock(node: Element, authored: Map<string, RecordValue>, segments
 	if (raw) {
 		try { const parsed: unknown = JSON.parse(raw); data = record(parsed) && record(parsed.data) ? { ...parsed.data } : record(parsed) ? parsed : data; }
 		catch { throw new Error(`Invalid data-block-json on ${id}.`); }
-	} else if (type === "text" || type === "heading") data.content = inner(node);
+	} else if (type === "text" || type === "heading") data.content = `<div>${inner(node)}</div>`;
 	if (type === "chart" && record(data.data) && Array.isArray(data.data.labels) && Array.isArray(data.data.series)) {
 		const series = data.data.series.filter(record);
 		data.rows = [[data.xAxisLabel ?? "", ...series.map((item) => item.name ?? "")], ...data.data.labels.map((label, index) => [label, ...series.map((item) => String(Array.isArray(item.values) ? item.values[index] ?? "" : ""))])];
@@ -128,7 +128,7 @@ function studioBlock(node: Element, authored: Map<string, RecordValue>, segments
 	// Studio also generates spoken headings. Its embedded block data identifies authored narration.
 	if (script?.length && (!saved || typeof (saved.data as RecordValue | undefined)?.narration === "string")) {
 		data.narration = saved && typeof (saved.data as RecordValue).narration === "string"
-			? (saved.data as RecordValue).narration : script.join(" ");
+			? (saved.data as RecordValue).narration : script.join("\n\n");
 	}
 	return { id, type, line: line(node), data: visibleData(data) as RecordValue };
 }
@@ -191,7 +191,7 @@ async function ordinaryBlock(node: Element, directory: string, file: string): Pr
 	const tag = node.tagName;
 	if ((tag === "form" || tag === "fieldset") && !elements(node, (child) => child.tagName === "input" && /^(radio|checkbox)$/i.test(attr(child, "type") ?? "")).length) return undefined;
 	const type = heading(tag) ? "heading" : ["p", "ul", "ol"].includes(tag) ? "text" : tag === "figure" || tag === "img" ? "image" : tag === "details" ? "accordion" : tag === "form" || tag === "fieldset" ? "assessment" : tag;
-	const data: RecordValue = { content: tag === "img" ? (attr(node, "alt") ?? "") : inner(node) };
+	const data: RecordValue = { content: tag === "img" ? (attr(node, "alt") ?? "") : tag === "p" ? `<p>${inner(node)}</p>` : inner(node) };
 	if (type === "video" || type === "audio") {
 		data.transcripts = await readCaptionTracks(node, directory, file);
 	}
@@ -215,6 +215,7 @@ async function readCaptionTracks(node: Element, directory: string, file: string)
 			const timing = rows.findIndex(row => row.includes("-->"));
 			return timing < 0 ? [] : rows.slice(timing + 1);
 		});
+		// Cues and their line wraps can divide one sentence; only authored punctuation ends it.
 		const prose = oneLine(stripTags(cues.join(" ").replace(/<\d{2}:\d{2}(?::\d{2})?\.\d{3}>/g, "")));
 		if (prose) tracks.push({ text: prose, origin: "caption-track", kind: node.tagName });
 	}
