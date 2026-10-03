@@ -3,14 +3,14 @@ import type { Course } from "./inspect.ts";
 import { buildPlaces, lessonTags, esc, locateBlocks, type Places, where, wheres } from "./places.ts";
 import { generated, generatedSummary, method, viewBlock } from "./modes.ts";
 
-export const PROMPT_VERSION = "terms/1";
+export const PROMPT_VERSION = "terms/2";
 
 export const KINDS = ["term", "reference", "premise"] as const;
 export type Kind = (typeof KINDS)[number];
 
 export interface Flag {
 	ref: string;
-	channel: "screen" | "narration";
+	channel: "screen" | "narration" | "transcript";
 	kind: Kind;
 	/** Exact text from the block, as shown in course.md. */
 	span: string;
@@ -40,9 +40,9 @@ Write \`answer.json\` in this folder, matching this shape exactly:
   "flags": [
     {
       "ref": "<ref>",
-      "channel": "screen | narration",
+      "channel": "screen | narration | transcript",
       "kind": "term | reference | premise",
-      "span": "<exact words copied from that block's Screen or Narration line>",
+      "span": "<exact words copied from that block's Screen, Narration or Transcript line>",
       "note": "<what the learner needs, in one sentence>",
       "explainedAt": "<ref where the course explains it, or null>"
     }
@@ -53,8 +53,8 @@ Write \`answer.json\` in this folder, matching this shape exactly:
 
 Rules:
 
-1. \`term\`: a word, name or acronym a newcomer may not know, which nothing on screen, in a tooltip or in narration has explained by this point. Flag its first unexplained use only. Everyday words and terms this block explains do not count.
-2. \`reference\`: a word such as "this", "these", "it" or "however" whose referent or contrast is unclear, far away, or only in the other channel.
+1. \`term\`: a word, name or acronym a newcomer may not know, which nothing on screen, in a tooltip, in narration or in a transcript has explained by this point. Flag its first unexplained use only. Everyday words and terms this block explains do not count.
+2. \`reference\`: a word such as "this", "these", "it" or "however" whose referent or contrast is unclear, far away, or only in another channel.
 3. \`premise\`: a statement that relies on a fact, step or claim the course has not given.
 4. \`span\`: copy the words exactly, keeping case and punctuation, and keep it short: the term, or the few words that carry the reference or claim.
 5. \`explainedAt\`: when the course explains the term later or elsewhere, give that ref; otherwise null.
@@ -75,7 +75,7 @@ export function parseTerms(json: string, course: Course): TermsAnswer {
 		const item = record(value, at);
 		const where = ref(item.ref, `${at}.ref`);
 		const channel: Flag["channel"] =
-			item.channel === "screen" || item.channel === "narration" ? item.channel : problem(`${at}.channel must be screen or narration`);
+			item.channel === "screen" || item.channel === "narration" || item.channel === "transcript" ? item.channel : problem(`${at}.channel must be screen, narration or transcript`);
 		const kind = typeof item.kind === "string" && (KINDS as readonly string[]).includes(item.kind) ? (item.kind as Kind) : problem(`${at}.kind must be one of ${KINDS.join(", ")}`);
 		const span = readSpan(answer, blocks.get(where)!, item.span, `${at}.span`, channel, where);
 		return {
@@ -114,7 +114,7 @@ export function termsView(course: Course, answer: TermsAnswer): TermsView {
 
 const KIND_LABEL: Record<Kind, string> = { term: "Unexplained term", reference: "Unclear reference", premise: "Unstated premise" };
 const KIND_HELP: Record<Kind, string> = {
-	term: "A word, name or acronym a newcomer may not know, used before anything on screen, in a tooltip or in narration explains it.",
+	term: "A word, name or acronym a newcomer may not know, used before anything on screen, in a tooltip, in narration or in a transcript explains it.",
 	reference: "A word such as this, it or however whose referent or contrast is unclear, far away, or only in the other channel.",
 	premise: "A statement that relies on a fact, step or claim the course has not given.",
 };
@@ -143,7 +143,7 @@ function flagTable(view: TermsView): string {
 	const rows = view.flags
 		.map(
 			(flag) =>
-				`<tr ${lessonTags(view.places, [flag.ref, ...(flag.explainedAt ? [flag.explainedAt] : [])])}><th scope="row"><mark>${esc(flag.span)}</mark></th><td>${kindName(flag.kind)}</td><td>${esc(flag.note)}</td><td class="where">${where(view.places, flag.ref)} <span class="channel">${flag.channel === "screen" ? "on screen" : "narration"}</span></td><td class="where">${flag.explainedAt ? where(view.places, flag.explainedAt) : "–"}</td></tr>`,
+				`<tr ${lessonTags(view.places, [flag.ref, ...(flag.explainedAt ? [flag.explainedAt] : [])])}><th scope="row"><mark>${esc(flag.span)}</mark></th><td>${kindName(flag.kind)}</td><td>${esc(flag.note)}</td><td class="where">${where(view.places, flag.ref)} <span class="channel">${flag.channel === "screen" ? "on screen" : flag.channel}</span></td><td class="where">${flag.explainedAt ? where(view.places, flag.explainedAt) : "–"}</td></tr>`,
 		)
 		.join("");
 	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Flagged terms and references"><table class="blocks terms"><caption class="sr">Flagged terms and references</caption><thead><tr><th scope="col">Words</th><th scope="col">Kind</th><th scope="col">What the learner needs</th><th scope="col">Where</th><th scope="col">Explained at</th></tr></thead><tbody>${rows}</tbody></table></div>`;

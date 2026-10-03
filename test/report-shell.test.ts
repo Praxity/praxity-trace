@@ -286,7 +286,7 @@ test("dark styles apply for the Dark choice, or System on a dark system, never f
 
 test("recommendations are tied to the report they were written from and link to its views", async () => {
 	const { parseRecommendations, reportHash, PROMPT_VERSION } = await import("../src/recommendations.ts");
-	assert.equal(PROMPT_VERSION, "recommendations/2");
+	assert.equal(PROMPT_VERSION, "recommendations/3");
 	assert.equal(reportHash(JSON.parse(JSON.stringify(report))), reportHash(report));
 	assert.equal(reportHash({ ...report, guides: { ...report.guides, pace: [] } }), reportHash(report), "editing a guide keeps answers valid");
 	assert.notEqual(reportHash({ ...report, speakingWpm: report.speakingWpm + 1 }), reportHash(report));

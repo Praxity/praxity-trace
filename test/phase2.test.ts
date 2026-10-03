@@ -13,14 +13,18 @@ import { conceptsView, renderConcepts } from "../src/concepts-view.ts";
 import { courseHash, parseCourse, type Course, type TypedText } from "../src/inspect.ts";
 import { absence, renderFeedback } from "../src/modes.ts";
 import { locateBlocks } from "../src/places.ts";
-import { parseTasks, renderTasks, tasksView, type TasksAnswer } from "../src/tasks.ts";
+import { parseTasks, PROMPT_VERSION as TASKS_VERSION, renderTasks, tasksView, type TasksAnswer } from "../src/tasks.ts";
 import { blockTexts, feedbackText } from "../src/text.ts";
 
 const fixture = (path: string) => readFileSync(new URL(`fixtures/${path}`, import.meta.url), "utf8");
 const load = (path: string) => parseCourse(fixture(path));
 const taskFixture = (name: string) => {
 	const course = load(`tasks/${name}/inspect.json`);
-	return { course, answer: parseTasks(fixture(`tasks/${name}/answer.json`), course) };
+	const frozen = fixture(`tasks/${name}/answer.json`);
+	assert.throws(() => parseTasks(frozen, course), /expected view/);
+	// Preserve historical coding as synthetic cases, revalidating every quote through the parser.
+	const json = JSON.stringify({ ...JSON.parse(frozen), promptVersion: `${TASKS_VERSION}-projection-2`, courseHash: courseHash(course), model: "synthetic-test" });
+	return { course, json, answer: parseTasks(json, course) };
 };
 const objective = (id: string, ref: string, text = "Explain the rule"): AlignmentAnswer["objectives"][number] => ({ id, ref, text, parent: null, fink: [] });
 const review = (checks: AlignmentAnswer["checks"], objectives: AlignmentAnswer["objectives"] = []): AlignmentAnswer => ({ model: "fixture-alignment", objectives, checks, overlaps: [], interpretation: [] });
@@ -149,13 +153,13 @@ test("partial absence claims point to coverage while complete inputs retain thei
 	assert.equal(absence(false, "None", "Instruction"), "None");
 });
 
-test("CLI derives task links using saved prompt versions and leaves them out without --tasks", () => {
-	const { course } = taskFixture("judgment");
+test("CLI derives task links using current synthetic answers and leaves them out without --tasks", () => {
+	const { course, json } = taskFixture("judgment");
 	const directory = mkdtempSync(join(tmpdir(), "trace-phase2-"));
 	const input = join(directory, "inspect.json"), alignment = join(directory, "alignment.json"), tasks = join(directory, "tasks.json");
 	writeFileSync(input, fixture("tasks/judgment/inspect.json"));
-	writeFileSync(tasks, fixture("tasks/judgment/answer.json"));
-	writeFileSync(alignment, JSON.stringify({ view: "alignment", promptVersion: "alignment/13-projection-2", courseHash: courseHash(course), ...review([knowledge("1.1.2"), knowledge("1.2.3", [{ ref: "1.2.2", channel: "screen" }], ["O1"])], [objective("O1", "1.2.2")]) }));
+	writeFileSync(tasks, json);
+	writeFileSync(alignment, JSON.stringify({ view: "alignment", promptVersion: "alignment/14-projection-2", courseHash: courseHash(course), ...review([knowledge("1.1.2"), knowledge("1.2.3", [{ ref: "1.2.2", channel: "screen" }], ["O1"])], [objective("O1", "1.2.2")]) }));
 	for (const withTasks of [false, true]) {
 		const output = join(directory, withTasks ? "with-tasks" : "without-tasks");
 		const run = spawnSync(process.execPath, ["src/cli.ts", "report", input, "--alignment", alignment, ...(withTasks ? ["--tasks", tasks] : []), "--out", output], { encoding: "utf8" });

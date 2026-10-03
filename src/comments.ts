@@ -30,12 +30,13 @@ export interface Comment {
 const positive = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 
 /**
- * A sentence id as the Language views print it: lesson.page, then s for on screen or n for
- * narration and the sentence's order, "3.9.s2". "L3.p9.s2" is the earlier form, still read so
- * comments saved before the change keep their sentence. Self-contained: the browser inlines it.
+ * A sentence id as the Language views print it: lesson.page, then s for on screen, n for
+ * narration or t for transcript and the sentence's order, "3.9.s2". "L3.p9.s2" is the earlier
+ * form, still read so comments saved before the change keep their sentence. Self-contained:
+ * the browser inlines it.
  */
 export function isSentenceId(value: unknown): value is string {
-	return typeof value === "string" && /^(?:[1-9]\d*\.[1-9]\d*\.[sn]|L[1-9]\d*\.p[1-9]\d*\.s)[1-9]\d*$/.test(value);
+	return typeof value === "string" && /^(?:[1-9]\d*\.[1-9]\d*\.[snt]|L[1-9]\d*\.p[1-9]\d*\.s)[1-9]\d*$/.test(value);
 }
 
 /**
@@ -271,7 +272,7 @@ export function commentsClient() {
     const location = element.closest<HTMLElement>('[data-page]') || row?.querySelector<HTMLElement>('[data-page]');
     const sentence = sentenceId(element.closest<HTMLElement>('li[id]')?.id) || sentenceId(element.closest('code')?.textContent) ||
       sentenceId(row?.querySelector('code')?.textContent);
-    const page = pageOf(location?.dataset.page) || (sentence ? pageOf(sentence.replace(/^(\d+)\.(\d+)\.[sn]\d+$/, '$1.$2')) : null);
+    const page = pageOf(location?.dataset.page) || (sentence ? pageOf(sentence.replace(/^(\d+)\.(\d+)\.[snt]\d+$/, '$1.$2')) : null);
     const lane = element.closest('g')?.querySelector<SVGElement>('text.lane');
     const rowLabel = rowText(row) || (lane && label(lane)) || null;
     const ownLabel = label(element) || rowLabel;

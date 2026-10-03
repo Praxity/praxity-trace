@@ -1,7 +1,7 @@
 import { COURSE_TEXT_GUIDE, type Interpretation, readAnswer, readInterpretation, writeBundle } from "./bundle.ts";
 import type { Course } from "./inspect.ts";
 
-export const PROMPT_VERSION = "concepts/3";
+export const PROMPT_VERSION = "concepts/4";
 
 export const ROLES = ["preview", "defined", "example", "mentioned", "activity", "checked", "recap"] as const;
 export type Role = (typeof ROLES)[number];
@@ -40,9 +40,9 @@ Rules:
 
 1. \`concepts\`: the ideas a learner must understand to meet the course's objectives or answer its checks, such as terms, principles, standards and named laws or plans. At most 30. Treat different wordings of one idea as one concept.
 2. \`prerequisites\`: ids of other concepts a learner must already understand for this one to make sense; use [] when there are none.
-3. \`occurrences\`: every block where the concept meaningfully appears, once per block, with the role that block plays for it:
+3. \`occurrences\`: every block where the concept meaningfully appears, once per block across screen, tooltip, narration and transcript evidence, with the role that block plays for it:
    - \`preview\`: names it ahead of teaching it on purpose, as in learning outcomes, an overview or a "coming up" page;
-   - \`defined\`: explains what the concept is, including in a glossary tooltip or narration;
+   - \`defined\`: explains what the concept is, including in a glossary tooltip, narration or transcript;
    - \`example\`: applies it to a case or scenario;
    - \`mentioned\`: uses it without explaining it;
    - \`activity\`: a reflection prompt or worksheet activity asks learners to apply or connect it;

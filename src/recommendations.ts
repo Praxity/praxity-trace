@@ -9,7 +9,7 @@ import { generated } from "./modes.ts";
 import { buildPlaces, esc, wheres } from "./places.ts";
 import type { Report } from "./report.ts";
 
-export const PROMPT_VERSION = "recommendations/2";
+export const PROMPT_VERSION = "recommendations/3";
 
 export interface Recommendation {
 	focus: string;

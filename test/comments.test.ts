@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { COMMENTS_SCRIPT, formatCommentsMarkdown, parseComments, quoteContext, sourceFromTitle, type CommentsFile } from "../src/comments.ts";
+import { COMMENTS_SCRIPT, formatCommentsMarkdown, isSentenceId, parseComments, quoteContext, sourceFromTitle, type CommentsFile } from "../src/comments.ts";
 
 const example: CommentsFile = {
 	schema: "praxity-trace-comments/0",
@@ -83,42 +83,72 @@ test("prepare --comments adds only that view's comments to the prompt", async ()
 	}
 });
 
-test("a comment can point at an on-screen or narration sentence by its id, and older saved ids still read", () => {
-	for (const sentence of ["3.9.s2", "3.9.n1", "L3.p9.s2"]) {
+test("a comment can point at an on-screen, narration or transcript sentence, and older saved ids still read", () => {
+	for (const sentence of ["3.9.s2", "3.9.n1", "3.9.t2", "L3.p9.s2"]) {
+		assert.equal(isSentenceId(sentence), true);
 		assert.equal(parseComments(changed((file) => { file.comments[0]!.target.sentence = sentence; })).comments[0]?.target.sentence, sentence);
 	}
-	for (const sentence of ["3.9", "3.9.x2", "L3 p9", "0.9.s2"]) {
+	for (const sentence of ["3.9", "3.9.x2", "L3 p9", "0.9.s2", "0.9.t2", "3.0.t2", "3.9.t0", "3.9.t02", "3.9.t-2", "3.9.t2.1", "L3.p9.t2"]) {
+		assert.equal(isSentenceId(sentence), false);
 		assert.throws(() => parseComments(changed((file) => { file.comments[0]!.target.sentence = sentence; })), /Invalid comment target/);
 	}
 });
 
-test("a sentence inside a table row keeps its own comment page and source", () => {
+test("sentences inside a table row keep their own comment page and source through export", () => {
 	const code = COMMENTS_SCRIPT.slice(COMMENTS_SCRIPT.indexOf("const anchorOf ="), COMMENTS_SCRIPT.indexOf("const quoteFor ="));
+	const helpers = COMMENTS_SCRIPT.slice(COMMENTS_SCRIPT.indexOf("const pageOf ="), COMMENTS_SCRIPT.indexOf("const rowText ="));
+	const { pageOf, sentenceId } = new Function("isSentenceId", `${helpers}\nreturn { pageOf, sentenceId };`)(isSentenceId);
 	const anchorOf = new Function("sectionOf", "rowText", "sentenceId", "pageOf", "label", "source", "meta", "headingOf", `${code}\nreturn anchorOf;`)(
-		() => ({ getAttribute: () => "sentences" }), () => null, (value: string) => value || null,
-		(value: string) => value ? { lesson: Number(value.split(".")[0]), page: Number(value.split(".")[1]) } : null,
+		() => ({ getAttribute: () => "sentences" }), () => null, sentenceId, pageOf,
 		() => null, (value: string) => value ? sourceFromTitle(value) : null, {}, () => "Sentence structure",
 	);
 	const pointer = (page: string, line: number) => ({ dataset: { page, tip: `Lesson, page ${page} · lesson.prax:${line}` }, getAttribute: () => null });
 	const first = pointer("1.1", 10), second = pointer("1.2", 20);
-	const sentence = { id: "1.2.s1", querySelector: (selector: string) => selector === "[data-page]" ? second : null };
 	const tableRow = { querySelector: (selector: string) => selector === "[data-page]" ? first : null };
-	const quote = {
-		closest: (selector: string) => selector.split(",").includes("li[id]") ? sentence : selector === "tr" ? tableRow : null,
-		getAttribute: () => null, dataset: {},
+	for (const id of ["1.2.s1", "1.2.n1", "1.2.t1"]) {
+		const sentence = { id, querySelector: (selector: string) => selector === "[data-page]" ? second : null };
+		const quote = {
+			closest: (selector: string) => selector.split(",").includes("li[id]") ? sentence : selector === "tr" ? tableRow : null,
+			getAttribute: () => null, dataset: {},
+		};
+		const comment = anchorOf(quote, null);
+		assert.equal(comment.view, "sentences");
+		assert.equal(comment.heading, "Sentence structure");
+		assert.equal(comment.target.sentence, id);
+		assert.deepEqual(comment.target.page, { lesson: 1, page: 2 });
+		assert.deepEqual(comment.source, { file: "lesson.prax", line: 20 });
+		const exported = structuredClone(example);
+		exported.comments[0] = { ...exported.comments[0]!, ...comment };
+		assert.deepEqual(parseComments(JSON.stringify(exported)).comments[0], exported.comments[0]);
+	}
+});
+
+test("the browser derives a transcript comment page from its sentence id without a page mark", () => {
+	const code = COMMENTS_SCRIPT.slice(COMMENTS_SCRIPT.indexOf("const anchorOf ="), COMMENTS_SCRIPT.indexOf("const quoteFor ="));
+	const helpers = COMMENTS_SCRIPT.slice(COMMENTS_SCRIPT.indexOf("const pageOf ="), COMMENTS_SCRIPT.indexOf("const rowText ="));
+	const { pageOf, sentenceId } = new Function("isSentenceId", `${helpers}\nreturn { pageOf, sentenceId };`)(isSentenceId);
+	const anchorOf = new Function("sectionOf", "rowText", "sentenceId", "pageOf", "label", "source", "meta", "headingOf", `${code}\nreturn anchorOf;`)(
+		() => ({ getAttribute: () => "sentences" }), () => null, sentenceId, pageOf,
+		() => null, sourceFromTitle, { lessons: [{ number: 3, file: "lesson-03.prax" }] }, () => "Sentence structure",
+	);
+	const sentence = { id: "3.9.t2", querySelector: () => null };
+	const element = {
+		closest: (selector: string) => selector.split(",").includes("li[id]") ? sentence : null,
+		getAttribute: () => "Transcript · lesson-03.prax:118", dataset: {},
 	};
-	const comment = anchorOf(quote, null);
-	assert.equal(comment.view, "sentences");
-	assert.equal(comment.heading, "Sentence structure");
-	assert.equal(comment.target.sentence, "1.2.s1");
-	assert.deepEqual(comment.target.page, { lesson: 1, page: 2 });
-	assert.deepEqual(comment.source, { file: "lesson.prax", line: 20 });
+	const comment = anchorOf(element, null);
+	assert.equal(comment.target.sentence, "3.9.t2");
+	assert.deepEqual(comment.target.page, { lesson: 3, page: 9 });
+	assert.deepEqual(comment.source, { file: "lesson-03.prax", line: 118 });
 });
 
 test("the browser reads stored comments with the same validator the command line uses", () => {
 	assert.equal(COMMENTS_SCRIPT.match(/const commentsFile = /g)?.length, 1);
 	assert.doesNotMatch(COMMENTS_SCRIPT, /const valid = /);
 	const inlined = new Function(`${COMMENTS_SCRIPT.slice(0, COMMENTS_SCRIPT.lastIndexOf("\n("))}\nreturn commentsFile;`)() as (value: unknown) => CommentsFile;
-	assert.deepEqual(inlined(JSON.parse(changed((file) => { file.comments[0]!.target.sentence = "3.9.n1"; }))).comments[0]?.target.sentence, "3.9.n1");
+	for (const sentence of ["3.9.s2", "3.9.n1", "3.9.t2", "L3.p9.s2"]) {
+		assert.equal(inlined(JSON.parse(changed((file) => { file.comments[0]!.target.sentence = sentence; }))).comments[0]?.target.sentence, sentence);
+	}
+	assert.throws(() => inlined(JSON.parse(changed((file) => { file.comments[0]!.target.sentence = "3.9.t0"; }))), /Invalid comment target/);
 	assert.throws(() => inlined(JSON.parse(changed((file) => { file.comments[0]!.target.page!.page = 0; }))));
 });

@@ -8,14 +8,14 @@ import { buildPlaces, esc, indexCourse, locateBlocks, pageKey, type Places } fro
 import { feedbackText, type Feedback } from "./text.ts";
 
 export const TAXONOMY_VERSION = "conole-task-families/1";
-export const PROMPT_VERSION = "tasks/2";
+export const PROMPT_VERSION = "tasks/3";
 export const TASK_TYPES = ["assimilative", "information handling", "communicative", "productive", "experiential", "adaptive"] as const;
 export type TaskType = (typeof TASK_TYPES)[number];
 export type AssessmentPurpose = "none" | "diagnostic" | "practice" | "summative" | "unknown";
 
 export interface TaskAnnotation {
 	ref: string;
-	evidence: Array<{ ref: string; channel: "screen" | "narration"; quote: string }>;
+	evidence: Array<{ ref: string; channel: "screen" | "narration" | "transcript"; quote: string }>;
 	taskTypes: TaskType[] | ["unknown"];
 	explanation: string;
 	work: "inside" | "outside";
@@ -44,7 +44,7 @@ Write answer.json in this folder:
   "model": "<your model name>",
   "annotations": [{
     "ref": "<ref of the task instruction or content to read>",
-    "evidence": [{ "ref": "<ref>", "channel": "screen", "quote": "<exact words from Screen or Narration>" }],
+    "evidence": [{ "ref": "<ref>", "channel": "screen", "quote": "<exact words from Screen, Narration or Transcript>" }],
     "taskTypes": ["assimilative"],
     "explanation": "<one sentence explaining the requested work>",
     "work": "inside",
@@ -73,7 +73,7 @@ export function parseTasks(json: string, course: Course): TasksAnswer {
 			const path = `${at}.evidence[${j}]`;
 			const source = record(value, path);
 			const cited = ref(source.ref, `${path}.ref`);
-			const channel: "screen" | "narration" = source.channel === "screen" || source.channel === "narration" ? source.channel : problem(`${path}.channel must be screen or narration`);
+			const channel: "screen" | "narration" | "transcript" = source.channel === "screen" || source.channel === "narration" || source.channel === "transcript" ? source.channel : problem(`${path}.channel must be screen, narration or transcript`);
 			return { ref: cited, channel, quote: readSpan(answer, blocks.get(cited)!, source.quote, `${path}.quote`, channel, cited) };
 		});
 		if (!evidence.some((item) => item.ref === primary)) problem(`${at}.evidence must quote ${primary}`);

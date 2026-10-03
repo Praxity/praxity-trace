@@ -12,17 +12,27 @@ With a portable artifact, replace `praxity-trace` in the commands below with `no
 1. Choose an input. For a Studio project, run `praxity inspect <course-dir> --schema 1 > course.json` and use `course.json`. For a static HTML export or an unzipped SCORM package, use its directory. `<course-dir>` is the folder that contains `course.yaml`. The `praxity` launcher comes from Studio or Rubato's tools directory.
 2. For each model view you need (`alignment`, `tasks`, `concepts`, `terms`, `visuals`, `distinctions`), run `praxity-trace prepare <view> <input> --out <bundle>`. Read `<bundle>/prompt.md` and `<bundle>/course.md`, then write `<bundle>/answer.json` exactly as the prompt specifies. Cite only refs that appear in `course.md`. For `tasks`, follow the [task-coding guide](../docs/task-coding-guide.md): classify requested work, quote its instruction and record assessment purpose separately.
 3. Run `praxity-trace report <input> --out <dir>`, adding `--alignment`, `--tasks`, `--concepts`, `--terms`, `--visuals` and `--distinctions` with each prepared `answer.json`. When `report` rejects an answer, it names the field to fix. A course-hash mismatch means the course changed, so prepare a new bundle.
-4. For the Recommendations section, run `praxity-trace prepare recommendations <input> --report <dir>/report.json --out <bundle>`, answer it the same way, then run step 3 again with `--recommendations <bundle>/answer.json` added. Recommendations use `recommendations/2`. A report-hash mismatch means the report changed since you prepared; prepare again.
+4. For the Recommendations section, run `praxity-trace prepare recommendations <input> --report <dir>/report.json --out <bundle>`, answer it the same way, then run step 3 again with `--recommendations <bundle>/answer.json` added. Recommendations use `recommendations/3`. A report-hash mismatch means the report changed since you prepared; prepare again.
 5. Serve `<dir>` through a local preview server and open `report.html` for the designer. `report.json` holds the same data. Every mark carries its lesson file and line or ref, so you can open the block the designer asks about.
 6. After the course changes, repeat from step 1.
 
 Schema 1 requires a Studio build that supports `--schema 1`. Trace still accepts schema 0, which older builds produce with `praxity inspect <course-dir>`. Both `prepare` and `report` accept `-` to read inspect JSON from stdin. Re-inspect after manifest or sidecar edits, even when lesson files have not changed.
 
-Read the input coverage notice before interpreting schema 1 results. In schema 1 the text projection is partial, correctness and scoring are unavailable, and narration times are estimates. A missing field is not evidence that a course lacks that feature. Studio refs are snapshot addresses, so find content with Trace source pointers and the original lesson line ranges.
+Read the input coverage notice before interpreting schema 1 results. The text projection is partial. Earlier schema 1 output has no correctness or scoring; projection version 2 supplies authored correctness and scoring separately. Narration times remain script estimates; stored sidecar endpoints do not establish full-file duration. A missing field is not evidence that a course lacks that feature. Studio refs are snapshot addresses, so find content with Trace source pointers and the original lesson line ranges.
 
 Structure contains Anatomy and Pace. Objective groups are part of the Course trace view, which view links call `trace`. Its Table mode lists all members, statement locations and what they build toward. The HTML and `report.json` no longer include page similarity.
 
 Before interpreting a view for the designer, read its entry in `report.json` under `guides`: the patterns worth noticing and what each could mean. Offer those readings as possibilities; a pattern that looks like a gap may be the course's intent.
+
+## Transcript evidence
+
+Read Transcript lines as supplied media prose, including descriptions with no speech. Inspect projection 2 supplies authored `media.transcript`; its caption-track contents remain unavailable. Schema 0 and embedded Studio HTML may supply authored `data.transcript`. HTML also reads local readable VTT caption and subtitle tracks. Transcripts add no on-screen words, narration time or playback time.
+
+In `report.json`, `language.lessons[].channels.transcript` holds transcript sentence and word summaries. English vocabulary counts also include `language.vocabulary.lessons[].transcript`. These optional fields are absent only when the course has no nonblank transcript text. Transcript sentence records use `channel: "transcript"`, ids such as `3.9.t2`, and the owning media block ref; longest, flagged and rare-word lists can include them.
+
+Terms flags, Tasks evidence and Visuals opportunities accept `screen`, `narration` or `transcript`; their quotes must occur in the cited channel. Alignment support also accepts `tooltip` and preserves transcript instruction links. `availability.checks[].available` and `availability.checks[].instructionLinks[].available` can be `transcript`, labelled "In a transcript only" without orange. Concepts keep one occurrence and role per block across channels.
+
+Prepare fresh answers after this contract change: old prompt versions are rejected, and schema 1 freshness uses `trace-inspect/3`. Copy the current `promptVersion` and `courseHash` from the bundle manifest, including its `-projection-2` suffix when present.
 
 ## Designer comments
 

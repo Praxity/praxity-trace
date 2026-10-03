@@ -94,20 +94,20 @@ test("media status, recorded endpoints and unresolved sidecar source reach the r
 	const bundle = join(dir, "alignment");
 	const prepared = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "alignment", resolve("test/fixtures/smoke.projection2.inspect.json"), "--out", bundle], { encoding: "utf8" });
 	assert.equal(prepared.status, 0, prepared.stderr);
-	assert.equal(JSON.parse(readFileSync(join(bundle, "manifest.json"), "utf8")).promptVersion, "alignment/13-projection-2");
-	assert.match(readFileSync(join(bundle, "prompt.md"), "utf8"), /"promptVersion": "alignment\/13-projection-2"/);
+	assert.equal(JSON.parse(readFileSync(join(bundle, "manifest.json"), "utf8")).promptVersion, "alignment/14-projection-2");
+	assert.match(readFileSync(join(bundle, "prompt.md"), "utf8"), /"promptVersion": "alignment\/14-projection-2"/);
 });
 
 test("producer revisions reject answers after media, lesson and sidecar changes", () => {
-	const base = smoke(), answer = JSON.stringify({ view: "concepts", promptVersion: "concepts/3-projection-2", courseHash: courseHash(base) });
-	assert.doesNotThrow(() => readAnswer(answer, base, "concepts", "concepts/3"));
+	const base = smoke(), answer = JSON.stringify({ view: "concepts", promptVersion: "concepts/4-projection-2", courseHash: courseHash(base) });
+	assert.doesNotThrow(() => readAnswer(answer, base, "concepts", "concepts/4"));
 	const stable = smoke();
 	assert.equal(courseHash(base), courseHash(stable));
 	assert.deepEqual(locateBlocks(base).map(item => item.ref), locateBlocks(stable).map(item => item.ref));
 	for (const name of ["smoke.projection2.media", "smoke.projection2.lesson", "smoke.projection2.sidecar"]) {
 		const changed = parseCourse(fixture(name));
 		assert.notEqual(courseHash(changed), courseHash(base), name);
-		assert.throws(() => readAnswer(answer, changed, "concepts", "concepts/3"), /different course revision/);
+		assert.throws(() => readAnswer(answer, changed, "concepts", "concepts/4"), /different course revision/);
 	}
 	assert.equal(parseCourse(fixture("smoke.projection2.media")).lessons[0]!.sha256, base.lessons[0]!.sha256);
 	assert.equal(parseCourse(fixture("smoke.projection2.sidecar")).lessons[0]!.sha256, base.lessons[0]!.sha256);

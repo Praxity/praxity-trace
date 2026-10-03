@@ -3,7 +3,7 @@ import type { Block, TypedText, TypedNarration, FormattedText } from "./inspect.
 
 /**
  * The course's text, read one way for every view: on-screen fields with their HTML, glossary
- * tooltips, narration scripts with their audio length, page previews, and a block's text as the
+ * tooltips, narration scripts with their audio length, supplied transcripts, page previews, and a block's text as the
  * model reviewers see it in course.md. Views measure from these; none walks block data itself.
  */
 
@@ -80,7 +80,7 @@ export function visibleStrings(value: unknown, key = ""): string[] {
 	if (Array.isArray(value)) return value.flatMap((item) => visibleStrings(item, key));
 	if (typeof value === "object" && value !== null) {
 		return Object.entries(value).flatMap(([childKey, child]) =>
-			childKey.startsWith("narration") ? [] : visibleStrings(child, childKey),
+			childKey.startsWith("narration") || ["transcript", "transcripts"].includes(childKey) ? [] : visibleStrings(child, childKey),
 		);
 	}
 	return [];
@@ -136,7 +136,7 @@ export function tooltips(value: unknown): Array<{ term: string; text: string }> 
 	}
 	if (Array.isArray(value)) return value.flatMap(tooltips);
 	if (typeof value === "object" && value !== null) {
-		return Object.entries(value).flatMap(([key, child]) => (key.startsWith("narration") ? [] : tooltips(child)));
+		return Object.entries(value).flatMap(([key, child]) => (key.startsWith("narration") || ["transcript", "transcripts"].includes(key) ? [] : tooltips(child)));
 	}
 	return [];
 }
@@ -177,7 +177,7 @@ export function previewLines(blocks: Array<{ type: string; data: Record<string, 
 			if ((key === "rows" || key === "headers") && value.every((cell) => typeof cell === "string")) add("text", value.map(value => clean(value)).join(" · "));
 			else for (const item of value) walk(item, key, heading, option || key === "options");
 		} else if (typeof value === "object" && value !== null) {
-			for (const [childKey, child] of Object.entries(value)) if (!childKey.startsWith("narration") && !PREVIEW_SKIP_KEYS.has(childKey)) walk(child, childKey, heading, option);
+			for (const [childKey, child] of Object.entries(value)) if (!childKey.startsWith("narration") && !["transcript", "transcripts"].includes(childKey) && !PREVIEW_SKIP_KEYS.has(childKey)) walk(child, childKey, heading, option);
 		}
 	};
 	for (const block of blocks) {
@@ -247,6 +247,27 @@ export const narrationText = (item: Narration) => item.resolved ? item.script : 
 export const oneLine = (text: string) => text.replace(/\s+/g, " ").trim();
 export const formattedText = (value: FormattedText) => oneLine(stripTags(typedHtml({ ...value, ref: "", role: "body", location: null })));
 
+export interface Transcript {
+	text: string;
+	origin: "authored" | "caption-track";
+	/** The owning media's kind, such as audio or video. */
+	kind: string;
+}
+
+/** Supplied transcript fields with markup retained, for the same code exclusions as screen prose. */
+export function transcriptStrings(block: Block): Transcript[] {
+	const authored = (block.media ?? []).flatMap(media => media.transcript ? [{ text: typedHtml({ ...media.transcript, ref: "", role: "body", location: null }), origin: "authored" as const, kind: media.kind }] : []);
+	// Schema 0 and embedded Studio HTML retain the authored media field in opaque block data.
+	if (!block.media && typeof block.data.transcript === "string") authored.push({ text: clean(block.data.transcript), origin: "authored", kind: block.type });
+	const tracks = (block.data.transcripts as Transcript[] | undefined) ?? [];
+	return [...authored, ...tracks.map(item => ({ ...item, text: escapeText(item.text) }))];
+}
+
+/** Supplied media prose, anchored to its block; it establishes no speech or playback duration. */
+export function transcripts(block: Block): Transcript[] {
+	return transcriptStrings(block).map(item => ({ ...item, text: oneLine(stripTags(item.text)) })).filter(item => item.text);
+}
+
 export interface Feedback {
 	status: "present" | "empty" | "not-supplied";
 	/** A typed text ref or a schema 0 field path within the check. */
@@ -297,12 +318,13 @@ function checkText(block: Block): string {
 
 
 /** A block's text exactly as \`course.md\` shows it, so answers can be checked against it. */
-export function blockTexts(block: Block): { screen: string; tooltips: Array<{ term: string; text: string }>; narration: string[] } {
+export function blockTexts(block: Block): { screen: string; tooltips: Array<{ term: string; text: string }>; narration: string[]; transcript: string[] } {
 	return {
 		// Code is left out of prose measures, but a reviewer needs it: a question can ask what the code does.
 		screen: typedTexts(block.data) ? oneLine(visibleText(block.data).join(" ")) : block.type === "assessment" ? checkText(block) : block.type === "code" && typeof block.data.code === "string" ? oneLine(block.data.code) : oneLine(visibleText(block.data).join(" ")),
 		tooltips: tooltips(block.data).map((tip) => ({ term: oneLine(tip.term), text: oneLine(tip.text) })),
 		narration: narrations(block.data).map((item) => oneLine(narrationText(item))),
+		transcript: transcripts(block).map(item => item.text),
 	};
 }
 

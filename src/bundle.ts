@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { blockTexts, formattedText, oneLine, visibleText } from "./text.ts";
+import { blockTexts, formattedText, oneLine, transcripts, visibleText } from "./text.ts";
 import { join } from "node:path";
 
 import { indexCourse, locateBlocks } from "./places.ts";
@@ -8,7 +8,7 @@ import { type Block, type Course, courseHash, typedLimits, type TypedText, type 
 
 const STRUCTURAL = new Set(["divider", "blockBreak", "pageBreak", "variable", "logic"]);
 
-/** The course as the reviewer sees it: every block's screen text and narration, by ref. */
+/** The course as the reviewer sees it: every block's screen text, narration and transcripts, by ref. */
 export function courseText(course: Course): string {
 	const index = indexCourse(course);
 	const out: string[] = [`# ${course.course.title}`];
@@ -36,7 +36,6 @@ export function courseText(course: Course): string {
 			out.push(`Media: ${media.kind}; source ${JSON.stringify(media.source)}.`);
 			if (media.alt !== null) out.push(`Media alternative (not screen prose): ${media.alt}`);
 			if (media.description) out.push(`Media description (not screen prose): ${formattedText(media.description)}`);
-			if (media.transcript) out.push(`Authored transcript (not measured speech): ${formattedText(media.transcript)}`);
 			if (media.captionTracks.length) out.push(`Caption tracks (contents unavailable): ${JSON.stringify(media.captionTracks)}`);
 		}
 		for (const feedback of new Set(((item.block.data.typedTexts as TypedText[] | undefined) ?? []).filter(text => text.role === "feedback").map(text => oneLine(visibleText({ typedTexts: [{ ...text, role: "body" }] }).join(" "))))) out.push(`Feedback: ${feedback}`);
@@ -44,6 +43,7 @@ export function courseText(course: Course): string {
 		if (texts.screen) out.push(`Screen: ${texts.screen}`);
 		for (const tip of texts.tooltips) out.push(`Tooltip on "${tip.term}": ${tip.text}`);
 		for (const narration of texts.narration) out.push(`Narration: ${narration}`);
+		for (const transcript of transcripts(item.block)) out.push(`Transcript (${transcript.origin === "authored" ? "authored" : "caption track"}, ${transcript.kind}): ${transcript.text}`);
 	}
 	if (course.projectionVersion === 2) for (const [l, lesson] of course.lessons.entries()) for (const narration of lesson.unlinkedNarration ?? []) out.push("", `Unresolved narration in L${l + 1} (not linked or confirmed spoken): ${JSON.stringify(narration)}`);
 	return `${out.join("\n")}\n`;
@@ -52,7 +52,7 @@ export function courseText(course: Course): string {
 const bundleVersion = (course: Course, version: string) => course.projectionVersion === 2 ? `${version}-projection-2` : version;
 
 /** How every bundle prompt describes \`course.md\`. */
-export const COURSE_TEXT_GUIDE = `Read \`course.md\`. Every block is labelled with a ref such as \`[3.9.2]\`: lesson, page, block. "Screen:" is text the learner sees; "Tooltip:" is shown only when the learner hovers or focuses the term; "Narration:" is audio only.`;
+export const COURSE_TEXT_GUIDE = `Read \`course.md\`. Every block is labelled with a ref such as \`[3.9.2]\`: lesson, page, block. "Screen:" is text the learner sees; "Tooltip:" is shown only when the learner hovers or focuses the term; "Narration:" is the course voice-over script. "Transcript (authored, video):" and "Transcript (caption track, video):" are supplied media prose, with origin and media kind stated. Transcripts are a separate channel, not confirmed speech; they add no narration or playback time. Cite their owning block with channel "transcript" where the answer records a channel.`;
 
 export async function writeBundle(
 	course: Course,
@@ -106,12 +106,12 @@ export function readSpan(
 	block: Block,
 	value: unknown,
 	at: string,
-	channel: "screen" | "narration",
+	channel: "screen" | "narration" | "transcript",
 	ref: string,
 ): string {
 	const span = oneLine(answer.text(value, at));
 	const texts = blockTexts(block);
-	const source = channel === "screen" ? [texts.screen, ...texts.tooltips.map((tip) => tip.text)] : texts.narration;
+	const source = channel === "screen" ? [texts.screen, ...texts.tooltips.map((tip) => tip.text)] : texts[channel];
 	if (!span || !source.some((line) => oneLine(line).includes(span))) {
 		answer.problem(`${at} "${span}" is not in the ${channel} text of ${ref}`);
 	}

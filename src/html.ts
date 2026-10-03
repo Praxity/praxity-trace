@@ -3,6 +3,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { basename, dirname, extname, join, posix, resolve, sep } from "node:path";
 import { parse, parseFragment, serialize, type DefaultTreeAdapterTypes } from "parse5";
 import { type Block, type Course, type Lesson, type Page, withPageNarration } from "./inspect.ts";
+import { oneLine, stripTags, transcripts, type Transcript } from "./text.ts";
 
 type Node = DefaultTreeAdapterTypes.Node;
 type Element = DefaultTreeAdapterTypes.Element;
@@ -192,17 +193,59 @@ async function ordinaryBlock(node: Element, directory: string, file: string): Pr
 	const type = heading(tag) ? "heading" : ["p", "ul", "ol"].includes(tag) ? "text" : tag === "figure" || tag === "img" ? "image" : tag === "details" ? "accordion" : tag === "form" || tag === "fieldset" ? "assessment" : tag;
 	const data: RecordValue = { content: tag === "img" ? (attr(node, "alt") ?? "") : inner(node) };
 	if (type === "video" || type === "audio") {
-		const track = first(node, (child) => child.tagName === "track" && /^(captions|subtitles)$/i.test(attr(child, "kind") ?? ""));
-		const src = track && attr(track, "src");
-		const path = src && safeFile(directory, join(dirname(file), decodeURIComponent(src.split(/[?#]/)[0] ?? "")));
-		if (path) {
-			try {
-				const vtt = await readFile(path, "utf8");
-				data.narration = vtt.split(/\r?\n/).filter((row) => row.trim() && !/^(WEBVTT|\d+|.*-->.*|NOTE\b)/.test(row.trim())).join(" ");
-			} catch { /* A missing caption file is not a readable transcript. */ }
-		}
+		data.transcripts = await readCaptionTracks(node, directory, file);
 	}
 	return { id: attr(node, "id") ?? `block-${node.sourceCodeLocation?.startOffset ?? 0}`, type, line: line(node), data };
+}
+
+/** Read cue prose only. Cue timestamps describe captions, never full media playback length. */
+async function readCaptionTracks(node: Element, directory: string, file: string): Promise<Transcript[]> {
+	const tracks: Transcript[] = [];
+	for (const track of elements(node, child => child.tagName === "track" && /^(captions|subtitles)$/i.test(attr(child, "kind") ?? ""))) {
+		const src = attr(track, "src");
+		if (!src || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(src)) continue;
+		const path = safeFile(directory, join(dirname(file), decodeURIComponent(src.split(/[?#]/)[0] ?? "")));
+		if (!path) continue;
+		let vtt: string;
+		try { vtt = await readFile(path, "utf8"); }
+		catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") continue; throw error; }
+		const cues = vtt.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").split(/\n\s*\n/).flatMap(chunk => {
+			const rows = chunk.split("\n");
+			if (/^(?:WEBVTT|NOTE|STYLE|REGION)\b/.test(rows[0]?.trim() ?? "")) return [];
+			const timing = rows.findIndex(row => row.includes("-->"));
+			return timing < 0 ? [] : rows.slice(timing + 1);
+		});
+		const prose = oneLine(stripTags(cues.join(" ").replace(/<\d{2}:\d{2}(?::\d{2})?\.\d{3}>/g, "")));
+		if (prose) tracks.push({ text: prose, origin: "caption-track", kind: node.tagName });
+	}
+	return tracks;
+}
+
+/** Caption evidence includes its owning block position; absent prose preserves the HTML byte hash. */
+const captionFingerprint = (blocks: Iterable<Block>) => [...blocks].flatMap((block, index) => {
+	const captions = transcripts(block).filter(item => item.origin === "caption-track");
+	return captions.length ? [JSON.stringify({ block: index, captions })] : [];
+}).join("\n");
+
+/** Studio markup nests media under its authored block; retain that block as the source pointer. */
+async function supplyCaptionTracks(doc: Node, pages: Page[], directory: string, file: string): Promise<string> {
+	const blocks = new Map<string, Block>();
+	const collect = (items: Block[]) => {
+		for (const block of items) {
+			blocks.set(block.id, block);
+			if (block.type === "columns" && Array.isArray(block.data.items)) for (const item of block.data.items) if (record(item) && Array.isArray(item.children)) collect(item.children as Block[]);
+		}
+	};
+	pages.forEach(page => collect(page.blocks));
+	for (const node of elements(doc, node => ["audio", "video"].includes(node.tagName))) {
+		let owner: Node | null = node;
+		while (owner && !(isElement(owner) && attr(owner, "data-block-type"))) owner = "parentNode" in owner ? owner.parentNode : null;
+		if (!owner || !isElement(owner)) continue;
+		const block = blocks.get(attr(owner, "data-block-id") ?? `block-${owner.sourceCodeLocation?.startOffset ?? 0}`);
+		if (!block) continue;
+		block.data.transcripts = [...(block.data.transcripts as Transcript[] | undefined ?? []), ...await readCaptionTracks(node, directory, file)];
+	}
+	return captionFingerprint(blocks.values());
 }
 async function ordinaryPages(doc: Node, directory: string, file: string): Promise<Page[]> {
 	const root = first(doc, (node) => node.tagName === "main") ?? first(doc, (node) => node.tagName === "body");
@@ -261,7 +304,7 @@ function ordered(files: string[], parsed: Map<string, { doc: Node; config?: Reco
 	return [...new Set([...(index ? [index] : []), ...links, ...files])];
 }
 
-function pagedCourse(files: Array<[string, { doc: Node; config?: RecordValue; bytes: Buffer }]>): Course {
+async function pagedCourse(files: Array<[string, { doc: Node; config?: RecordValue; bytes: Buffer }]>, directory: string): Promise<Course> {
 	const lessons = new Map<string, { files: string[]; hash: ReturnType<typeof createHash>; title: string; pages: Page[] }>();
 	const position = (config?: RecordValue) => Number(config?.currentPage ?? Infinity);
 	for (const [file, { doc, config, bytes }] of [...files].sort((a, b) => position(a[1].config) - position(b[1].config))) {
@@ -273,7 +316,9 @@ function pagedCourse(files: Array<[string, { doc: Node; config?: RecordValue; by
 		lesson.hash.update(bytes);
 		const entry = Array.isArray(config.pages) ? config.pages.filter(record).find((page) => page.id === config.pageId) : undefined;
 		const data = record(entry?.data) && typeof entry.data.narration === "string" ? { narration: entry.data.narration } : {};
-		lesson.pages.push(withPageNarration({ id: config.pageId as string, number: lesson.pages.length + 1, title: typeof config.pageTitle === "string" ? config.pageTitle : file, data, blocks: topBlocks(root, authoredBlocks(config), new Map()) }));
+		const page = withPageNarration({ id: config.pageId as string, number: lesson.pages.length + 1, title: typeof config.pageTitle === "string" ? config.pageTitle : file, data, blocks: topBlocks(root, authoredBlocks(config), new Map()) });
+		lesson.hash.update(await supplyCaptionTracks(doc, [page], directory, file));
+		lesson.pages.push(page);
 		lessons.set(lessonId, lesson);
 	}
 	const config = files[0]?.[1].config;
@@ -306,7 +351,7 @@ export async function readHtmlCourse(directory: string): Promise<Course> {
 	});
 	// Studio's page layout writes one file per page; its config names the page's lesson and position.
 	const paged = [...parsed].filter(([, item]) => typeof item.config?.pageId === "string" && typeof item.config.lessonId === "string" && !first(item.doc, (node) => node.tagName === "article" && hasClass(node, "deck-slide")));
-	if (paged.length && !manifest) return pagedCourse(paged);
+	if (paged.length && !manifest) return pagedCourse(paged, directory);
 	const lessons: Lesson[] = [];
 	let courseTitle = "";
 	let locale = "";
@@ -316,12 +361,13 @@ export async function readHtmlCourse(directory: string): Promise<Course> {
 		const { doc, config, bytes } = item;
 		const studio = !!first(doc, (node) => node.tagName === "article" && hasClass(node, "deck-slide")) || !!first(doc, (node) => attr(node, "data-block-type") !== undefined);
 		const pages = studio ? studioPages(doc, config) : await ordinaryPages(doc, directory, file);
+		const captions = studio ? await supplyCaptionTracks(doc, pages, directory, file) : captionFingerprint(pages.flatMap(page => page.blocks));
 		if (!pages.some((page) => page.blocks.length)) continue;
 		const heading = typeof config?.lessonTitle === "string" ? config.lessonTitle : title(doc, basename(file, extname(file)));
 		courseTitle ||= typeof config?.courseTitle === "string" ? config.courseTitle : "";
 		const html = first(doc, (node) => node.tagName === "html");
 		locale ||= (html && attr(html, "lang")) || (typeof config?.sourceLocale === "string" ? config.sourceLocale : "");
-		lessons.push({ file, title: heading, sha256: createHash("sha256").update(bytes).digest("hex"), pages });
+		lessons.push({ file, title: heading, sha256: createHash("sha256").update(bytes).update(captions).digest("hex"), pages });
 	}
 	if (!lessons.length) throw new Error("No readable course content found in HTML directory. Scripted players that render lessons with JavaScript (such as Rise, Storyline, or Captivate) are unsupported.");
 	return { schema: "praxity-html/0", studioVersion: "", course: { title: courseTitle || lessons[0]?.title || "HTML course", locale: locale || "und" }, lessons };

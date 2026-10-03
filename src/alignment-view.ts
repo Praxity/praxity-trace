@@ -225,6 +225,7 @@ const CHANNEL_LABEL: Record<Channel, string> = {
 	screen: "on screen",
 	tooltip: "in a glossary tooltip",
 	narration: "in narration only",
+	transcript: "in a transcript only",
 };
 
 const PLOT = 640;

@@ -10,7 +10,7 @@ test("narration is read once for every view: page and block scripts, audio lengt
 		{ script: "Step one, then step two.", seconds: null },
 	]);
 	assert.deepEqual(blockTexts({ id: "b", type: "text", line: 1, data: { content: "<p>Shown</p>", narration: "Said\n aloud" } }), {
-		screen: "Shown", tooltips: [], narration: ["Said aloud"],
+		screen: "Shown", tooltips: [], narration: ["Said aloud"], transcript: [],
 	});
 });
 
