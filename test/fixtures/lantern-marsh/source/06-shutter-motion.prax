@@ -1,0 +1,50 @@
+---
+title: Watch a shutter move
+lang: en
+---
+
+## Describe the motion
+
+By the end of this lesson, you can distinguish a shutter's movement from its final state.
+
+The short animation shows an amber panel moving across a white lantern disc. It is an original synthetic demonstration with no speech. The panel stops halfway across the disc. A keeper records the final state after the movement ends. A passing glimpse of a moving shutter cannot tell the next keeper which state will remain.
+
+A [settled state]{The shutter position after the keeper has finished moving it.} is the state used for the ledger entry.
+
+--- Watch or read
+
+## Watch or read
+
+/assets/shutter-motion.webm
+title: Amber shutter demonstration
+caption: The amber panel moves right and stops halfway across the lantern disc.
+captions: /assets/shutter-motion.en.vtt
+transcript: An amber panel moves from the left edge towards a white lantern disc. It stops halfway across the disc. The final state is amber. No speech is present.
+
+Use the animation, captions or transcript to describe the change. The transcript gives the same sequence in words. Wait for the final state before deciding which entry belongs in the ledger.
+
+--- Record the final state
+
+## Record the final state
+
+You watch the panel cross the edge of the lantern and stop halfway across it. Another keeper asks you to record the shutter state.
+
+### Which state belongs in the entry?
+as: choice
+
+(x) Amber
+feedback: The panel stops halfway across the disc, the amber state.
+( ) Clear
+feedback: The opening is not unobstructed after movement ends.
+( ) Covered
+feedback: The panel does not cover the whole disc.
+
+--- Draw before and after
+
+## Draw before and after
+
+Draw two small lanterns on your worksheet. The first shows the panel before movement. The second shows its settled state. Add an arrow between them and label the final state.
+
+Ask a partner to read only the second drawing. They should be able to describe the state without needing your arrow. If they cannot, change the drawing or its label.
+
+Write one sentence explaining why a moving shutter and a settled shutter belong in different parts of your description.

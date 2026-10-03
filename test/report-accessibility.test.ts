@@ -21,17 +21,20 @@ function cli(args: string[]): void {
 	assert.equal(result.status, 0, `Report fixture CLI failed: ${args.join(" ")}\n${result.error ?? ""}\n${result.stdout}\n${result.stderr}`);
 }
 
-async function reports(directory: string): Promise<Array<{ name: string; html: string }>> {
+const reportFixtures = [
+	["schema0", "examples.inspect.json"],
+	["projection2", "examples.projection2.inspect.json"],
+	["html-export", "html/studio"],
+	["lantern-marsh", "lantern-marsh/inspect.json"],
+	["all-model-views", null],
+] as const;
+
+async function reportFixture(directory: string, name: string, inputPath: string | null): Promise<string> {
 	const fixtures = join(sourceRoot, "test/fixtures");
-	const result = [];
-	for (const [name, input] of [
-		["schema0", join(fixtures, "examples.inspect.json")],
-		["projection2", join(fixtures, "examples.projection2.inspect.json")],
-		["html-export", join(fixtures, "html/studio")],
-	]) {
-		const output = join(directory, name!);
-		cli(["report", input!, "--out", output]);
-		result.push({ name: name!, html: join(output, "report.html") });
+	if (inputPath !== null) {
+		const output = join(directory, name);
+		cli(["report", join(fixtures, inputPath), "--out", output]);
+		return join(output, "report.html");
 	}
 	// Read real fixture text through its owner. Every quote is accepted by the production parsers.
 	const { parseCourse } = await import(pathToFileURL(join(sourceRoot, "src/inspect.ts")).href);
@@ -83,8 +86,7 @@ async function reports(directory: string): Promise<Array<{ name: string; html: s
 	cli(["report", input, "--out", output, ...answers, "--recommendations", recommendations]);
 	const built = JSON.parse(await readFile(join(output, "report.json"), "utf8"));
 	for (const view of [...Object.keys(payloads), "spacing", "availability", "recommendations"]) assert.ok(built[view], `Missing model fixture view ${view}`);
-	result.push({ name: "all-model-views", html: join(output, "report.html") });
-	return result;
+	return join(output, "report.html");
 }
 
 async function open(page: Page, html: string): Promise<void> {
@@ -531,8 +533,8 @@ async function serverLabels(browser: Browser, html: string): Promise<void> {
 	} finally { await context.close(); }
 }
 
-// verify runs these journeys alongside CLI and package tests; allow for that contention.
-test("generated reports meet browser accessibility requirements", { timeout: 360_000 }, async context => {
+// Each fixture has its own timeout, including contention with verify's CLI and package tests.
+for (const [name, inputPath] of reportFixtures) test(`generated report ${name} meets browser accessibility requirements`, { timeout: 360_000 }, async context => {
 	if (!existsSync(chromium.executablePath())) {
 		if (process.env.TRACE_SKIP_BROWSER === "1") { context.skip("Chromium executable missing; explicit TRACE_SKIP_BROWSER=1"); return; }
 		assert.fail("Playwright Chromium is missing. Run pnpm exec playwright install chromium (CI: pnpm exec playwright install --with-deps chromium). Local opt-out only: TRACE_SKIP_BROWSER=1.");
@@ -541,41 +543,38 @@ test("generated reports meet browser accessibility requirements", { timeout: 360
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const browser = await chromium.launch({ headless: true });
 	try {
-		for (const report of await reports(directory)) {
-			await context.test(report.name, async fixture => {
-				const browserContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "light", reducedMotion: "reduce" });
-				const page = await browserContext.newPage();
-				const checks: Array<[string, () => Promise<void>]> = [
-					["captions, including hidden tables", () => captions(page)],
-					["Chart whole-page axe", async () => { await mode(page, "chart"); await axe(page, "Chart"); }],
-					["Table whole-page axe", async () => { await mode(page, "table"); await axe(page, "Table"); }],
-					["expanded Table whole-page axe", async () => { await mode(page, "table"); await expandDisclosures(page); await axe(page, "Expanded Table"); }],
-					["Chart Tab order and focus contrast", async () => { await mode(page, "chart"); await tabOrder(page); }],
-					["Table Tab order and focus contrast", async () => { await mode(page, "table"); await tabOrder(page); }],
-					["expanded Table Tab order and focus contrast", async () => { await mode(page, "table"); await expandDisclosures(page); await tabOrder(page); }],
-					["keyboard switches, disclosures and lesson menus", () => keyboard(page)],
-					["keyboard scroll buttons and endpoint focus", () => scrollButtons(page)],
-					["Table reflow at 320 CSS px", () => reflow(page)],
-					["stacked Table accessibility semantics at 320 CSS px", () => tableSemantics(page)],
-					["sort buttons, Tab traversal and row ordering at 320 CSS px", () => sortKeyboard(page)],
-					["server-rendered labels without JavaScript at 320 CSS px", () => serverLabels(browser, report.html)],
-				];
-				try {
-					for (const [name, check] of checks) await fixture.test(name, async () => {
-						await page.setViewportSize({ width: 1440, height: 900 });
-						await open(page, report.html);
-						try { await check(); } catch (error) {
-							if (artifacts) {
-								await mkdir(artifacts, { recursive: true });
-								const stem = join(artifacts, `${report.name}-${name.replace(/[^a-z0-9]+/gi, "-")}`);
-								await writeFile(`${stem}.txt`, String(error instanceof Error ? error.stack : error));
-								await page.screenshot({ path: `${stem}.png`, fullPage: true });
-							}
-							throw error;
-						}
-					});
-				} finally { await browserContext.close(); }
+		const report = { name, html: await reportFixture(directory, name, inputPath) };
+		const browserContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "light", reducedMotion: "reduce" });
+		const page = await browserContext.newPage();
+		const checks: Array<[string, () => Promise<void>]> = [
+			["captions, including hidden tables", () => captions(page)],
+			["Chart whole-page axe", async () => { await mode(page, "chart"); await axe(page, "Chart"); }],
+			["Table whole-page axe", async () => { await mode(page, "table"); await axe(page, "Table"); }],
+			["expanded Table whole-page axe", async () => { await mode(page, "table"); await expandDisclosures(page); await axe(page, "Expanded Table"); }],
+			["Chart Tab order and focus contrast", async () => { await mode(page, "chart"); await tabOrder(page); }],
+			["Table Tab order and focus contrast", async () => { await mode(page, "table"); await tabOrder(page); }],
+			["expanded Table Tab order and focus contrast", async () => { await mode(page, "table"); await expandDisclosures(page); await tabOrder(page); }],
+			["keyboard switches, disclosures and lesson menus", () => keyboard(page)],
+			["keyboard scroll buttons and endpoint focus", () => scrollButtons(page)],
+			["Table reflow at 320 CSS px", () => reflow(page)],
+			["stacked Table accessibility semantics at 320 CSS px", () => tableSemantics(page)],
+			["sort buttons, Tab traversal and row ordering at 320 CSS px", () => sortKeyboard(page)],
+			["server-rendered labels without JavaScript at 320 CSS px", () => serverLabels(browser, report.html)],
+		];
+		try {
+			for (const [name, check] of checks) await context.test(name, async () => {
+				await page.setViewportSize({ width: 1440, height: 900 });
+				await open(page, report.html);
+				try { await check(); } catch (error) {
+					if (artifacts) {
+						await mkdir(artifacts, { recursive: true });
+						const stem = join(artifacts, `${report.name}-${name.replace(/[^a-z0-9]+/gi, "-")}`);
+						await writeFile(`${stem}.txt`, String(error instanceof Error ? error.stack : error));
+						await page.screenshot({ path: `${stem}.png`, fullPage: true });
+					}
+					throw error;
+				}
 			});
-		}
+		} finally { await browserContext.close(); }
 	} finally { await browser.close(); }
 });

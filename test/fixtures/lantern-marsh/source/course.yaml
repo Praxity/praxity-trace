@@ -1,0 +1,13 @@
+title: Lantern Marsh keeper practice
+locale: en
+moduleDeck: false
+lessons:
+  - 01-route.prax
+  - 02-shutters.prax
+  - 03-ledger.prax
+  - 04-bells.prax
+  - 05-branch.prax
+  - 06-shutter-motion.prax
+  - 07-repair.prax
+  - 08-handoff.prax
+  - 09-fieldbook.prax
