@@ -1,0 +1,223 @@
+{
+  "ok": true,
+  "schema": "praxity-inspect/1",
+  "studioVersion": "synthetic",
+  "revision": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "course": {
+    "title": "Policy objective levels",
+    "locale": "en"
+  },
+  "lessons": [
+    {
+      "file": "policy.prax",
+      "id": null,
+      "title": "Policy",
+      "sha256": "synthetic-policy",
+      "unlinkedNarrationCount": 0,
+      "narration": [],
+      "pages": [
+        {
+          "ref": "policy/page/1",
+          "id": null,
+          "number": 1,
+          "title": "Objectives",
+          "blocks": [
+            {
+              "ref": "policy/O1",
+              "parentRef": null,
+              "id": "objective-O1",
+              "type": "text",
+              "coverage": "text",
+              "location": {
+                "file": "policy.prax",
+                "startLine": 10,
+                "endLine": 10
+              },
+              "texts": [
+                {
+                  "ref": "policy/O1/body",
+                  "role": "body",
+                  "value": "Paraphrase why the policy fails",
+                  "format": "plain",
+                  "location": {
+                    "file": "policy.prax",
+                    "startLine": 10,
+                    "endLine": 10
+                  }
+                }
+              ]
+            },
+            {
+              "ref": "policy/O2",
+              "parentRef": null,
+              "id": "objective-O2",
+              "type": "text",
+              "coverage": "text",
+              "location": {
+                "file": "policy.prax",
+                "startLine": 11,
+                "endLine": 11
+              },
+              "texts": [
+                {
+                  "ref": "policy/O2/body",
+                  "role": "body",
+                  "value": "Paraphrase the policy steps",
+                  "format": "plain",
+                  "location": {
+                    "file": "policy.prax",
+                    "startLine": 11,
+                    "endLine": 11
+                  }
+                }
+              ]
+            },
+            {
+              "ref": "policy/O3",
+              "parentRef": null,
+              "id": "objective-O3",
+              "type": "text",
+              "coverage": "text",
+              "location": {
+                "file": "policy.prax",
+                "startLine": 12,
+                "endLine": 12
+              },
+              "texts": [
+                {
+                  "ref": "policy/O3/body",
+                  "role": "body",
+                  "value": "Explain why the policy fails",
+                  "format": "plain",
+                  "location": {
+                    "file": "policy.prax",
+                    "startLine": 12,
+                    "endLine": 12
+                  }
+                }
+              ]
+            },
+            {
+              "ref": "policy/O4",
+              "parentRef": null,
+              "id": "objective-O4",
+              "type": "text",
+              "coverage": "text",
+              "location": {
+                "file": "policy.prax",
+                "startLine": 13,
+                "endLine": 13
+              },
+              "texts": [
+                {
+                  "ref": "policy/O4/body",
+                  "role": "body",
+                  "value": "Teach a crew how to apply the policy",
+                  "format": "plain",
+                  "location": {
+                    "file": "policy.prax",
+                    "startLine": 13,
+                    "endLine": 13
+                  }
+                }
+              ]
+            },
+            {
+              "ref": "policy/O5",
+              "parentRef": null,
+              "id": "objective-O5",
+              "type": "text",
+              "coverage": "text",
+              "location": {
+                "file": "policy.prax",
+                "startLine": 14,
+                "endLine": 14
+              },
+              "texts": [
+                {
+                  "ref": "policy/O5/body",
+                  "role": "body",
+                  "value": "Describe why the policy fails",
+                  "format": "plain",
+                  "location": {
+                    "file": "policy.prax",
+                    "startLine": 14,
+                    "endLine": 14
+                  }
+                }
+              ]
+            },
+            {
+              "ref": "policy/O6",
+              "parentRef": null,
+              "id": "objective-O6",
+              "type": "text",
+              "coverage": "text",
+              "location": {
+                "file": "policy.prax",
+                "startLine": 15,
+                "endLine": 15
+              },
+              "texts": [
+                {
+                  "ref": "policy/O6/body",
+                  "role": "body",
+                  "value": "Paraphrase the policy purpose",
+                  "format": "plain",
+                  "location": {
+                    "file": "policy.prax",
+                    "startLine": 15,
+                    "endLine": 15
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "practice.prax",
+      "id": null,
+      "title": "Policy practice",
+      "sha256": "synthetic-policy-practice",
+      "unlinkedNarrationCount": 0,
+      "narration": [],
+      "pages": [
+        {
+          "ref": "practice/page/1",
+          "id": null,
+          "number": 1,
+          "title": "Policy instruction",
+          "blocks": [
+            {
+              "ref": "practice/instruction",
+              "parentRef": null,
+              "id": "practice-instruction",
+              "type": "text",
+              "coverage": "text",
+              "location": {
+                "file": "practice.prax",
+                "startLine": 5,
+                "endLine": 5
+              },
+              "texts": [
+                {
+                  "ref": "practice/instruction/body",
+                  "role": "body",
+                  "value": "The policy records each decision and its stated reason.",
+                  "format": "plain",
+                  "location": {
+                    "file": "practice.prax",
+                    "startLine": 5,
+                    "endLine": 5
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

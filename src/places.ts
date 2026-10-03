@@ -145,12 +145,14 @@ export const clip = (text: string, length: number) => (text.length > length ? `$
 export const lessonTitle = (number: number, title: string) => title.replace(new RegExp(`^Lesson\\s+${number}\\s*[:.–-]\\s*`, "i"), "");
 export const lessonHeading = (number: number, title: string) => `L${number} · ${lessonTitle(number, title)}`;
 
+/** "lesson.prax:12", or the file alone when the input gives no line. */
+export const sourceOf = (place: Place) => (place.line === null ? place.file : `${place.file}:${place.line}`);
+
 /** "3.9", with the lesson title and source file and line on hover. */
 export function where(places: Places, ref: string): string {
 	const place = places[ref];
 	if (!place) return esc(ref);
-	const source = place.line === null ? place.file : `${place.file}:${place.line}`;
-	return `<span data-page="${pageKey(place.lesson, place.page)}" title="${esc(`${place.lessonTitle}, page ${place.page} · ${source}`)}">${pageKey(place.lesson, place.page)}</span>`;
+	return `<span data-page="${pageKey(place.lesson, place.page)}" title="${esc(`${place.lessonTitle}, page ${place.page} · ${sourceOf(place)}`)}">${pageKey(place.lesson, place.page)}</span>`;
 }
 
 /** Several locations, deduplicated and in course order: "3.9, 3.14, 4.2". */

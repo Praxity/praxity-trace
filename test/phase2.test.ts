@@ -153,6 +153,13 @@ test("partial absence claims point to coverage while complete inputs retain thei
 	assert.equal(absence(false, "None", "Instruction"), "None");
 });
 
+test("SVG absence qualifiers stay noninteractive while HTML retains the coverage link", () => {
+	assert.equal(absence(true, "No instruction found", "Instruction", "svg"), "Instruction not found in the inspected content · <tspan>coverage note</tspan>");
+	assert.equal(absence(true, "No instruction found", "Instruction", "html"), 'Instruction not found in the inspected content · <a href="#coverage">coverage note</a>');
+	assert.equal(absence(true, "No instruction found", "Instruction", "text"), "Instruction not found in the inspected content (see coverage note)");
+	assert.equal(absence(false, "No instruction found", "Instruction", "svg"), "No instruction found");
+});
+
 test("CLI derives task links using current synthetic answers and leaves them out without --tasks", () => {
 	const { course, json } = taskFixture("judgment");
 	const directory = mkdtempSync(join(tmpdir(), "trace-phase2-"));

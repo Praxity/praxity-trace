@@ -40,6 +40,7 @@ export const GUIDES = {
 	],
 	outcomes: [
 		{ see: "Objectives mostly at Remember and Understand", could: "Read the objective verbs and check whether they state the intended demands of the course." },
+		{ see: "A reviewer level that differs from the verb's listed level", could: "Read the objective and the reviewer's reason, and check whether its object asks more or less of learners than the verb usually does." },
 		{ see: "Most objectives Verbal information in Gagné's terms", could: "Check whether the objectives also need to name a skill learners must perform." },
 		{ see: "Objectives that state an action but no conditions or standard", could: "Inspect whether the action needs a stated context or criterion to make success clear." },
 	],
