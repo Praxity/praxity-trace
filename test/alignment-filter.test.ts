@@ -23,12 +23,12 @@ const view: AlignmentView = {
 };
 const html = renderAlignment(view);
 const rowsOf = (label: string) => {
-	const table = html.split(`aria-label="${label}"`)[1]?.match(/<tbody>([\s\S]*?)<\/tbody>/)?.[1] ?? "";
+	const table = html.split(`aria-label="${label}"`)[1]?.match(/<tbody\b[^>]*>([\s\S]*?)<\/tbody>/)?.[1] ?? "";
 	return [...table.matchAll(/<tr\b[^>]*>[\s\S]*?<\/tr>/g)].map((match) => match[0]);
 };
 
 test("all alignment table rows declare lesson membership", () => {
-	const bodies = [...html.matchAll(/<tbody>([\s\S]*?)<\/tbody>/g)];
+	const bodies = [...html.matchAll(/<tbody\b[^>]*>([\s\S]*?)<\/tbody>/g)];
 	assert.equal(bodies.length, 4);
 	for (const body of bodies) {
 		for (const row of body[1]!.matchAll(/<tr\b[^>]*>/g)) assert.match(row[0], /data-lessons?="[1-5 ]+"/);
@@ -60,7 +60,7 @@ test("trace objective rows retain full group tooltips, statement sources and par
 	const markup = renderTrace(trace);
 	assert.match(markup, /<title>O1 · Explain lesson 1\nO2 · Explain lesson 2\nWhat the group shares: Shared learning<\/title>/);
 	const table = markup.split('aria-label="Course trace objective groups"')[1]?.split("</table>")[0] ?? "";
-	for (const column of ["Objective", "Group", "Stated at", "Builds toward", "What the group shares"]) assert.ok(table.includes(`<th scope="col">${column}</th>`));
+	for (const column of ["Objective", "Group", "Stated at", "Builds toward", "What the group shares"]) assert.ok(table.includes(`<th scope="col" role="columnheader">${column}</th>`));
 	const rows = [...table.matchAll(/<tr\b[^>]*>[\s\S]*?<\/tr>/g)].map((match) => match[0]);
 	const second = rows.find((row) => row.includes('class="oid">O2</span>'))!;
 	assert.match(second, /data-lesson="2"/);

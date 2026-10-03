@@ -627,7 +627,7 @@ function lengthTable(view: LanguageView): string {
 			}),
 		)
 		.join("");
-	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Sentences by length"><table class="blocks"><thead><tr><th scope="col">Lesson</th><th scope="col">Channel</th><th scope="col" class="num">Sentences</th>${BANDS.map(([, , label]) => `<th scope="col" class="num">${label} words</th>`).join("")}<th scope="col" class="num">Median</th><th scope="col" class="num">Longest</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Sentences by length"><table class="blocks"><caption class="sr">Sentences by length</caption><thead><tr><th scope="col">Lesson</th><th scope="col">Channel</th><th scope="col" class="num">Sentences</th>${BANDS.map(([, , label]) => `<th scope="col" class="num">${label} words</th>`).join("")}<th scope="col" class="num">Median</th><th scope="col" class="num">Longest</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 const fixed = (value: number | null, digits: number) => (value === null ? "–" : value.toFixed(digits));
@@ -647,7 +647,7 @@ function profileTable(view: LanguageView): string {
 		)
 		.join("");
 	const head = (label: string, help: string) => `<th scope="col" class="num two-line"><abbr class="defined" tabindex="0" title="${esc(help)}">${label}</abbr></th>`;
-	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Text profile by lesson"><table class="blocks"><thead><tr><th scope="col">Lesson</th><th scope="col">Channel</th><th scope="col" class="num">Words</th>${[
+	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Text profile by lesson"><table class="blocks"><caption class="sr">Text profile by lesson</caption><thead><tr><th scope="col">Lesson</th><th scope="col">Channel</th><th scope="col" class="num">Words</th>${[
 		head("Median<br>sentence", "Median words per sentence."),
 		head("Clause cues<br>per 100", "Subordinating words such as because, although, which and who, per 100 sentences."),
 		head("Rare words<br>per 1,000", "Words rarely encountered in everyday language."),
@@ -689,13 +689,13 @@ function structureTable(view: LanguageView): string {
 			const total = lesson.channels[channel].sentences;
 			const values = data
 				? [data.clauseCuesPer100Sentences, count(data.twoOrMoreClauseCues, total), count(data.passive, total), data.nominalisationsPer100Words, count(data.frontLoaded, total)]
-					.map((value, column) => `<td class="num" data-label="${STRUCTURE_COLUMNS[column]![0]}">${value}</td>`).join("")
+					.map((value) => `<td class="num">${value}</td>`).join("")
 				: `<td colspan="5">${view.locale.toLowerCase().startsWith("en") ? "No sentences" : "Not measured for this language"}</td>`;
-			return `<tr data-lesson="${index + 1}">${channel === "screen" ? lessonCell(index, lesson.title, examples ? 3 : 2) : ""}<th scope="row">${CHANNEL_LABEL[channel]}</th><td class="num" data-label="Sentences">${total}</td>${values}</tr>`;
+			return `<tr data-lesson="${index + 1}">${channel === "screen" ? lessonCell(index, lesson.title, examples ? 3 : 2) : ""}<th scope="row">${CHANNEL_LABEL[channel]}</th><td class="num">${total}</td>${values}</tr>`;
 		}).join("");
 		return `<tbody>${counts}${examples ? `<tr data-lesson="${index + 1}"><td colspan="7">${examples}</td></tr>` : ""}</tbody>`;
 	}).join("");
-	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Sentence structure by lesson"><table class="blocks sentence-structure"><thead><tr><th scope="col">Lesson</th><th scope="col">Channel</th><th scope="col" class="num">Sentences</th>${STRUCTURE_COLUMNS.map(([label, help]) => `<th scope="col" class="num"><abbr class="defined" tabindex="0" title="${esc(help)}">${label}</abbr></th>`).join("")}</tr></thead>${rows}</table></div>`;
+	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Sentence structure by lesson"><table class="blocks sentence-structure"><caption class="sr">Sentence structure by lesson</caption><thead><tr><th scope="col">Lesson</th><th scope="col">Channel</th><th scope="col" class="num">Sentences</th>${STRUCTURE_COLUMNS.map(([label, help]) => `<th scope="col" class="num"><abbr class="defined" tabindex="0" title="${esc(help)}">${label}</abbr></th>`).join("")}</tr></thead>${rows}</table></div>`;
 }
 
 function markedSentence(sentence: Sentence): string {
@@ -743,7 +743,7 @@ function vocabularyTable(view: LanguageView, vocabulary: Vocabulary): string {
 			}),
 		)
 		.join("");
-	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Word familiarity by lesson"><table class="blocks vocabulary"><thead><tr><th scope="col">Lesson</th><th scope="col">Channel</th><th scope="col" class="num">Words</th><th scope="col" class="num"><abbr class="defined" tabindex="0" title="Words encountered infrequently in everyday language">Uncommon per 1,000 words</abbr></th><th scope="col"><abbr class="defined" tabindex="0" title="Words rarely encountered in everyday language">Rare per 1,000 words</abbr></th><th scope="col" class="num">Distinct rare words</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Word familiarity by lesson"><table class="blocks vocabulary"><caption class="sr">Word familiarity by lesson</caption><thead><tr><th scope="col">Lesson</th><th scope="col">Channel</th><th scope="col" class="num">Words</th><th scope="col" class="num"><abbr class="defined" tabindex="0" title="Words encountered infrequently in everyday language">Uncommon per 1,000 words</abbr></th><th scope="col"><abbr class="defined" tabindex="0" title="Words rarely encountered in everyday language">Rare per 1,000 words</abbr></th><th scope="col" class="num">Distinct rare words</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 /** One table of rare words, first use first, inside a single accordion; its columns sort. */
@@ -752,7 +752,7 @@ function rareLists(view: LanguageView, vocabulary: Vocabulary): string {
 		.sort((a, b) => (view.places[a.ref]?.position ?? 0) - (view.places[b.ref]?.position ?? 0))
 		.map((word) => `<tr data-lessons="${word.lessons.join(" ")}"><th scope="row">${esc(word.forms ? word.forms.join(", ") : word.word)}</th><td class="num">${word.uses}</td><td>${where(view.places, word.ref)} <code>${esc(word.firstUse)}</code></td><td>${word.glossed ? "Glossary tooltip" : ""}</td></tr>`)
 		.join("");
-	return `<details class="review-group"><summary>Rare words · ${vocabulary.rare.length}</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Rare words"><table class="blocks"><thead><tr><th scope="col">Word</th><th scope="col" class="num">Uses</th><th scope="col">First used</th><th scope="col">Explained by</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
+	return `<details class="review-group"><summary>Rare words · ${vocabulary.rare.length}</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Rare words"><table class="blocks"><caption class="sr">Rare words</caption><thead><tr><th scope="col">Word</th><th scope="col" class="num">Uses</th><th scope="col">First used</th><th scope="col">Explained by</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
 }
 
 function acronymTable(view: LanguageView): string {
@@ -762,7 +762,7 @@ function acronymTable(view: LanguageView): string {
 				`<tr data-lessons="${[...new Set([item.firstUse, item.expandedAt].flatMap((ref) => ref && view.places[ref] ? [view.places[ref]!.lesson] : []))].join(" ")}"><th scope="row">${esc(item.acronym)}</th><td class="num">${item.uses}</td><td>${where(view.places, item.firstUse)}</td><td>${item.expandedAt ? where(view.places, item.expandedAt) : "Not spelled out"}</td><td>${item.expandedAt && item.usedBeforeExpansion ? "Used before it is spelled out" : ""}</td></tr>`,
 		)
 		.join("");
-	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Acronyms"><table class="blocks"><thead><tr><th scope="col">Acronym</th><th scope="col" class="num">Uses</th><th scope="col">First used</th><th scope="col">Spelled out</th><th scope="col">Note</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Acronyms"><table class="blocks"><caption class="sr">Acronyms</caption><thead><tr><th scope="col">Acronym</th><th scope="col" class="num">Uses</th><th scope="col">First used</th><th scope="col">Spelled out</th><th scope="col">Note</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 /** Sentences: length, readability, structure, and the sentences to look at. */
@@ -817,5 +817,4 @@ section[aria-labelledby=language] td:nth-child(2),section[aria-labelledby=langua
 .vocabulary td.bar-cell{min-width:12rem;white-space:nowrap}.vocabulary .bar-total{margin-left:.5rem;font-variant-numeric:tabular-nums}
 .vocabulary .rare-bar{display:inline-block;height:12px;background:var(--accent);vertical-align:middle;border-radius:0 2px 2px 0}
 .review mark{background:none;color:inherit;font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:2px}
-@media(max-width:600px){.sentence-structure,.sentence-structure tbody,.sentence-structure tr,.sentence-structure th,.sentence-structure td{display:block;width:100%}.sentence-structure thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.sentence-structure tr{padding:.5rem 0;border-bottom:1px solid var(--axis)}.sentence-structure th,.sentence-structure td{border:0;padding:.2rem 0;text-align:left}.sentence-structure td[data-label]::before{content:attr(data-label) ": ";font-weight:600}}
 `;

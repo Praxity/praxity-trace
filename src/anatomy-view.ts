@@ -221,7 +221,7 @@ function paceTable(lessons: LessonAnatomy[]): string {
 			),
 		)
 		.join("");
-	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Pace times by page"><table class="blocks"><thead><tr><th scope="col">Page</th><th scope="col">Where</th><th scope="col" class="num">Words</th><th scope="col" class="num two-line">Reading<br>s</th><th scope="col" class="num two-line">Narration<br>s</th><th scope="col" class="num two-line">Estimated<br>s</th><th scope="col" class="num two-line">Cumulative<br>reading s</th><th scope="col" class="num two-line">Cumulative<br>narration s</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Pace times by page"><table class="blocks"><caption class="sr">Pace times by page</caption><thead><tr><th scope="col">Page</th><th scope="col">Where</th><th scope="col" class="num">Words</th><th scope="col" class="num two-line">Reading<br>s</th><th scope="col" class="num two-line">Narration<br>s</th><th scope="col" class="num two-line">Estimated<br>s</th><th scope="col" class="num two-line">Cumulative<br>reading s</th><th scope="col" class="num two-line">Cumulative<br>narration s</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function blockTable(lessons: LessonAnatomy[]): string {
@@ -234,7 +234,7 @@ function blockTable(lessons: LessonAnatomy[]): string {
 			),
 		)
 		.join("");
-	return `<h4 class="chart-title">Every block, in course order</h4><div class="table-wrap" tabindex="0" role="region" aria-label="Every block"><table class="blocks"><thead><tr><th scope="col">Block type</th><th scope="col">Role</th>${expanded ? `<th scope="col">Scoring</th>` : ""}<th scope="col" class="num">Words</th><th scope="col">Where</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+	return `<h4 class="chart-title">Every block, in course order</h4><div class="table-wrap" tabindex="0" role="region" aria-label="Every block"><table class="blocks"><caption class="sr">Every block</caption><thead><tr><th scope="col">Block type</th><th scope="col">Role</th>${expanded ? `<th scope="col">Scoring</th>` : ""}<th scope="col" class="num">Words</th><th scope="col">Where</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 export function renderAnatomy(report: Shape): string {

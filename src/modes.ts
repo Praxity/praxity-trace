@@ -1,3 +1,4 @@
+import { parseFragment, type DefaultTreeAdapterTypes } from "parse5";
 import { inlineClient } from "./client.ts";
 import { icon, type IconName } from "./icons.ts";
 import { GUIDES, isViewId, type Reading } from "./guides.ts";
@@ -15,6 +16,97 @@ export function absence(partial: boolean | undefined, complete: string, subject:
 export function renderFeedback(feedback: Feedback): string {
 	if (feedback.status === "not-supplied") return "Feedback not supplied by the input";
 	return feedback.items.map(item => `<div>${item.text ? esc(item.text) : "Empty feedback"}<span class="file">${esc(item.source)}</span></div>`).join("");
+}
+
+type Tag = DefaultTreeAdapterTypes.Element;
+type Tree = DefaultTreeAdapterTypes.Node;
+
+const isElement = (node: Tree): node is Tag => "tagName" in node;
+const attribute = (element: Tag, name: string) => element.attrs.find((attr) => attr.name === name)?.value;
+const span = (element: Tag, name: "rowspan" | "colspan") => Math.max(1, Number.parseInt(attribute(element, name) ?? "1", 10) || 1);
+const textOf = (node: Tree): string =>
+	"value" in node && node.nodeName === "#text" ? node.value : isElement(node) && node.tagName === "br" ? " " : "childNodes" in node ? node.childNodes.map(textOf).join("") : "";
+
+/**
+ * The cells of each row in a row group, each with the logical column it starts in. A rowspan holds
+ * its columns in the rows below it, within the same group, as the HTML table model does.
+ */
+function grid(rows: Tag[]): Array<Array<{ cell: Tag; column: number; columns: number }>> {
+	const held: number[] = [];
+	return rows.map((row) => {
+		let column = 0;
+		const cells = row.childNodes.filter(isElement).filter((cell) => cell.tagName === "th" || cell.tagName === "td").map((cell) => {
+			while ((held[column] ?? 0) > 0) column++;
+			const columns = span(cell, "colspan");
+			for (let offset = 0; offset < columns; offset++) held[column + offset] = span(cell, "rowspan");
+			const placed = { cell, column, columns };
+			column += columns;
+			return placed;
+		});
+		held.forEach((rows, index) => { held[index] = Math.max(0, rows - 1); });
+		return cells;
+	});
+}
+
+/**
+ * Narrow screens stack each table row into "column: value" lines (MODES_STYLE). Chromium drops
+ * table semantics from elements shown as blocks, so each data table carries explicit table roles,
+ * and each body cell names its column in data-label for the visible label. A label is the header
+ * cells over the cell's logical column, outermost first; a cell spanning columns takes only the
+ * headers those columns share, so a note across a whole row has none. The attributes go in at
+ * their parsed offsets and every other byte stays as the renderer wrote it. A table hidden from
+ * assistive technology is a chart drawn with table markup and keeps its layout.
+ */
+export function reflowTables(html: string): string {
+	if (!html.includes("<table")) return html;
+	const inserts: Array<[number, string]> = [];
+	const mark = (element: Tag, attrs: string) => {
+		for (const name of ["role", "data-label"]) {
+			if (attribute(element, name) !== undefined) throw new Error(`reflowTables owns ${name} on table markup; found it on <${element.tagName}>`);
+		}
+		const end = element.sourceCodeLocation?.startTag?.endOffset;
+		if (end === undefined || html[end - 1] !== ">") throw new Error(`Table markup needs an explicit <${element.tagName}> start tag`);
+		inserts.push([end - 1, ` ${attrs}`]);
+	};
+	const sections = (table: Tag) => table.childNodes.filter(isElement).filter((child) => ["thead", "tbody", "tfoot"].includes(child.tagName));
+	const rows = (section: Tag) => section.childNodes.filter(isElement).filter((child) => child.tagName === "tr");
+	const table = (element: Tag) => {
+		mark(element, `role="table"`);
+		const headers: Tag[][] = [];
+		for (const section of sections(element)) {
+			mark(section, `role="rowgroup"`);
+			const head = section.tagName === "thead";
+			const placed = grid(rows(section));
+			rows(section).forEach((row, index) => {
+				mark(row, `role="row"`);
+				for (const { cell, column, columns } of placed[index] ?? []) {
+					if (head) {
+						for (let offset = 0; offset < columns; offset++) (headers[column + offset] ??= []).push(cell);
+						mark(cell, `role="${cell.tagName === "th" ? "columnheader" : "cell"}"`);
+						continue;
+					}
+					const over = Array.from({ length: columns }, (_, offset) => headers[column + offset] ?? []);
+					const shared = (over[0] ?? []).filter((header, depth) => over.every((path) => path[depth] === header));
+					const label = shared.map((header) => textOf(header).replace(/\s+/g, " ").trim()).filter(Boolean).join(" · ");
+					mark(cell, `role="${cell.tagName === "th" ? "rowheader" : "cell"}"${label ? ` data-label="${esc(label)}"` : ""}`);
+				}
+			});
+		}
+	};
+	const walk = (node: Tree, hidden: boolean) => {
+		if (!isElement(node) && !("childNodes" in node)) return;
+		const quiet = hidden || (isElement(node) && attribute(node, "aria-hidden") === "true");
+		if (isElement(node) && node.tagName === "table" && !quiet) table(node);
+		if ("childNodes" in node) node.childNodes.forEach((child) => walk(child, quiet));
+	};
+	walk(parseFragment(html, { sourceCodeLocationInfo: true }), false);
+	let out = "";
+	let from = 0;
+	for (const [offset, text] of inserts.sort((a, b) => a[0] - b[0])) {
+		out += html.slice(from, offset) + text;
+		from = offset;
+	}
+	return out + html.slice(from);
 }
 
 export interface SegmentOption {
@@ -87,7 +179,9 @@ export function outline(draw: () => string): { html: string; entries: OutlineEnt
  * heading row in every view; CSS :has() does the switching, so no script is needed.
  */
 export function viewBlock(options: ViewOptions): string {
-	const { id, level, title, headingId, question, controls = "", lead = "", chart, table, after = "" } = options;
+	const { id, level, title, headingId, question, controls = "", chart } = options;
+	// Every table outside the chart is data a reader may need at 320 CSS px, the lead's included.
+	const [lead, table, after] = [options.lead ?? "", options.table, options.after ?? ""].map(reflowTables);
 	drawn?.push({ title, level, anchor: headingId ?? `view-${id}`, view: id });
 	const heading = `<h${level}${headingId ? ` id="${esc(headingId)}"` : ""}>${esc(title)}</h${level}>`;
 	return `<div class="view" id="view-${esc(id)}" data-view="${esc(id)}">
@@ -233,6 +327,24 @@ export const MODES_STYLE = `
 .legend-item{white-space:nowrap;display:inline-flex;align-items:center}
 .mode-narrow-note{display:none;color:var(--ink-2);font-size:.85rem}
 @media (max-width:600px){.view>.mode-chart{display:none!important}.view>.mode-table{display:block!important}.view-head .seg-mode{display:none}.mode-narrow-note{display:block}.view [data-guide-mode=table]{display:block!important}.view [data-guide-pace=cumulative]{display:none!important}}
+/* Table reflow (reflowTables). Tables stack at the width where charts give way to tables: below it
+   most tables' columns no longer fit, and WCAG 1.4.10 asks for no sideways scrolling at 320 CSS px.
+   Wider screens keep columns and scroll wide tables sideways. Each row becomes "column: value"
+   lines; the header row stays, wrapping, for its sort buttons. Bars repeat a printed number. */
+@media (max-width:600px){
+table[role=table],table[role=table] :is(thead,tbody,tfoot,tr,th,td){display:block;width:auto!important;min-width:0!important;max-width:none!important;white-space:normal!important;text-align:left;overflow-wrap:anywhere}
+table[role=table] tr[hidden]{display:none}
+table[role=table] caption{display:block}
+.table-wrap:has(>table[role=table]){overflow:visible;max-height:none}
+table[role=table] thead tr{display:flex;flex-wrap:wrap;column-gap:1rem;border-bottom:1px solid var(--axis)}
+table[role=table] thead :is(th,td){position:static;border:0;box-shadow:none;padding:.2rem 0}
+table[role=table] tbody tr{padding:.5rem 0;border-bottom:1px solid var(--grid)}
+table[role=table] tbody :is(th,td){border-bottom:0;padding:.15rem 0}
+/* A row group (tr.group-start) starts with a rule across the stacked row, not over each line. */
+table[role=table] tbody tr.group-start{border-top:1px solid var(--axis)}table[role=table] tbody tr.group-start>*{border-top:0}
+table[role=table] [data-label]::before{content:attr(data-label) ": " / "";font-weight:600}
+table[role=table] .bar{display:none}
+}
 .icon-button{display:inline-flex;align-items:center;justify-content:center;width:2.1rem;height:2.1rem;border:1px solid var(--axis);border-radius:8px;background:var(--surface);color:var(--ink-2);cursor:pointer;padding:0;font:inherit}
 .icon-button:hover{color:var(--ink);background:var(--plane)}
 .icon-button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}

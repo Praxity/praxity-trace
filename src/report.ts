@@ -202,7 +202,7 @@ svg .bg{fill:var(--ink-2)}svg .bg.activity,svg .bg.check{fill:var(--accent)}svg 
 .views{position:fixed;z-index:14;right:max(.75rem,calc((100vw - 78rem)/2 + .75rem));top:5rem;width:2.25rem}
 .views ul{position:absolute;right:0;top:0;display:grid;gap:0;list-style:none;padding:.25rem 0;margin:0;max-height:calc(100vh - 6rem);overflow:auto;width:2.25rem}
 .views li{margin:0}
-.views a{display:flex;justify-content:flex-end;align-items:center;gap:.6rem;min-height:1.4rem;padding:0 .3rem;color:var(--ink);text-decoration:none;white-space:nowrap;border-radius:4px}
+.views a{display:flex;justify-content:flex-end;align-items:center;gap:.6rem;min-height:24px;padding:0 .3rem;color:var(--ink);text-decoration:none;white-space:nowrap;border-radius:4px}
 .views a::after{content:"";display:block;flex:none;width:1.1rem;height:2px;border-radius:1px;background:var(--rail)}
 .views a.sub::after{width:.55rem;opacity:.7}
 .views a[aria-current]::after{width:1.6rem;height:2px;background:var(--ink)}
@@ -339,9 +339,13 @@ const setup = (el: Element) => {
   if (el.namespaceURI === 'http://www.w3.org/2000/svg' || el.closest('.mode-chart')) el.removeAttribute('tabindex');
   el.addEventListener('pointerenter', event => show(el, event instanceof PointerEvent ? event : undefined));
   el.addEventListener('pointerleave', () => { dismissed = false; timer = setTimeout(() => hide(), 120); });
-  // Keyboard focus only: focus moved by script after a click (opening a panel) must not pop a tooltip.
-  el.addEventListener('focus', () => { if (el.matches(':focus-visible')) show(el); });
-  el.addEventListener('blur', () => { dismissed = false; hide(true); });
+  // Chromium makes SVG elements with focus listeners tabbable even without tabindex. Marks keep
+  // pointer previews; their Table representation supplies keyboard access to the same details.
+  if (el.namespaceURI !== 'http://www.w3.org/2000/svg' && !el.closest('.mode-chart')) {
+    // Focus moved by script after a click must not pop a tooltip.
+    el.addEventListener('focus', () => { if (el.matches(':focus-visible')) show(el); });
+    el.addEventListener('blur', () => { dismissed = false; hide(true); });
+  }
 };
 targets.forEach(setup);
 // Buttons added after load (a comment's actions) adopt the same tooltip on first hover or focus.
@@ -391,8 +395,11 @@ function sizeTables() {
     const outer = wrap.parentElement?.classList.contains('scroll-frame') ? wrap.parentElement : wrap;
     const cue = outer.previousElementSibling?.classList.contains('table-cue') ? outer.previousElementSibling as HTMLElement : null;
     if (wrap.querySelectorAll('tbody tr').length > 15) wrap.classList.add('sticky-table');
-    if (wrap.scrollHeight > window.innerHeight * 1.5) {
-      wrap.classList.add('long-table');
+    if (wrap.scrollHeight > window.innerHeight * 1.5) wrap.classList.add('long-table');
+    // A table stacked for a narrow screen keeps its full height in the page; the cue claims a
+    // scroll region only where the region really scrolls.
+    if (wrap.classList.contains('long-table') && wrap.scrollHeight <= wrap.clientHeight + 1) wrap.classList.remove('long-table');
+    if (wrap.classList.contains('long-table')) {
       if (!cue) outer.insertAdjacentHTML('beforebegin', '<p class="table-cue">Scroll within this table for more rows.</p>');
       else cue.hidden = false;
     } else if (cue) cue.hidden = true;

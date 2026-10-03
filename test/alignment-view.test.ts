@@ -49,7 +49,7 @@ test("alignment evidence and course trace use one row per objective group", () =
 	assert.match(matrix, /<span class="group-also">with <abbr class="defined oid-ref" title="O5 · Objective O5">O5<\/abbr>, <abbr[^>]*>O12<\/abbr><\/span>/);
 	assert.doesNotMatch(html, /data-view="objectives"/);
 	assert.doesNotMatch(html, /Overlapping objectives|overlaps O5/);
-	assert.match(html, /<table class="blocks evidence-table">[\s\S]*Knowledge checks[\s\S]*Online activities[\s\S]*Worksheet activities/);
+	assert.match(html, /<table class="blocks evidence-table" role="table">[\s\S]*Knowledge checks[\s\S]*Online activities[\s\S]*Worksheet activities/);
 	assert.match(matrix, /data-page="1\.1"/);
 	assert.match(html, /<th scope="col" class="check lesson-start"[^>]*>1.1<\/th>/);
 	assert.doesNotMatch(matrix, /tabindex="0"/);
@@ -71,14 +71,14 @@ test("checks on one page share a column while table mode lists every item", () =
 		places: { [objectives[0]!.ref]: place, a: place, b: place, c: place },
 	};
 	const html = renderAlignment(view);
-	const matrixHead = html.match(/<table class="matrix" aria-hidden="true"><thead>([\s\S]*?)<\/thead>/)?.[1] ?? "";
+	const matrixHead = html.match(/<table class="matrix" aria-hidden="true">[\s\S]*?<thead>([\s\S]*?)<\/thead>/)?.[1] ?? "";
 	assert.equal((matrixHead.match(/3.9/g) ?? []).length, 1);
 	assert.deepEqual(view.activities.map((activity) => activity.purpose), ["knowledge", "knowledge", "reflection"]);
 	assert.deepEqual(view.activities.map((activity) => view.places[activity.ref]?.page), [9, 9, 9]);
 	assert.equal((html.match(/Knowledge check: <span>3.9<\/span>/g) ?? []).length, 2);
 	assert.equal((html.match(/Online activity: <span>3.9<\/span>/g) ?? []).length, 1);
 	assert.match(html, /1 activity \(1 online, 0 worksheet\)/);
-	const evidenceTable = html.match(/<table class="blocks evidence-table">[\s\S]*?<\/table>/)?.[0] ?? "";
+	const evidenceTable = html.match(/<table class="blocks evidence-table" role="table">[\s\S]*?<\/table>/)?.[0] ?? "";
 	assert.doesNotMatch(evidenceTable, /data-page|tabindex|title=/);
 });
 
@@ -113,8 +113,8 @@ test("course trace has one plain-text row per page and separates response blocks
 		{ stated: ["O1"], instructed: [], activities: [], checks: [] },
 		{ stated: [], instructed: ["O1"], activities: ["O1"], checks: ["O1"] },
 	]);
-	const table = renderTrace(trace).match(/<table class="blocks trace-table">[\s\S]*?<\/table>/)?.[0] ?? "";
-	assert.match(table, /<th scope="row">1.1<\/th>[\s\S]*data-label="Objectives stated">O1<\/td>/);
+	const table = renderTrace(trace).match(/<table class="blocks trace-table" role="table">[\s\S]*?<\/table>/)?.[0] ?? "";
+	assert.match(table, /<th scope="row" role="rowheader" data-label="Page">1.1<\/th>[\s\S]*data-label="Objectives stated">O1<\/td>/);
 	assert.doesNotMatch(table, /Page in this row|data-page|tabindex|title=/);
 });
 
@@ -131,7 +131,7 @@ test("course trace keeps the last page inside a 1000 px plot", () => {
 	assert.ok(width <= 312 + 1000);
 	assert.match(html, /data-page="1\.300"/);
 	assert.match(html, /width="5" height="5"/);
-	assert.equal((html.match(/<tr data-lesson="1"><th scope="row">1\./g) ?? []).length, 300);
+	assert.equal((html.match(/<tr data-lesson="1" role="row"><th scope="row" role="rowheader" data-label="Page">1\./g) ?? []).length, 300);
 });
 
 test("activities end in the flow evidence column", () => {
