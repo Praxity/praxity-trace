@@ -34,7 +34,6 @@ function projectedHtml(html: string, screen = true): string {
 }
 function markdownText(value: string): string {
 	return value
-		.replace(RAW_TOOLTIP, "$1")
 		.replace(/(?<!\\)\[([^\]]+)\]\([^)]*\)/g, "$1")
 		.replace(/(?<!\\)\*\*(.*?)\*\*|(?<!\\)__(.*?)__/g, (_match, a: string | undefined, b: string | undefined) => a ?? b ?? "")
 		.replace(/(?<!\\)\*([^*\s][^*]*?)\*/g, "$1")

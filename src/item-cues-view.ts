@@ -3,7 +3,7 @@ import { generated, method, reflowTables, viewBlock } from "./modes.ts";
 import { esc, lessonTags, where } from "./places.ts";
 
 const number = (value: number) => Number.isInteger(value) ? String(value) : value.toFixed(2);
-const probability = (p: number) => esc(p < 0.001 ? "p < 0.001" : `p = ${p.toFixed(3)}`);
+const probability = (p: number) => esc(`p = ${p.toPrecision(4)}`);
 const counted = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
 const sentence = (text: string) => `${esc(text)}${/[.!?]$/.test(text) ? "" : "."}`;
 function table(caption: string, headings: string[], rows: string): string {
@@ -12,7 +12,7 @@ function table(caption: string, headings: string[], rows: string): string {
 const tails = (score: ProbeScore) => `Chance of this many or more by guessing: ${score.tooFewItems ? "Too few items to compare with guessing" : probability(score.p)}. Chance of this few or fewer: ${score.tooFewItemsLow ? "Too few items to compare with guessing" : probability(score.pLow)}.`;
 function itemWhere(view: ItemCuesView, ref: string): string {
 	const item = view.course.items.find(item => item.ref === ref), place = view.places[ref];
-	return `${where(view.places, ref)} <span class="file">${esc(item?.label ?? ref)}${place ? ` · ${esc(place.file)}${place.line !== null ? `:${place.line}` : ""}` : ""}</span>`;
+	return where(view.places, ref);
 }
 const sources = (view: ItemCuesView, refs: string[]) => [...new Set(refs)].map(ref => itemWhere(view, ref)).join("; ") || "None";
 
@@ -23,7 +23,7 @@ function summary(row: ItemCueRow): string {
 }
 
 function overview(view: ItemCuesView): string {
-	return table("Choices-only summary: course, then banks", ["Scope", "Right / total", "Guessing gets about", "Chance of this many or more", "Chance of this few or fewer", "Cover-the-options"], [view.course, ...view.banks].map(row => {
+	return table("Choices-only summary: course, then banks", ["Scope", "Right / total", "Guessing gets about", "Upper tail: at least this many", "Lower tail: at most this many", "Cover-the-options"], [view.course, ...view.banks].map(row => {
 		const score = row.choicesOnly;
 		return `<tr ${lessonTags(view.places, row.items.map(item => item.ref))}><th scope="row">${esc(row.label)}</th><td>${score ? `${score.right} / ${score.total}` : "Probes not run"}</td><td>${number(row.chanceExpected)}</td><td>${score ? score.tooFewItems ? "Too few items to compare with guessing" : probability(score.p) : "Probes not run"}</td><td>${score ? score.tooFewItemsLow ? "Too few items to compare with guessing" : probability(score.pLow) : "Probes not run"}</td><td>${row.coverTheOptions?.status ?? "Probes not run"}</td></tr>`;
 	}).join(""));
