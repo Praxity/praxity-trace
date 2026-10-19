@@ -1,4 +1,4 @@
-import { CUES, SOLVER_CUES, SPREAD_FIXES, type Cue, type ItemCueRow, type ItemCuesView, type ProbeScore } from "./item-cues.ts";
+import { BRACKET_REMEDY, PROBE_SETUP, CUES, SOLVER_CUES, SPREAD_FIXES, type Cue, type ItemCueRow, type ItemCuesView, type ProbeScore } from "./item-cues.ts";
 import { generated, method, reflowTables, viewBlock } from "./modes.ts";
 import { esc, lessonTags } from "./places.ts";
 
@@ -18,9 +18,9 @@ const sources = (view: ItemCuesView, refs: string[]) => [...new Set(refs)].map(r
 
 function summary(row: ItemCueRow, excludedCount: number): string {
 	const score = row.choicesOnly;
-	const exclusions = row.id === "course" ? `<p>${counted(excludedCount, "item")} left out${excludedCount ? "; see Excluded items" : ""}.</p>` : "";
+	const exclusions = row.id === "course" && excludedCount ? `<p>${counted(excludedCount, "item")} left out; see Excluded items.</p>` : "";
 	return exclusions + (score ? `<p>The solver picked the key on ${score.right} of ${score.total} items without seeing the questions. Guessing gets about ${number(score.chanceExpected)}. ${tails(score)} Choices-only solver: ${generated(score.model, esc(score.model))}.</p>`
-		: "<p><strong>Probes not run.</strong> No solver test yet. Run praxity-trace prepare item-cues with schema 1 inspect JSON, projection 2, to test whether the options give away the key.</p>");
+		: `<p><strong>Probes not run.</strong>${row.id === "course" ? ` Run <code>${esc(PROBE_SETUP.inspect)}</code>, then <code>${esc(PROBE_SETUP.prepare)}</code>.` : ""}</p>`);
 }
 
 function overview(view: ItemCuesView): string {
@@ -80,14 +80,14 @@ function chart(row: ItemCueRow, view: ItemCuesView): string {
 
 function exclusions(view: ItemCuesView): string {
 	if (!view.excluded.length) return "";
-	const advice = view.excluded.some(item => item.reason.startsWith("Brackets left")) ? "Trace leaves bracketed items out of both solver tests so a hidden glossary definition cannot reach the solvers. Remove the square or curly brackets, or move a glossary term out of another term's label, then run Trace again. Otherwise check the item by hand." : "These items were left out of both solver tests. Review each reason and check the items by hand if they cannot be included.";
+	const advice = view.excluded.some(item => item.reason.endsWith(BRACKET_REMEDY)) ? "Trace leaves bracketed items out of both solver tests so a hidden glossary definition cannot reach the solvers. Remove the square or curly brackets, or move a glossary term out of another term's label, then run Trace again. Otherwise check the item by hand." : "These items were left out of both solver tests. Review each reason and check the items by hand if they cannot be included.";
 	return `<p>${advice}</p>${table(`Excluded items (${view.excludedCount})`, ["Item", "Reason"], view.excluded.map(item => `<tr ${lessonTags(view.places, [item.ref])}><th scope="row">${itemWhere(view, item.ref)}</th><td>${esc(item.reason)}</td></tr>`).join(""))}`;
 }
 
 export function renderItemCues(view: ItemCuesView): string {
 	if (!view.course.count) {
 		if (!view.excluded.length) return "";
-		return `<section aria-labelledby="item-cues">${viewBlock({ id: "item-cues", headingId: "item-cues", level: 2, title: "Item cues", lead: `<p>No eligible keyed choices. ${counted(view.excludedCount, "item")} left out; see Excluded items. Review each reason below.</p>`, table: exclusions(view) })}</section>`;
+		return `<section aria-labelledby="item-cues">${viewBlock({ id: "item-cues", headingId: "item-cues", level: 2, title: "Item cues", lead: `<p>Trace left out all ${counted(view.excludedCount, "item")}. The reasons are below.</p>`, table: exclusions(view) })}</section>`;
 	}
 	const rows = [view.course, ...view.banks];
 	const body = (mode: "chart" | "table") => rows.map(row => `<div ${lessonTags(view.places, row.items.map(item => item.ref))}><h3>${esc(row.label)}</h3>${summary(row, view.excludedCount)}${bankPatterns(row, view)}${mode === "chart" ? chart(row, view) : `${cueTables(row, view)}${spreads(row, view)}${itemTable(row, view)}${solverResponses(row, view)}`}</div>`).join("");

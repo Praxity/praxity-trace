@@ -8,15 +8,21 @@ import { buildPlaces, indexCourse, type Places } from "./places.ts";
 import { assessmentStem, oneLine, previewText, visibleText } from "./text.ts";
 
 export const PROMPT_VERSION = "item-cues/6";
-export const PROBE_INPUT_ERROR = "Prepare item-cues from `praxity inspect <course> --schema 1` output. HTML exports aren't supported for blind probes yet.";
-export const PROBE_JSON_ERROR = "Expected `praxity inspect --schema 1` JSON.";
-const PROBE_KEYS_ERROR = "This inspect output has no answer keys (projection 2). Re-run `praxity inspect <course> --schema 1` with current Studio.";
+export const PROBE_SETUP = {
+	inspect: "praxity inspect <course-folder> --schema 1 > course.json",
+	prepare: "praxity-trace prepare item-cues course.json --out <new-empty-folder>",
+};
+export const PROBE_JSON_ERROR = `Blind probes need Studio's inspect JSON. Run \`${PROBE_SETUP.inspect}\`, then \`${PROBE_SETUP.prepare}\`.`;
+export const PROBE_INPUT_ERROR = `${PROBE_JSON_ERROR} \`report\` still runs on HTML exports.`;
+const PROBE_KEYS_ERROR = "This inspect file has no answer keys. Update Studio, run the same inspect command again, and prepare from the new file.";
+export const BRACKET_REMEDY = "Remove the brackets or check this item by hand.";
+export class ProbeInputError extends Error {}
 
 export function requireProbeInput(input: unknown): void {
-	if (record(input) && input.schema === "praxity-html/0") throw new Error(PROBE_INPUT_ERROR);
-	if (!record(input) || !["praxity-inspect/0", "praxity-inspect/1"].includes(input.schema as string)) throw new Error(PROBE_JSON_ERROR);
-	if (input.schema === "praxity-inspect/0" || input.projectionVersion === undefined || (typeof input.projectionVersion === "number" && input.projectionVersion < 2)) throw new Error(PROBE_KEYS_ERROR);
-	if (input.projectionVersion !== 2) throw new Error("Unsupported inspect projection. Blind probes require projection 2.");
+	if (record(input) && input.schema === "praxity-html/0") throw new ProbeInputError(PROBE_INPUT_ERROR);
+	if (!record(input) || !["praxity-inspect/0", "praxity-inspect/1"].includes(input.schema as string)) throw new ProbeInputError(PROBE_JSON_ERROR);
+	if (input.schema === "praxity-inspect/0" || input.projectionVersion === undefined || (typeof input.projectionVersion === "number" && input.projectionVersion < 2)) throw new ProbeInputError(PROBE_KEYS_ERROR);
+	if (input.projectionVersion !== 2) throw new ProbeInputError("This inspect file is newer than this Trace. Update Trace.");
 }
 const STOP = new Set("a an the and or but if then than that this these those as at by for from in into of on to with about after before during which what who how when where why is are was were be been being has have had do does did can could might will would should it its they their them he his she her you your we our one each some such more most best first directly following choose identify".split(" "));
 const ABSOLUTES = new Set("always never none every completely absolutely entirely all must necessarily".split(" "));
@@ -37,30 +43,50 @@ export interface CueItem {
 	stemDependsOnNonText: boolean;
 }
 
-/** Only markup observed in the producer's choice fields; visibility is not inferred from CSS. */
-function probeHtml(html: string): boolean {
-	let valid = true;
-	const fragment = parseFragment(html, { sourceCodeLocationInfo: true, onParseError: () => { valid = false; } });
+/** Studio's visible inline forms, without CSS or attributes that could hide their text. */
+function probeHtml(html: string): string | null {
+	let rejected: string | null = null, malformed = false;
+	const reject = (detail: string) => { rejected ??= detail; return false; };
+	const fragment = parseFragment(html, { sourceCodeLocationInfo: true, onParseError: () => { malformed = true; } });
 	const covered = new Uint8Array(html.length);
 	const mark = (location: { startOffset: number; endOffset: number }) => covered.fill(1, location.startOffset, location.endOffset);
 	const allowed = (node: DefaultTreeAdapterTypes.Node): boolean => {
 		if ("tagName" in node) {
-			if (node.namespaceURI !== "http://www.w3.org/1999/xhtml" || node.attrs.some(attr => attr.namespace || attr.prefix)) return false;
-			if (node.tagName === "p") { if (node.attrs.length) return false; }
+			if (node.namespaceURI !== "http://www.w3.org/1999/xhtml") return reject(`<${node.tagName}> outside HTML`);
+			let attributes: string[];
+			if (["p", "strong", "em", "code", "del", "mark"].includes(node.tagName)) attributes = [];
+			else if (node.tagName === "a") attributes = ["href"];
 			else if (node.tagName === "span") {
-				if (node.attrs.length !== 2 || node.attrs.find(attr => attr.name === "class")?.value.trim() !== "inline-tooltip-trigger" || !node.attrs.some(attr => attr.name === "data-tooltip-content")) return false;
-			} else return false;
-			if (!node.sourceCodeLocation?.startTag) return false;
+				// HTML class tokens split on ASCII whitespace. Unicode spaces remain part of an unknown class.
+				const classAttribute = node.attrs.find(attr => attr.name === "class");
+				if (!classAttribute) return reject(node.attrs[0] ? `the '${node.attrs[0].name}' attribute on <span>` : "<span> without a supported class");
+				const classes = classAttribute.value.split(/[\t\n\f\r ]+/).filter(Boolean);
+				if (classes.length !== 1) return reject("the 'class' attribute on <span>");
+				if (classes[0] === "inline-tooltip-trigger") attributes = ["class", "data-tooltip-content"];
+				else if (classes[0] === "praxity-doodle") attributes = ["class", "data-doodle", "data-doodle-mods"];
+				else return reject("the 'class' attribute on <span>");
+			} else return reject(`<${node.tagName}>`);
+			const extra = node.attrs.find(attr => attr.namespace || attr.prefix || !attributes.includes(attr.name));
+			if (extra) return reject(`the '${extra.name}' attribute on <${node.tagName}>`);
+			const missing = attributes.find(name => !node.attrs.some(attr => attr.name === name));
+			if (missing) return reject(`<${node.tagName}> without '${missing}'`);
+			if (!node.sourceCodeLocation?.startTag) return reject(`an incomplete <${node.tagName}>`);
 			mark(node.sourceCodeLocation.startTag);
 			if (node.sourceCodeLocation.endTag) mark(node.sourceCodeLocation.endTag);
 		} else if (node.nodeName === "#text") {
-			if (!node.sourceCodeLocation) return false;
+			if (!node.sourceCodeLocation) return reject("unlocated text");
 			mark(node.sourceCodeLocation);
-		} else if (node.nodeName !== "#document-fragment") return false;
+		} else if (node.nodeName !== "#document-fragment") return reject("an HTML comment or declaration");
 		return !("childNodes" in node) || node.childNodes.every(allowed);
 	};
+	allowed(fragment);
+	if (!rejected && malformed) rejected = "malformed HTML";
 	// Fragment parsing silently discards some tags, including html/body; every source character must be accounted for.
-	return allowed(fragment) && valid && covered.every(Boolean);
+	if (!rejected && !covered.every(Boolean)) {
+		const tag = html.slice(covered.indexOf(0)).match(/^<\/?([a-z][\w:-]*)/i)?.[1];
+		rejected = tag ? `<${tag}> outside the parsed text` : "unconsumed HTML";
+	}
+	return rejected;
 }
 
 /** Reads only the existing course model and shared visible-text projection. */
@@ -90,15 +116,14 @@ export function keyedChoices(course: Course): { items: CueItem[]; excluded: Arra
 		if (keys.length !== 1) { skip(`Expected one key, found ${keys.length}`); continue; }
 		const labels = texts.filter(text => text.role === "option");
 		if (typed && (labels.length !== options.length || labels.some((label, i) => label.value !== options[i]!.label))) throw new Error(`Invalid keyed choice ${ref}: option text projection does not match the key`);
-		if ([...stemTexts, ...labels].some(text => text.format === "html" && !probeHtml(text.value))) {
-			skip("This question's text uses markup Trace can't safely check. Simplify it or re-export from current Studio."); continue;
-		}
+		const markup = [...stemTexts, ...labels].filter(text => text.format === "html").map(text => probeHtml(text.value)).find(detail => detail !== null);
+		if (markup) { skip(`The question uses ${markup}, which Trace can't safely check yet. Check this item by hand.`); continue; }
 		const visible = options.map((option, i) => screen(typed ? { typedTexts: [labels[i]!] } : { text: option.text }));
 		// Fail closed on leftover delimiters, including unfamiliar syntax, until the producer supplies rendered text.
 		const bracketField = [stem, ...visible].findIndex(text => /[\[\]{}]/.test(text));
 		if (bracketField !== -1) {
 			const bracket = [stem, ...visible][bracketField]!.match(/[\[\]{}]/)![0];
-			skip(`Brackets left in ${bracketField === 0 ? "question" : `option ${bracketField}`}: ${"[]".includes(bracket) ? "square" : "curly"} bracket '${bracket}'. Remove the brackets or check this item by hand.`); continue;
+			skip(`${bracketField === 0 ? "The question" : `Option ${bracketField}`} still contains '${bracket}'. ${BRACKET_REMEDY}`); continue;
 		}
 		if (visible.some(label => !normal(label))) { skip("An option has no comparable text"); continue; }
 		const bankGroups = [...(groups.get(ref) ?? [])];

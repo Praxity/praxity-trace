@@ -22,13 +22,11 @@ The schema 1 interpretation fingerprint is `trace-inspect/3`. Sequences count as
 
 Sentence splitting keeps blank-line paragraph breaks and separate structural items as boundaries before text is flattened for display. Wrapped single line breaks and VTT cue boundaries stay within a sentence. This changes Language sentence counts and can renumber later sentence ids on a page. It does not change the fingerprint or any prompt version: model answers cite block refs, not sentence ids, and `course.md` is unchanged. Comments anchored to a renumbered sentence find it again by quote, as [ADR 0007](0007-report-comments.md) describes.
 
-
 ## Hidden screen content and item-cues probes
 
 The shared screen projection now removes hidden descendants and post-response HTML elements before text conversion, including hidden attributes, inline display/visibility hiding and known feedback classes. Attributes never become screen prose. Explicit feedback fields remain in their separate channel. Item-cues selects its stems and options through that projection, never through raw labels or a second parser. The schema 1 interpretation fingerprint advances to `trace-inspect/4`, invalidating older answers. Item-cues uses prompt version `item-cues/2` because blind option order, structured cue codes and cover-answer judgements changed. Other prompts retain their versions; their schema 1 answers are invalidated by the fingerprint.
 
 Item-cues consumes optional authored `assessment.shuffle` when supplied. Projection 2 output that omits it remains shuffle-unknown; missing metadata never establishes fixed order. The HTML adapter preserves `response.selectionMode` and `response.shuffle` in its existing course model.
-
 
 ## Markdown glossary projection
 
@@ -42,16 +40,14 @@ Item-cues keeps the shared visible-text projection and then checks each projecte
 
 This is an eligibility guard, not another inline parser. Studio should eventually supply visible field text rendered by its own tokenizer; that producer change is outside this view. Shared projection and its `trace-inspect/5` fingerprint remain unchanged. Item-cues advances to `item-cues/4` for the guarded item set and revised judge guidance. The command shapes and answer field names remain unchanged.
 
-
 ## Inspect-only blind preparation
 
 Blind item-cues bundles require `praxity inspect <course> --schema 1` JSON with projection 2. The CLI refuses directories and non-inspect stdin before preparation, and preparation validates the course schema and projection before creating output. HTML export visibility cannot yet be established reliably for blind solver inputs. Scripted `report` checks remain available for HTML exports and schema 0; they do not write solver inputs.
 
 The bracket guard remains unchanged in scope, including literal brackets. Excluded rows retain question excerpts and source pointers; the course summary counts exclusions, and the all-excluded view asks the author to review the reasons. Prompt version `item-cues/5` records the narrower preparation contract and revised alternative-answer guidance. The shared text projection and its freshness fingerprint are unchanged.
 
-
 ## Blind HTML field allow-list
 
-Projection 2 can contain HTML choice stems even when options are Markdown. Item-cues eligibility accepts only the inventoried producer forms: `p` without attributes, and `span` with exactly `class="inline-tooltip-trigger"` and `data-tooltip-content`. The existing projection removes the tooltip attribute and its definition from solver prose. No style or hiding attribute, unknown class, or other element is accepted. Parsing errors and markup discarded by the fragment parser also exclude the item. Validation uses the installed HTML parser and accounts for every source character, including tags a fragment parser silently discards.
+Projection 2 can contain HTML choice stems even when options are Markdown. Item-cues eligibility accepts the markup Studio emits in choice stems: attribute-free `p`, `strong`, `em`, `code`, `del` and `mark`; `a` with only `href`; tooltips with exactly `class="inline-tooltip-trigger"` and `data-tooltip-content`; and doodles with exactly `class="praxity-doodle"`, `data-doodle` and `data-doodle-mods`. Class tokens split on HTML ASCII whitespace only. Non-ASCII whitespace remains part of a different, unknown class. Empty icon and variable spans remain excluded. The existing projection removes the tooltip attribute and its definition from solver prose. No style or hiding attribute, unknown class, or other element is accepted. Parsing errors and markup discarded by the fragment parser also exclude the item. Validation uses the installed HTML parser and accounts for every source character, including tags a fragment parser silently discards.
 
-This policy belongs to item-cues eligibility and is reused by preparation, answer validation and scored denominators. The shared visibility projection remains unchanged, with no interpretation fingerprint bump. The plain exclusion reason asks authors to simplify the markup or re-export from current Studio. The item-cues prompt advances to `item-cues/6` for the narrower accepted evidence. Studio-rendered visible text remains the long-term replacement.
+Preparation, answer validation and scored denominators all use this check. The shared visibility projection remains unchanged, with no interpretation fingerprint bump. The exclusion reason names the rejected tag or attribute and asks authors to check the item by hand. The item-cues prompt advances to `item-cues/6` for the narrower accepted evidence. Studio-rendered visible text remains the long-term replacement.

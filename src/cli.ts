@@ -22,7 +22,7 @@ import { buildReport, renderHtml } from "./report.ts";
 import { parseRecommendations, prepareRecommendations } from "./recommendations.ts";
 import { parseTasks, prepareTasks, tasksView } from "./tasks.ts";
 import { formatCommentsMarkdown, parseComments } from "./comments.ts";
-import { itemCuesView, parseItemCues, prepareItemCues, PROBE_INPUT_ERROR, PROBE_JSON_ERROR, requireProbeInput } from "./item-cues.ts";
+import { itemCuesView, parseItemCues, prepareItemCues, PROBE_INPUT_ERROR, PROBE_JSON_ERROR, ProbeInputError, requireProbeInput } from "./item-cues.ts";
 
 const HELP = `Usage:
   praxity-trace report <inspect.json|html-dir|-> --out <dir> [--alignment <answer.json>] [--tasks <answer.json>] [--concepts <answer.json>] [--terms <answer.json>] [--visuals <answer.json>] [--distinctions <answer.json>] [--item-cues <answer.json>] [--recommendations <answer.json>]
@@ -149,15 +149,20 @@ async function readInput(path: string): Promise<string> {
 }
 
 async function readCourse(path: string, probes = false): Promise<Course> {
-	if (path !== "-" && (await stat(path)).isDirectory()) {
-		if (probes) throw new Error(PROBE_INPUT_ERROR);
-		return readHtmlCourse(path);
+	try {
+		if (path !== "-" && (await stat(path)).isDirectory()) {
+			if (probes) throw new ProbeInputError(PROBE_INPUT_ERROR);
+			return readHtmlCourse(path);
+		}
+		const input = await readInput(path);
+		if (probes) {
+			let raw: unknown;
+			try { raw = JSON.parse(input); } catch (cause) { throw new ProbeInputError(PROBE_JSON_ERROR, { cause }); }
+			requireProbeInput(raw);
+		}
+		return parseCourse(input);
+	} catch (error) {
+		if (error instanceof ProbeInputError) { console.error(error.message); process.exit(1); }
+		throw error;
 	}
-	const input = await readInput(path);
-	if (probes) {
-		let raw: unknown;
-		try { raw = JSON.parse(input); } catch (cause) { throw new Error(PROBE_JSON_ERROR, { cause }); }
-		requireProbeInput(raw);
-	}
-	return parseCourse(input);
 }

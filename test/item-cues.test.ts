@@ -420,7 +420,7 @@ test("bundle CLI strips canaries from typed inspect inputs and refuses unsupport
 	for (const [name, input] of [["legacy", join(dir, "legacy.json")], ["legacy-native", join(dir, "legacy-native.json")], ["typed", join(dir, "typed.json")], ["typed-markdown", join(dir, "typed-markdown.json")], ["export", exported]]) {
 		const out = join(dir, `bundle-${name}`), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", input!, "--out", out], { encoding: "utf8" });
 		if (!["typed", "typed-markdown"].includes(name!)) {
-			assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(name === "export" ? "HTML exports aren't supported for blind probes yet." : "This inspect output has no answer keys (projection 2)."));
+			assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(name === "export" ? "`report` still runs on HTML exports." : "This inspect file has no answer keys."));
 			await assert.rejects(readdir(out), { code: "ENOENT" });
 			continue;
 		}
@@ -583,7 +583,7 @@ test("blind bundles fail closed on unconsumed markup in either stems or options,
 	assert.equal(reported.status, 0, reported.stderr);
 	const view = JSON.parse(await readFile(join(report, "report.json"), "utf8")).itemCues;
 	assert.equal(view.excludedCount, 8); assert.equal(view.course.count, 1);
-	assert.ok(view.excluded.every((row: { reason: string; label: string }) => /Brackets left in (question|option 1): square bracket/.test(row.reason) && /Remove the brackets or check this item by hand/.test(row.reason) && /Red|UNPARSED|Which symbol is specified/.test(row.label)));
+	assert.ok(view.excluded.every((row: { reason: string; label: string }) => /(The question|Option 1) still contains/.test(row.reason) && /Remove the brackets or check this item by hand/.test(row.reason) && /Red|UNPARSED|Which symbol is specified/.test(row.label)));
 	const html = await readFile(join(report, "report.html"), "utf8");
 	assert.match(html, /8 items left out; see Excluded items/);
 	assert.match(html, /move a glossary term out of another term/);
@@ -592,7 +592,7 @@ test("blind bundles fail closed on unconsumed markup in either stems or options,
 	const excludedOnly = structuredClone(raw); excludedOnly.lessons[0]!.pages[0]!.blocks.pop();
 	const only = itemCuesView(parseCourse(JSON.stringify(excludedOnly)));
 	assert.equal(only.course.count, 0); assert.match(renderItemCues(only), /Excluded items \(8\)/);
-	assert.match(renderItemCues(only), /8 items left out/);
+	assert.match(renderItemCues(only), /Trace left out all 8 items\. The reasons are below/);
 	assert.doesNotMatch(renderItemCues(only), /If keys are unavailable, export/);
 });
 
@@ -625,23 +625,24 @@ test("cover answers sort by action needed and show solver names in visible text"
 
 test("probe preparation requires projection-2 schema-1 inspect JSON, including stdin, while HTML scripted reports still work", async context => {
 	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-inspect-only-")); context.after(() => rm(dir, { recursive: true, force: true }));
-	const refusal = "Prepare item-cues from `praxity inspect <course> --schema 1` output. HTML exports aren't supported for blind probes yet.";
+	const setup = "Blind probes need Studio's inspect JSON. Run `praxity inspect <course-folder> --schema 1 > course.json`, then `praxity-trace prepare item-cues course.json --out <new-empty-folder>`.";
+	const refusal = setup + " `report` still runs on HTML exports.";
 	const exported = join(dir, "html"); await mkdir(exported);
 	const data = { question: String.raw`Which colour?<span style="display:/*c*/none">COMMENT_CANARY</span><span style="display:n\6f ne">ESCAPED_CANARY</span>`, options: [{ text: "Red", correct: true }, { text: "Blue", correct: false }] };
 	const native = JSON.stringify({ type: "assessment", data }).replace(/&/g, "&amp;").replace(/'/g, "&#39;");
 	await writeFile(join(exported, "lesson.html"), `<html lang="en"><body><article class="deck-slide" data-deck-slide="p"><div data-block-type="assessment" data-block-json='${native}'>Red Blue</div></article></body></html>`);
 	const schema0 = { ok: true, schema: "praxity-inspect/0", studioVersion: "synthetic", course: { title: "Synthetic", locale: "en" }, lessons: [] };
 	const missingProjection = { ...fixture(), projectionVersion: undefined };
-	const expectedJson = "Expected `praxity inspect --schema 1` JSON.";
-	const expectedKeys = "This inspect output has no answer keys (projection 2). Re-run `praxity inspect <course> --schema 1` with current Studio.";
-	const inputs = [["<html>not inspect</html>", expectedJson], ["plain prose", expectedJson], ["{}", expectedJson], [JSON.stringify(schema0), expectedKeys], [JSON.stringify(missingProjection), expectedKeys], [JSON.stringify({ ...fixture(), projectionVersion: 1 }), expectedKeys]];
+	const expectedJson = setup;
+	const expectedKeys = "This inspect file has no answer keys. Update Studio, run the same inspect command again, and prepare from the new file.";
+	const inputs = [["<html>not inspect</html>", expectedJson], ["plain prose", expectedJson], ["{}", expectedJson], [JSON.stringify(schema0), expectedKeys], [JSON.stringify(missingProjection), expectedKeys], [JSON.stringify({ ...fixture(), projectionVersion: 1 }), expectedKeys], [JSON.stringify({ ...fixture(), projectionVersion: 3 }), "This inspect file is newer than this Trace. Update Trace."]];
 	for (const [i, [input, expected]] of inputs.entries()) {
 		const out = join(dir, `stdin-${i}`), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", "-", "--out", out], { input, encoding: "utf8" });
-		assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(expected!), cli.stderr);
+		assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(expected!), cli.stderr); assert.doesNotMatch(cli.stderr, /Error:|at readCourse|node:internal/);
 		await assert.rejects(readdir(out), { code: "ENOENT" });
 	}
 	const out = join(dir, "html-bundle"), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", exported, "--out", out], { encoding: "utf8" });
-	assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(refusal), cli.stderr); await assert.rejects(readdir(out), { code: "ENOENT" });
+	assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(refusal), cli.stderr); assert.doesNotMatch(cli.stderr, /Error:|at readCourse|node:internal/); await assert.rejects(readdir(out), { code: "ENOENT" });
 	await assert.rejects(prepareItemCues(await readHtmlCourse(exported), out), error => error instanceof Error && error.message === refusal);
 	await assert.rejects(prepareItemCues(parseCourse(JSON.stringify(schema0)), out), error => error instanceof Error && error.message === expectedKeys);
 	const report = join(dir, "report"), reported = spawnSync(process.execPath, [resolve("src/cli.ts"), "report", exported, "--out", report], { encoding: "utf8" });
@@ -662,7 +663,7 @@ test("exclusions name curly brackets and singular and plural cover summaries agr
 	assert.doesNotMatch(html, /1 give another|2 differs/);
 	const edited = fixture(); edited.lessons[1]!.pages[0]!.blocks[0]!.texts[0]!.value = "Which set {2, 4}?";
 	const view = itemCuesView(parseCourse(JSON.stringify(edited)));
-	assert.match(view.excluded[0]!.reason, /question: curly bracket/);
+	assert.match(view.excluded[0]!.reason, /The question still contains '\{'/);
 	assert.match(view.excluded[0]!.reason, /Remove the brackets or check this item by hand/);
 });
 
@@ -673,6 +674,10 @@ test("HTML probe eligibility allows only inventoried paragraphs and tooltips acr
 		'<p>Red square<span style="display:/* c */none">COMMENT_CANARY: Red square is the key</span></p>',
 		String.raw`<p>Red square<span style="display:n\6f ne">CSS_ESCAPE_CANARY: Red square is the key</span></p>`,
 		'<p>Red square<span class="unlisted-secret">CLASS_CANARY: Red square is the key</span></p>',
+		'<p>Visible <span class="inline-tooltip-trigger&#160;" data-tooltip-content="definition">UNICODE_CANARY: Red square is the key</span></p>',
+		'<p>Visible <span class="&#160;inline-tooltip-trigger" data-tooltip-content="definition">PREFIX_CANARY: Red square is the key</span></p>',
+		'<p>Visible <span class="inline-tooltip-trigger\u200b" data-tooltip-content="definition">ZERO_WIDTH_CANARY: Red square is the key</span></p>',
+		'<p>Visible <span class="inline-tooltip-trigger\ufeff" data-tooltip-content="definition">BOM_CANARY: Red square is the key</span></p>',
 	];
 	const raw = fixture(), template = raw.lessons[1]!.pages[0]!.blocks[0]!;
 	raw.lessons = [raw.lessons[1]!];
@@ -685,7 +690,7 @@ test("HTML probe eligibility allows only inventoried paragraphs and tooltips acr
 	const markdown = structuredClone(template); markdown.ref = "visible-markdown";
 	markdown.texts.forEach((text, i) => { text.ref = `${markdown.ref}/text-${i}`; text.format = "markdown"; });
 	const tooltip = structuredClone(template); tooltip.ref = "visible-tooltip";
-	const term = '<p><span class="inline-tooltip-trigger" data-tooltip-content="TOOLTIP_CANARY: Red square is the key">Red square</span></p>';
+	const term = '<p><span class=" \tinline-tooltip-trigger\n\f\r " data-tooltip-content="TOOLTIP_CANARY: Red square is the key">Red square</span></p>';
 	tooltip.texts.forEach((text, i) => { text.ref = `${tooltip.ref}/text-${i}`; if (text.role === "prompt" || (text.role === "option" && i === 1)) { text.format = "html"; text.value = term; } });
 	tooltip.assessment.options[0]!.label = term;
 	raw.lessons[0]!.pages[0]!.blocks = [...blocks, markdown, tooltip];
@@ -702,15 +707,15 @@ test("HTML probe eligibility allows only inventoried paragraphs and tooltips acr
 			const file = join(path, entry.name); if (entry.isDirectory()) await scan(file); else { files++; assert.doesNotMatch(await readFile(file, "utf8"), /[A-Z_]+_CANARY|Red square is the key|data-tooltip-content/, file); }
 		} }; await scan(out); assert.equal(files, 6);
 		for (const probe of ["choices-only", "cover-the-options"]) {
-			const rows = JSON.parse(await readFile(join(out, probe, "items.json"), "utf8")); assert.deepEqual(rows.map((row: { ref: string }) => row.ref), ["1.1.7", "1.1.8"]);
+			const rows = JSON.parse(await readFile(join(out, probe, "items.json"), "utf8")); assert.deepEqual(rows.map((row: { ref: string }) => row.ref), ["1.1.15", "1.1.16"]);
 		}
 		assert.ok(JSON.parse(await readFile(join(out, "choices-only/items.json"), "utf8")).every((row: { options: string[] }) => row.options.includes("Red square")));
 		assert.equal(JSON.parse(await readFile(join(out, "cover-the-options/items.json"), "utf8"))[1].stem, "Red square");
 	}
 	const view = itemCuesView(course);
-	assert.equal(view.excludedCount, 6); assert.equal(view.course.count, 2);
-	assert.ok(view.excluded.every(item => item.reason === "This question's text uses markup Trace can't safely check. Simplify it or re-export from current Studio."));
-	assert.match(renderItemCues(view), /6 items left out/);
+	assert.equal(view.excludedCount, 14); assert.equal(view.course.count, 2);
+	assert.ok(view.excluded.every(item => /attribute.*<span>|class.*<span>/.test(item.reason) && /Check this item by hand/.test(item.reason)));
+	assert.match(renderItemCues(view), /14 items left out/);
 });
 
 test("HTML allow-list refuses hiding, unfamiliar markup and malformed attributes even when visible text looks safe", () => {
@@ -726,6 +731,47 @@ test("HTML allow-list refuses hiding, unfamiliar markup and malformed attributes
 		block.texts[0]!.format = "html"; block.texts[0]!.value = html;
 		const view = itemCuesView(parseCourse(JSON.stringify(raw)));
 		assert.equal(view.banks.length, 1, html); assert.equal(view.excludedCount, 1, html);
-		assert.match(view.excluded[0]!.reason, /markup Trace can't safely check/, html);
+		assert.match(view.excluded[0]!.reason, /Trace can't safely check/, html);
 	}
+});
+
+
+test("ordinary Studio inline formatting stays eligible without attributes that can hide it", () => {
+	const forms = [
+		["strong", "<strong>not</strong>"], ["em", "<em>not</em>"], ["code", "<code>len(x)</code>"],
+		["del", "<del>old</del>"], ["mark", "<mark>marked</mark>"], ["a", '<a href="https://example.com">manual</a>'],
+		["span", '<span class="praxity-doodle" data-doodle="circle" data-doodle-mods="">a doodle</span>'],
+	];
+	for (const [tag, html] of forms) {
+		for (const role of ["prompt", "option"]) {
+			const raw = fixture(), block = raw.lessons[1]!.pages[0]!.blocks[0]!;
+			const text = block.texts.find(text => text.role === role)!; text.value = `<p>Which ${html} fits?</p>`; text.format = "html";
+			if (role === "option") block.assessment.options[0]!.label = text.value;
+			const view = itemCuesView(parseCourse(JSON.stringify(raw)));
+			assert.equal(view.excludedCount, 0, `${role} ${tag}`);
+			assert.ok(view.banks[1]!.items.length, tag);
+		}
+		for (const attribute of ['style="display:none"', 'class="unknown"']) {
+			const raw = fixture(), block = raw.lessons[1]!.pages[0]!.blocks[0]!;
+			block.texts[0]!.value = html!.replace(`<${tag}`, `<${tag} ${attribute}`); block.texts[0]!.format = "html";
+			const view = itemCuesView(parseCourse(JSON.stringify(raw)));
+			assert.equal(view.excludedCount, 1, `${tag} ${attribute}`);
+			assert.match(view.excluded[0]!.reason, new RegExp(tag!));
+			assert.doesNotMatch(view.excluded[0]!.reason, /re-export/);
+		}
+	}
+	for (const html of ['<sup>Red</sup>', '<span data-mention="variable:name"></span>', '<span class="praxity-inline-icon" aria-hidden="true"></span>']) {
+		const raw = fixture(), block = raw.lessons[1]!.pages[0]!.blocks[0]!; block.texts[0]!.format = "html"; block.texts[0]!.value = html;
+		const view = itemCuesView(parseCourse(JSON.stringify(raw))); assert.equal(view.excludedCount, 1); assert.match(view.excluded[0]!.reason, /<sup>|<span>/);
+	}
+});
+
+test("report setup commands appear only on course rows and the skill reads the manifest version", async () => {
+	const html = renderItemCues(itemCuesView(load()));
+	assert.doesNotMatch(html, /0 items left out|with schema 1 inspect JSON, projection 2/);
+	assert.equal((html.match(/praxity-trace prepare item-cues course.json/g) ?? []).length, 2, "One course instruction per display mode, never repeated per bank");
+	assert.match(html, /praxity inspect.*course-folder.*--schema 1.*course.json/);
+	const skill = await readFile(resolve("skill/SKILL.md"), "utf8");
+	assert.match(skill, /Copy `view`, `promptVersion` and `courseHash` from the manifest/);
+	assert.doesNotMatch(skill, /Use `item-cues\/\d/);
 });
