@@ -7,7 +7,7 @@ import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { parseFragment, type DefaultTreeAdapterTypes } from "parse5";
 import { parseCourse, courseHash } from "../src/inspect.ts";
-import { binomialTail, maskItem, MaskSpaceError, CUES, itemCuesView, keyedChoices, parseItemCues as readItemCues, prepareItemCues, probeOrder, PROMPT_VERSION } from "../src/item-cues.ts";
+import { binomialTail, englishEvidence, maskItem, MaskSpaceError, CUES, itemCuesView, keyedChoices, parseItemCues as readItemCues, prepareItemCues, probeOrder, PROMPT_VERSION } from "../src/item-cues.ts";
 import { renderItemCues } from "../src/item-cues-view.ts";
 import { readHtmlCourse } from "../src/html.ts";
 
@@ -31,7 +31,7 @@ function fixture() {
 	return { ok: true, schema: "praxity-inspect/1", projectionVersion: 2, studioVersion: "synthetic", revision: "a".repeat(64), course: { title: "Synthetic cue banks", locale: "en" }, lessons: [lesson("leaking", [...planted]), lesson("clean", [{ options: balanced }])] };
 }
 const load = () => parseCourse(JSON.stringify(fixture()));
-const HOLD_DETAIL = "Masked scoring is on hold: schema 1, projection 2 does not report language provenance. The masked gate is unavailable until Studio supplies provenance and Trace verifies it. Stop and ask; do not compute masked tails by hand.";
+const HOLD_DETAIL = "Masked scoring is on hold: included lessons lack confirmed authored English language provenance in this inspect input. Stop and ask; do not compute masked tails by hand.";
 const HELD = { applies: false as const, reason: "language-unconfirmed" as const, detail: HOLD_DETAIL };
 function probeMetadata(course: ReturnType<typeof load>) {
 	return { bundleId: "synthetic-bundle", seed: 0, optionOrder: Object.fromEntries(keyedChoices(course).items.map(item => [item.ref, probeOrder(item, 0)])),
@@ -257,7 +257,7 @@ test("masked you-sound article exception preserves unicorn against vowel-sound d
 
 test("masked initialisms and university preserve an MRI and a university", async context => {
 	const result = await maskedFixture(context, "Which is the correct phrase?", ["an MRI", "a university", "an honest heir", "a European user"]);
-	assert.deepEqual(result.aligned, { stem: "Which is the tifacey yaqovo?", options: ["an ODU", "a vucepapafi", "an atedap itut", "a Rugomane weka"] });
+	assert.deepEqual(result.aligned, { stem: "Which is the tifacey yaqovo?", options: ["an ALI", "a vucepapafi", "an atedap itut", "a Rugomane weka"] });
 });
 
 test("generated pseudo-words also retain the requested article sound class", async context => {
@@ -270,7 +270,7 @@ test("masked singular us is ss endings do not become regular plurals", async con
 	assert.deepEqual(result.aligned, { stem: "Which is a tagecele nihu?", options: ["jacak", "zocati", "ahubopam", "fokoz"] });
 });
 
-// Literal review cases exercise dormant masking without enabling a held probe.
+// Literal review cases cover the bounded masking transform independently of eligibility.
 test("bounded masking preserves the review article acronym plural and pronoun cases across seeds", () => {
 	const cases = [
 		{ stem: "Which is a useful utility?", options: ["utility", "useful tool", "urn", "uninsured patient"], expected: [{ stem: "Which is a gojuya mugecuc?", options: ["mugecuc", "gojuya helu", "ici", "uzegiyota lumajoh"] }, { stem: "Which is a coweqo tafarey?", options: ["tafarey", "coweqo hepu", "eza", "abedekatu buxarax"] }, { stem: "Which is a keqayu fupoqil?", options: ["fupoqil", "keqayu fano", "ogi", "amarajago gejexil"] }] },
@@ -279,14 +279,14 @@ test("bounded masking preserves the review article acronym plural and pronoun ca
 		{"stem": "A chest pain call is an", "options": ["urgent case", "routine check", "scheduled visit", "minor issue"], "expected": [{"stem": "A napuh hiro xena is an", "options": ["omimut rudo", "dahorep check", "livavefil vohic", "jaxer atoti"]}, {"stem": "A pubob ceco rude is an", "options": ["ixiqax luho", "zeduyam check", "foyequjic latol", "wuvoj aqude"]}, {"stem": "A dudem vafo paxe is an", "options": ["uxixuz vicu", "puvatev check", "tirefekiw lorah", "lozel ipuqo"]}]},
 		{"stem": "This magical animal is a", "options": ["unicorn", "apple", "orange", "eagle"], "expected": [{"stem": "This ranewix umotul is a", "options": ["junobem", "apeqi", "uxeqoz", "ivufe"]}, {"stem": "This gefezaw oxugoj is a", "options": ["jirezip", "arulo", "amigaf", "aqine"]}, {"stem": "This dizupak oluhuj is a", "options": ["zuqaziq", "ijaza", "uniyez", "ezumi"]}]},
 		{"stem": "The water company is a", "options": ["utility", "agency", "office", "insurer"], "expected": [{"stem": "The xawak vanimek is a", "options": ["mugecuc", "umopik", "uzuliw", "utileba"]}, {"stem": "The mulum zivinol is a", "options": ["tafarey", "ohavit", "awayuk", "ulexuma"]}, {"stem": "The gunaw dukoduj is a", "options": ["fupoqil", "agejoy", "ahecuv", "ucufoyi"]}]},
-		{"stem": "Set a", "options": ["SMART goal", "vague goal", "loose goal", "broad goal"], "expected": [{"stem": "Jaq a", "options": ["RUZON linu", "kocuk linu", "hutiy linu", "pocig linu"]}, {"stem": "Ruk a", "options": ["LIMON moco", "bohoh moco", "woqoj moco", "vebaq moco"]}, {"stem": "Civ a", "options": ["LIFIP roda", "zonom roda", "peyed roda", "fazod roda"]}]},
-		{"stem": "Upload the course as a", "options": ["SCORM package", "PDF file", "video", "zip"], "expected": [{"stem": "Apuzim the tewaco as a", "options": ["LALIR ruhigel", "GEQ hahu", "gidad", "yif"]}, {"stem": "Eyamuy the hahaxe as a", "options": ["TODAB cujozaf", "WOZ votu", "meluk", "jeb"]}, {"stem": "Eqezik the rupuxe as a", "options": ["LAZOV pewalur", "CEN xira", "cagij", "xem"]}]},
-		{"stem": "Sharing the chart is a", "options": ["HIPAA violation", "policy question", "billing matter", "task"], "expected": [{"stem": "Guwalil the pugix is a", "options": ["TOMIH potetereq", "butixa noyupiri", "fubulep koqudo", "wada"]}, {"stem": "Kuzanag the qulon is a", "options": ["TUPAB lenitifib", "fexudi quqexetu", "yaqodud dohake", "dofo"]}, {"stem": "Mavikad the nujix is a", "options": ["GUJIZ pedimeriv", "biziti lofejenu", "ruzufir kipibe", "coqa"]}]},
-		{"stem": "It connects over a", "options": ["LAN", "WAN", "VPN", "USB"], "expected": [{"stem": "It liqeyijs unex a", "options": ["ROW", "JAC", "TIJ", "WOW"]}, {"stem": "It lenuvins iwel a", "options": ["GIJ", "WAB", "GAW", "BAP"]}, {"stem": "It zumineps ajup a", "options": ["NAH", "YEG", "DAQ", "TON"]}]},
-		{"stem": "The scan ordered was an", "options": ["MRI", "CT scan", "X-ray", "ultrasound"], "expected": [{"stem": "The bavo aroloya was an", "options": ["ANE", "VA bavo", "H-buc", "egoxowemog"]}, {"stem": "The woxe etilehi was an", "options": ["ODU", "ZO woxe", "E-mod", "afamomugoy"]}, {"stem": "The qole erugiga was an", "options": ["MNO", "QU qole", "E-hey", "ocirajutev"]}]},
-		{"stem": "She needed an X-ray and a university consult.", "options": ["an hour", "an HIV test", "a virus", "a radius"], "expected": [{"stem": "She nehipo an H-buc and a cudipogila consult.", "options": ["an iway", "an IYE caju", "a luyiq", "a cuhezo"]}, {"stem": "She hijoda an E-mod and a vucepapafi consult.", "options": ["an orun", "an XBO gefe", "a jacak", "a zocati"]}, {"stem": "She covudu an E-hey and a reyopereto consult.", "options": ["an uhal", "an MVI cama", "a fufav", "a pigomu"]}]},
-		{"stem": "These dashboards track two", "options": ["KPIs", "metric", "goal", "target"], "expected": [{"stem": "These wenuneleks lihoh tam", "options": ["TEHs", "coriko", "linu", "jaxaco"]}, {"stem": "These coremabows lewac raj", "options": ["VOWs", "kohegu", "moco", "vufuki"]}, {"stem": "These kajihomups bexay nez", "options": ["VEVs", "xifiwi", "roda", "kigaku"]}]},
-		{"stem": "The app exposes several", "options": ["APIs", "menus", "button", "window"], "expected": [{"stem": "The iqe uhozehs corizic", "options": ["HVIs", "vijos", "muqaqa", "zibuxu"]}, {"stem": "The ele iwiqejs qaxemon", "options": ["FXEs", "qaqos", "faxebu", "tamita"]}, {"stem": "The ixe ufunuds yijabim", "options": ["FCEs", "yozis", "cekagi", "pacayo"]}]},
+		{"stem":"Set a","options":["SMART goal","vague goal","loose goal","broad goal"],"expected":[{"stem":"Jaq a","options":["KEVAY linu","kocuk linu","hutiy linu","pocig linu"]},{"stem":"Ruk a","options":["BEZUX moco","bohoh moco","woqoj moco","vebaq moco"]},{"stem":"Civ a","options":["BEZIX roda","zonom roda","peyed roda","fazod roda"]}]},
+		{"stem":"Upload the course as a","options":["SCORM package","PDF file","video","zip"],"expected":[{"stem":"Apuzim the tewaco as a","options":["BEFIL ruhigel","GOP hahu","gidad","yif"]},{"stem":"Eyamuy the hahaxe as a","options":["ZUTEQ cujozaf","PUH votu","meluk","jeb"]},{"stem":"Eqezik the rupuxe as a","options":["GAXEK pewalur","JIM xira","cagij","xem"]}]},
+		{"stem":"Sharing the chart is a","options":["HIPAA violation","policy question","billing matter","task"],"expected":[{"stem":"Guwalil the pugix is a","options":["CEGUF potetereq","butixa noyupiri","fubulep koqudo","wada"]},{"stem":"Kuzanag the qulon is a","options":["YEYAB lenitifib","fexudi quqexetu","yaqodud dohake","dofo"]},{"stem":"Mavikad the nujix is a","options":["JAQOB pedimeriv","biziti lofejenu","ruzufir kipibe","coqa"]}]},
+		{"stem":"It connects over a","options":["LAN","WAN","VPN","USB"],"expected":[{"stem":"It liqeyijs unex a","options":["ZIZ","BOZ","WIL","JOD"]},{"stem":"It lenuvins iwel a","options":["GIP","ZOG","VOV","KAC"]},{"stem":"It zumineps ajup a","options":["GUK","QOG","CIP","POX"]}]},
+		{"stem":"The scan ordered was an","options":["MRI","CT scan","X-ray","ultrasound"],"expected":[{"stem":"The bavo aroloya was an","options":["ANU","YO bavo","O-buc","egoxowemog"]},{"stem":"The woxe etilehi was an","options":["ALI","BA woxe","E-mod","afamomugoy"]},{"stem":"The qole erugiga was an","options":["IPA","ZI qole","E-hey","ocirajutev"]}]},
+		{"stem":"She needed an X-ray and a university consult.","options":["an hour","an HIV test","a virus","a radius"],"expected":[{"stem":"She nehipo an O-buc and a cudipogila consult.","options":["an iway","an AVA caju","a luyiq","a cuhezo"]},{"stem":"She hijoda an E-mod and a vucepapafi consult.","options":["an orun","an ODU gefe","a jacak","a zocati"]},{"stem":"She covudu an E-hey and a reyopereto consult.","options":["an uhal","an IJO cama","a fufav","a pigomu"]}]},
+		{"stem":"These dashboards track two","options":["KPIs","metric","goal","target"],"expected":[{"stem":"These wenuneleks lihoh tam","options":["DAYs","coriko","linu","jaxaco"]},{"stem":"These coremabows lewac raj","options":["QACs","kohegu","moco","vufuki"]},{"stem":"These kajihomups bexay nez","options":["ZUTs","xifiwi","roda","kigaku"]}]},
+		{"stem":"The app exposes several","options":["APIs","menus","button","window"],"expected":[{"stem":"The iqe uhozehs corizic","options":["OHOs","vijos","muqaqa","zibuxu"]},{"stem":"The ele iwiqejs qaxemon","options":["IPAs","qaqos","faxebu","tamita"]},{"stem":"The ixe ufunuds yijabim","options":["IFOs","yozis","cekagi","pacayo"]}]},
 		{"stem": "When I log in, I see", "options": ["a menu", "an error", "a form", "a list"], "expected": [{"stem": "When I guq in, I cif", "options": ["a vijo", "an ibefo", "a meku", "a qeji"]}, {"stem": "When I tef in, I xuw", "options": ["a qaqo", "an upiwe", "a mido", "a foba"]}, {"stem": "When I piq in, I tev", "options": ["a yozi", "an ucubi", "a voqi", "a zado"]}]},
 		{"stem": "Which is a singular noun?", "options": ["virus", "radius", "analysis", "glass"], "expected": [{"stem": "Which is a lukukeqi pave?", "options": ["luyiq", "cuhezo", "eyiyuhap", "wefom"]}, {"stem": "Which is a tagecele nihu?", "options": ["jacak", "zocati", "ahubopam", "fokoz"]}, {"stem": "Which is a hizufeku jiqa?", "options": ["fufav", "pigomu", "ekufukun", "gabig"]}]},
 	];
@@ -428,7 +428,7 @@ test("French and missing course.locale never produce a masked score", async cont
 			assert.deepEqual(row.masked, HELD);
 			assert.equal("p" in row.masked!, false); assert.equal("pLow" in row.masked!, false);
 		}
-		assert.match(renderItemCues(view), /does not report language provenance/);
+		assert.match(renderItemCues(view), /lack confirmed authored English language provenance/);
 		assert.equal(itemCuesView(course).course.masked?.applies, false);
 	}
 });
@@ -493,7 +493,8 @@ test("unavailable masked populations discard injected scores and never emit scor
 		const view = itemCuesView(course, supplied);
 		for (const row of [view.course, ...view.banks]) assert.deepEqual(row.masked, HELD);
 		const html = renderItemCues(view);
-		assert.match(html, /does not report language provenance/);
+		assert.match(html, /lack confirmed authored English language provenance/);
+		assert.equal(html.split(HOLD_DETAIL).length - 1, 1, "The full hold detail appears once");
 		assert.match(html, /Stop and ask; do not compute masked tails by hand/);
 		assert.doesNotMatch(html, /Masked guessing-cue responses|masked solver picked/);
 	}
@@ -508,7 +509,7 @@ test("masked bundle keeps function words, digit counts, punctuation and consiste
 	const course = parseCourse(JSON.stringify(replaceOptions(fixture(), source)));
 	for (const name of ["a", "b"]) await prepareItemCues(course, join(dir, name), 17);
 	const manifest = JSON.parse(await readFile(join(dir, "a-review/operator.json"), "utf8"));
-	assert.equal(manifest.promptVersion, "item-cues/10-projection-2");
+	assert.equal(manifest.promptVersion, "item-cues/11-projection-2");
 	assert.equal(manifest.seed, 17);
 	const a = await readFile(join(dir, "a/masked/items.json"), "utf8");
 	assert.equal(withoutIdentity(a), withoutIdentity(await readFile(join(dir, "b/masked/items.json"), "utf8")));
@@ -662,7 +663,7 @@ test("independent probe permutations remove an authored first-key pattern and ma
 	await prepareItemCues(parseCourse(JSON.stringify(raw)), join(dir, "flipped"), 0);
 	assert.equal(withoutIdentity(await readFile(join(dir, "first/choices-only/items.json"), "utf8")), withoutIdentity(await readFile(join(dir, "flipped/choices-only/items.json"), "utf8")));
 	const manifest = JSON.parse(await readFile(join(dir, "first/manifest.json"), "utf8"));
-	assert.deepEqual(Object.keys(manifest), ["view", "promptVersion", "courseHash", "bundleId", "masked"]);
+	assert.deepEqual(Object.keys(manifest), ["view", "promptVersion", "courseHash", "bundleId", "masked", "maskedBanks"]);
 });
 
 test("cover answers need semantic judgement, never literal scoring or free-response p values", () => {
@@ -899,7 +900,7 @@ test("small-bank limits are evaluated separately for high and low tails", () => 
 	assert.equal(view.banks[1]!.choicesOnly!.tooFewItemsLow, true);
 	const html = renderItemCues(view);
 	assert.match(html, /Chance of this few or fewer: Too few items to compare with guessing/);
-	assert.match(html, /The masked gate is unavailable until Studio supplies provenance/);
+	assert.match(html, /Any unavailable bank also withholds pooled gate scores/);
 });
 
 test("absent bank patterns do not prescribe changes and spreads use separate tables", async () => {
@@ -988,7 +989,7 @@ test("blind bundles fail closed on unconsumed markup in either stems or options,
 	assert.equal(only.course.count, 0); assert.match(renderItemCues(only), /Excluded items \(8\)/);
 	assert.match(renderItemCues(only), /Trace left out all 8 items\. The reasons are below/);
 	assert.deepEqual(only.course.masked, HELD);
-	assert.match(renderItemCues(only), /does not report language provenance/);
+	assert.match(renderItemCues(only), /lack confirmed authored English language provenance/);
 	assert.doesNotMatch(renderItemCues(only), /If keys are unavailable, export/);
 });
 
@@ -1171,4 +1172,264 @@ test("report setup commands appear only on course rows and the skill reads the m
 	assert.match(skill, /Copy `view`, `promptVersion`, `courseHash` and `bundleId` from the bundle manifest/);
 	assert.match(skill, /Keep `seed` and `optionOrder` exclusively in the sibling `operator.json`/);
 	assert.doesNotMatch(skill, /Use `item-cues\/\d/);
+});
+
+
+function authored() {
+	const raw = fixture();
+	return { ...raw, course: { ...raw.course, language: { declared: "en-CA", source: "manifest", workspaceContext: "unavailable" } },
+		lessons: raw.lessons.map(lesson => ({ ...lesson, language: { value: "EN-ca", source: "course" } })) };
+}
+
+async function activated(context: { after: (cleanup: () => Promise<void>) => void }, raw = authored(), seed = 17) {
+	const dir = await mkdtemp(join(tmpdir(), "trace-activation-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	const course = parseCourse(JSON.stringify(raw)), bundle = join(dir, "bundle");
+	await prepareItemCues(course, bundle, seed);
+	const operator = JSON.parse(await readFile(join(`${bundle}-review`, "operator.json"), "utf8"));
+	const rows = JSON.parse(await readFile(join(bundle, "masked/items.json"), "utf8")) as Array<{ ref: string; stem: string; options: string[] }>;
+	const items = keyedChoices(course).items;
+	const choice = (ref: string) => operator.optionOrder[ref].indexOf(items.find(item => item.ref === ref)!.key) + 1;
+	const answer = { ...operator,
+		masked: rows.length ? { bundleId: operator.bundleId, probe: "masked", applies: true, model: "masked-solver", answers: rows.map(row => ({ ref: row.ref, choice: choice(row.ref), cue: "guessed", note: "" })) } : { ...operator.masked, bundleId: operator.bundleId, probe: "masked" },
+		choicesOnly: { bundleId: operator.bundleId, probe: "choices-only", model: "plain-solver", answers: items.map(item => ({ ref: item.ref, choice: choice(item.ref), cue: "guessed", note: "" })) },
+		coverTheOptions: { bundleId: operator.bundleId, probe: "cover-the-options", model: "stem-solver", answers: items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+	const parsed = readItemCues(JSON.stringify(answer), course, JSON.stringify(operator));
+	return { dir, bundle, rows, course, operator, answer, parsed, view: itemCuesView(course, parsed) };
+}
+
+function noMaskedScore(value: unknown) {
+	assert.ok(value && typeof value === "object");
+	assert.equal((value as { applies: boolean }).applies, false);
+	for (const field of ["p", "pLow", "pMin", "pLowMin", "right", "total", "chanceExpected", "tooFewItems", "tooFewItemsLow", "items", "cueCounts"]) assert.equal(field in value, false, field);
+}
+
+test("authored English lesson provenance activates preparation parsing and reports for file and stdin", async context => {
+	const raw = authored(); raw.lessons[0]!.language = { value: "eN", source: "lesson" };
+	const result = await activated(context, raw);
+	assert.equal(result.rows.length, 9);
+	assert.deepEqual(result.operator.masked, { applies: true, status: "not run" });
+	assert.deepEqual(itemCuesView(result.course).course.masked, { applies: true, status: "not run" });
+	for (const row of [result.view.course, ...result.view.banks]) {
+		assert.ok(row.masked.applies && row.masked.status === "scored");
+		assert.equal(row.masked.total, row.count); assert.equal(row.masked.right, row.count);
+	}
+	const input = join(result.dir, "input.json"), answer = join(`${result.bundle}-review`, "answer.json");
+	await writeFile(input, JSON.stringify(raw)); await writeFile(answer, JSON.stringify(result.answer));
+	for (const route of ["file", "stdin"]) {
+		const prepared = join(result.dir, route), out = join(result.dir, `${route}-report`);
+		const run = (args: string[]) => { const cli = spawnSync(process.execPath, [resolve("src/cli.ts"), ...args], { input: JSON.stringify(raw), encoding: "utf8" }); assert.equal(cli.status, 0, cli.stderr); };
+		run(["prepare", "item-cues", route === "file" ? input : "-", "--out", prepared, "--seed", "17"]);
+		assert.equal(JSON.parse(await readFile(join(prepared, "masked/items.json"), "utf8")).length, 9);
+		run(["report", route === "file" ? input : "-", "--out", out, "--item-cues", answer]);
+		assert.equal(JSON.parse(await readFile(join(out, "report.json"), "utf8")).itemCues.course.masked.total, 9);
+		assert.match(await readFile(join(out, "report.html"), "utf8"), /Masked guessing-cue probe: 9 of 9 right/);
+	}
+	assert.match(renderItemCues(result.view), /Masked stem and response/);
+	const missing = structuredClone(result.answer); missing.masked.answers.pop();
+	assert.throws(() => readItemCues(JSON.stringify(missing), result.course, JSON.stringify(result.operator)), /every eligible item/);
+	const crossed = structuredClone(result.answer); crossed.masked.probe = "choices-only";
+	assert.throws(() => readItemCues(JSON.stringify(crossed), result.course, JSON.stringify(result.operator)), /bundleId\/probe/);
+});
+
+test("missing malformed default and foreign lesson evidence fail closed without borrowing another lesson", async context => {
+	for (const [language, reason] of [[undefined, "language-unconfirmed"], [null, "language-unconfirmed"], [{ value: "en" }, "language-unconfirmed"], [{ value: 42, source: "lesson" }, "language-unconfirmed"], [{ value: "en", source: "workspace" }, "language-unconfirmed"], [{ source: "default" }, "language"], [{ value: "fr" }, "language"], [{ value: "en", source: "default" }, "language"], [{ value: "", source: "lesson" }, "language"], [{ value: "eng", source: "lesson" }, "language"], [{ value: "fr-CA", source: "lesson" }, "language"]] as const) {
+		const raw = authored(); Object.assign(raw.lessons[1]!, { language });
+		const result = await activated(context, raw);
+		assert.equal(result.rows.length, 8, JSON.stringify(language));
+		assert.equal(result.view.course.count, 9); assert.equal(result.view.banks[1]!.count, 1);
+		for (const row of [result.view.course, result.view.banks[1]!]) { noMaskedScore(row.masked); assert.ok(!row.masked.applies); assert.equal(row.masked.reason, reason); }
+		assert.ok(result.view.banks[0]!.masked.applies && result.view.banks[0]!.masked.status === "scored");
+		if (reason === "language") { assert.ok(!result.view.course.masked.applies); assert.match(result.view.course.masked.detail, /2\.1\.1/); }
+		const forged = structuredClone(result.answer); forged.masked.answers.push({ ref: "2.1.1", choice: 1, cue: "guessed", note: "" });
+		assert.throws(() => readItemCues(JSON.stringify(forged), result.course, JSON.stringify(result.operator)), /unique eligible/);
+	}
+	const raw = authored(); raw.lessons[1]!.language = { value: "fr", source: "lesson" };
+	raw.lessons[1]!.pages[0]!.blocks[0]!.assessment.selectionMode = "multiple";
+	const result = await activated(context, raw);
+	assert.equal(result.view.excludedCount, 1); assert.equal(result.rows.length, 8);
+	assert.ok(result.view.course.masked.applies && result.view.course.masked.status === "scored");
+	assert.equal(result.view.course.masked.total, 8);
+	const detached = authored(); Reflect.deleteProperty(detached.lessons[1]!, "language");
+	Object.assign(detached.lessons[0]!, { language: { value: "en", source: "lesson" }, otherLesson: "clean.prax" });
+	assert.equal((await activated(context, detached)).view.banks[1]!.masked.applies, false);
+});
+
+test("producer revision binds manifest-only and lesson-language-only changes and rejects replayed operator evidence", async context => {
+	const result = await activated(context);
+	for (const kind of ["manifest", "lesson"]) {
+		const raw = authored(); raw.revision = (kind === "manifest" ? "b" : "c").repeat(64);
+		if (kind === "manifest") raw.course.language.declared = "en-US"; else raw.lessons[1]!.language.value = "en-US";
+		const changed = parseCourse(JSON.stringify(raw));
+		assert.notEqual(courseHash(changed), courseHash(result.course));
+		assert.deepEqual(changed.lessons.map(lesson => lesson.sha256), result.course.lessons.map(lesson => lesson.sha256));
+		assert.throws(() => readItemCues(JSON.stringify(result.answer), changed, JSON.stringify(result.operator)), /different course/);
+		assert.throws(() => readItemCues(JSON.stringify({ ...result.answer, courseHash: courseHash(changed) }), changed, JSON.stringify(result.operator)), /different course/);
+	}
+});
+
+test("English discriminating evidence excludes frozen homographs independently of masking", () => {
+	const homographs = "a an in no on or as do so was will also is has had he but for here I";
+	assert.deepEqual(englishEvidence(homographs), { words: 20, evidence: 0, conflicts: [] });
+	assert.deepEqual(englishEvidence("Which of these would you choose?"), { words: 6, evidence: 5, conflicts: [] });
+	assert.deepEqual(englishEvidence("THE 42 isn't on [it]?"), { words: 4, evidence: 3, conflicts: [] });
+	const item = { ref: "1.1.1", label: "Synthetic", bank: "lesson:1", stem: homographs, options: ["the copper", "the wire"], key: 0, shuffle: false, stemDependsOnNonText: false };
+	assert.equal(maskItem(item, 17).stem, homographs);
+});
+
+test("deny-only text conflicts screen every stem with options despite an erroneous English declaration", async context => {
+	const french = ["Toujours appeler le responsable", "Ne jamais appeler le responsable", "Appeler seulement le responsable", "Appeler parfois le responsable"];
+	const cases = [
+		["Which action should you take?", french],
+		["On doit toujours appeler", french],
+		["Quel choix?", french],
+		["Which of these is the one that you would choose?", french],
+		["Was machen Sie in einem Brandfall?", ["Immer melden", "Nie melden", "Nur warten", "Sie m?ssen gehen"]],
+		["Was tun Sie bei Rauch in einem B?ro?", ["Immer melden", "Nie melden", "Nur warten", "Sie m?ssen gehen"]],
+		["Qual ? a fun??o do plano no local?", ["Sempre chamar", "Nunca chamar", "Chamar depois", "N?o chamar"]],
+		["A qui?n se llama si no funciona?", ["Siempre llamar", "Nunca llamar", "Llamar despu?s", "No llamar"]],
+		["Qui a re?u le message?", ["Le but principal", "On appelle", "Avec le responsable", "Vrai ou faux"]],
+	] as const;
+	for (const [stem, options] of cases) {
+		const raw = authored(); replaceOptions(raw, [...options]); raw.lessons[1]!.pages[0]!.blocks[0]!.texts[0]!.value = stem;
+		const result = await activated(context, raw);
+		assert.equal(result.rows.length, 8, stem); noMaskedScore(result.view.course.masked); noMaskedScore(result.view.banks[1]!.masked);
+		assert.ok(!result.view.banks[1]!.masked.applies); assert.equal(result.view.banks[1]!.masked.reason, "language");
+		assert.match(result.view.banks[1]!.masked.detail, /2\.1\.1.*text conflict/);
+		assert.equal(result.view.course.count, 9); assert.equal(result.view.banks[1]!.count, 1);
+		assert.ok(result.view.banks[0]!.masked.applies);
+		assert.match(renderItemCues(result.view), /Unavailable: language/);
+	}
+	// Four English and five French items cannot dilute one another inside a bank.
+	const raw = authored(); raw.lessons = [raw.lessons[0]!];
+	const template = structuredClone(raw.lessons[0]!.pages[0]!.blocks[0]!);
+	raw.lessons[0]!.pages[0]!.blocks = Array.from({ length: 9 }, (_, i) => {
+		const block = structuredClone(template); block.ref = `mixed/${i}`;
+		block.texts.forEach((text, j) => { text.ref = `${block.ref}/text/${j}`; if (text.role === "prompt") text.value = i < 4 ? "Which action should you take?" : ["Qui a re?u", "Le but principal", "Que fait-on", "Vrai ou faux?", "Quel choix?"][i - 4]!; });
+		return block;
+	});
+	const result = await activated(context, raw); assert.equal(result.rows.length, 0); assert.equal(result.view.course.count, 9);
+	noMaskedScore(result.view.course.masked); noMaskedScore(result.view.banks[0]!.masked);
+});
+
+test("terse English noun phrases and content-only banks keep their complete denominators", async context => {
+	const raw = authored();
+	for (const lesson of raw.lessons) for (const block of lesson.pages[0]!.blocks) block.texts[0]!.value = "Correct hand hygiene duration";
+	replaceOptions(raw, ["Twenty seconds", "Ten seconds", "Fifteen seconds", "Thirty seconds"]);
+	const result = await activated(context, raw); assert.equal(result.rows.length, 9);
+	assert.ok(result.view.course.masked.applies && result.view.course.masked.status === "scored"); assert.equal(result.view.course.masked.total, 9);
+	const short = authored(); short.lessons[1]!.pages[0]!.blocks[0]!.texts[0]!.value = "Identify correct hand hygiene";
+	assert.equal((await activated(context, short)).rows.length, 9);
+	for (const stem of ["Which SQL transaction isolation level prevents phantom reads?", "Which copper pipes carry clean water?"]) {
+		const positive = authored(); positive.lessons[1]!.pages[0]!.blocks[0]!.texts[0]!.value = stem;
+		assert.equal((await activated(context, positive)).rows.length, 9);
+	}
+});
+
+test("attainable minimum tails expose the consumer threshold gap per bank and course", async context => {
+	for (const n of [11, 12]) {
+		const raw = authored(), template = structuredClone(raw.lessons[1]!.pages[0]!.blocks[0]!);
+		raw.lessons = [raw.lessons[1]!]; raw.lessons[0]!.pages[0]!.blocks = Array.from({ length: n }, (_, i) => {
+			const block = structuredClone(template); block.ref = `tail/${i}`;
+			block.texts.forEach((text, j) => { text.ref = `${block.ref}/text/${j}`; }); return block;
+		});
+		const result = await activated(context, raw);
+		for (const row of [result.view.course, ...result.view.banks]) for (const score of [row.masked, row.choicesOnly!]) {
+			assert.ok(score.applies && "pMin" in score);
+			assert.equal(score.pMin, n === 11 ? 0.0000002384185791015625 : 0.000000059604644775390625);
+			assert.equal(score.pLowMin, n === 11 ? 0.04223513603210449 : 0.03167635202407837);
+			assert.equal(score.tooFewItemsLow, false); assert.ok(score.pLowMin > 0.025);
+		}
+	}
+	const result = await activated(context);
+	assert.ok(result.view.course.masked.applies && "pMin" in result.view.course.masked);
+	assert.equal(result.view.course.masked.pMin, 0.000003814697265625);
+	assert.equal(result.view.course.masked.pLowMin, 0.07508468627929688);
+});
+
+test("you-sound inflections and masked capitals preserve article class with literal alphabets", () => {
+	const item = { ref: "1.1.1", label: "Synthetic", bank: "lesson:1", stem: "We chose a", options: ["used needle", "usable tool", "unified approach", "Eurozone office", "usage guide", "usability study", "utilize", "utilization", "euros"], key: 0, shuffle: false, stemDependsOnNonText: false };
+	for (let seed = 0; seed < 64; seed++) {
+		const form = maskItem(item, seed); assert.ok(form.options.every(option => /^[b-df-hj-np-tv-z]/i.test(option)), `seed ${seed}`);
+		assert.deepEqual(maskItem({ ...item, key: 3 }, seed), form);
+		for (const [word, alphabet] of [["LAN", "bcdgjkpqtvwyz"], ["SMART", "bcdgjkpqtvwyz"], ["HIPAA", "bcdgjkpqtvwyz"], ["SCORM", "bcdgjkpqtvwyz"], ["MRI", "aeio"], ["HIV", "aeio"], ["X-ray", "aeio"]]) {
+			const output = maskItem({ ...item, options: [word!, "plain", "simple", "routine"] }, seed).options[0]!;
+			assert.ok(alphabet!.includes(output[0]!.toLowerCase()), `${word} -> ${output}, seed ${seed}`);
+		}
+	}
+});
+
+
+test("mask-space blocks only its complete bank and never reports partial tails", async context => {
+	const raw = authored(); replaceOptions(raw, ["q\u0301", "x\u0301", "f\u0301", "j\u0301"]);
+	const result = await activated(context, raw);
+	assert.equal(result.rows.length, 8); assert.equal(result.view.course.count, 9);
+	for (const row of [result.view.course, result.view.banks[1]!]) { noMaskedScore(row.masked); assert.ok(!row.masked.applies); assert.equal(row.masked.reason, "mask-space"); assert.match(row.masked.detail, /2\.1\.1/); }
+	assert.ok(result.view.banks[0]!.masked.applies && result.view.banks[0]!.masked.status === "scored");
+});
+
+test("heterogeneous option counts have literal attainable minima", async context => {
+	const raw = authored(); raw.lessons[0]!.pages[0]!.blocks = [raw.lessons[0]!.pages[0]!.blocks[0]!];
+	const first = raw.lessons[0]!.pages[0]!.blocks[0]!;
+	first.assessment.options = first.assessment.options.slice(0, 2);
+	let options = 0; first.texts = first.texts.filter(text => text.role !== "option" || options++ < 2);
+	const result = await activated(context, raw);
+	const pooled = result.view.course.masked;
+	assert.ok(pooled.applies && pooled.status === "scored"); assert.equal(pooled.pMin, 0.125); assert.equal(pooled.pLowMin, 0.375);
+	const bank = result.view.banks[0]!.masked;
+	assert.ok(bank.applies && bank.status === "scored"); assert.equal(bank.pMin, 0.5); assert.equal(bank.pLowMin, 0.5);
+});
+
+test("lesson overrides can confirm English independently of missing workspace or default course context", async context => {
+	const raw = authored(); raw.course.language = { declared: "", source: "default", workspaceContext: "unavailable" };
+	Reflect.deleteProperty(raw.course.language, "workspaceContext");
+	for (const lesson of raw.lessons) lesson.language = { value: " en_US ", source: "lesson" };
+	const result = await activated(context, raw); assert.equal(result.rows.length, 9);
+	assert.ok(result.view.course.masked.applies);
+});
+
+
+test("German banks on both sides of the former pooled floor remain unavailable", async context => {
+	const german = [
+		"Was sollte ein Mitarbeiter in einem Notfall zuerst tun?",
+		"Was ist die beste Antwort an einen unzufriedenen Kunden?",
+		"Was tun Sie, wenn ein Kollege die Daten an Dritte senden will?",
+		"Was passiert, wenn ein Patient die Medikamente nicht einnimmt?",
+		"Wie oft muss die Anlage in einem Jahr gepr?ft werden?",
+		"Was ist in diesem Fall die richtige Meldung?",
+		"Was gilt f?r Besucher in der Produktionshalle?",
+		"Was sagen Sie einem Kunden, der eine R?ckerstattung will?",
+		"Wer ist richtig?", "Was ist ein Beinahe-Unfall?",
+	];
+	for (const stems of [german, [...german, "Was machen Sie in einem Brandfall?"]]) {
+		const raw = authored(); raw.lessons = [{ ...raw.lessons[0]!, pages: courseWithStems(stems).lessons[0]!.pages }];
+		const result = await activated(context, raw);
+		assert.equal(result.rows.length, 0); assert.equal(result.view.course.count, stems.length);
+		noMaskedScore(result.view.course.masked); noMaskedScore(result.view.banks[0]!.masked);
+		assert.ok(!result.view.course.masked.applies); assert.equal(result.view.course.masked.reason, "language");
+	}
+});
+
+test("the three review populations cannot launder French options or a separate French bank", async context => {
+	const french = ["Toujours appeler le responsable", "Ne jamais appeler le responsable", "Appeler seulement le responsable", "Appeler parfois le responsable"];
+	for (const scenario of ["english-stems", "french-stems", "separate-bank"]) {
+		const raw = authored(), template = structuredClone(raw.lessons[1]!.pages[0]!.blocks[0]!);
+		replaceOptions(raw, french);
+		const bank = raw.lessons[1]!;
+		bank.pages[0]!.blocks = Array.from({ length: 16 }, (_, i) => {
+			const block = structuredClone(template); block.ref = `foreign/${i}`;
+			block.texts.forEach((text, j) => { text.ref = `${block.ref}/text/${j}`; if (text.role === "prompt") text.value = scenario === "english-stems" ? "Which action should you take?" : scenario === "french-stems" ? "On doit toujours appeler" : "Quel choix?"; if (text.role === "option") text.value = french[Number(text.ref.split("/").at(-1)) - 1]!; });
+			block.assessment.options.forEach((option, j) => { option.ref = `${block.ref}/option/${j}`; option.label = french[j]!; });
+			return block;
+		});
+		if (scenario === "separate-bank") {
+			raw.lessons[0]!.pages[0]!.blocks = [raw.lessons[0]!.pages[0]!.blocks[0]!];
+			raw.lessons[0]!.pages[0]!.blocks[0]!.texts[0]!.value = "Which of these is the one that you would choose?";
+		} else raw.lessons = [bank];
+		const result = await activated(context, raw);
+		assert.equal(result.rows.length, scenario === "separate-bank" ? 1 : 0);
+		assert.equal(result.view.course.count, scenario === "separate-bank" ? 17 : 16);
+		noMaskedScore(result.view.course.masked);
+		const foreignBank = result.view.banks.at(-1)!; assert.equal(foreignBank.count, 16); noMaskedScore(foreignBank.masked);
+		if (scenario === "separate-bank") { const good = result.view.banks[0]!.masked; assert.ok(good.applies && good.status === "scored"); assert.equal(good.total, 1); }
+	}
 });

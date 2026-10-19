@@ -10,8 +10,8 @@ export interface Reading {
 
 export const GUIDES = {
 	"item-cues": [
-		{ see: "Masked scoring on hold", could: "Schema 1, projection 2 has no language provenance. The masked gate is unavailable until Studio supplies provenance and Trace verifies it. Read language-unconfirmed detail, including any supplied non-English lesson lang. Stop and ask; never compute masked tails by hand or use a hand-masked fallback." },
-		{ see: "Plain choices-only above guessing", could: "Does the stem matter? Subject knowledge may identify the only generally true option. This remains a stem diagnostic and cannot supply the unavailable masked gate." },
+		{ see: "Masked scoring unavailable", could: "Read each bank's masked applicability and reason, including language-unconfirmed for missing provenance. Scoring requires authored English lesson provenance and no deny-only text conflict. A blocked bank also withholds the pooled score; that gate is unavailable. Compare pMin and pLowMin with the consumer threshold before using a scored tail. Stop and ask; never compute masked tails by hand or use a hand-masked fallback." },
+		{ see: "Plain choices-only above guessing", could: "Does the stem matter? Subject knowledge may identify the only generally true option. This remains a stem diagnostic and cannot supply the masked gate." },
 		{ see: "Keys concentrated at a position or length rank", could: "Compare the authored options across the bank, allowing for ties and runtime shuffling." },
 		{ see: "Cover-the-options answers need judgement", could: "Have a separate fresh judge compare each stem, answer and key by meaning. A paraphrase can match; non-text content can explain why the solver could not tell.", mode: "table" },
 	],
