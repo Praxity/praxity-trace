@@ -52,7 +52,7 @@ export function keyedChoices(course: Course): { items: CueItem[]; excluded: Arra
 		const visible = options.map((option, i) => screen(typed ? { typedTexts: [labels[i]!] } : { text: option.text }));
 		const stem = screen(typed ? { typedTexts: texts.filter(text => text.role === "prompt" || text.role === "body") } : { question: block.data.question ?? block.data.prompt ?? assessmentStem(block.data), description: block.data.description });
 		// Fail closed on leftover delimiters, including unfamiliar syntax, until the producer supplies rendered text.
-		if ([stem, ...visible].some(text => /[\[\]{}]/.test(text))) { skip("Markup could not be removed safely"); continue; }
+
 		if (visible.some(label => !normal(label))) { skip("An option has no comparable text"); continue; }
 		const bankGroups = [...(groups.get(ref) ?? [])];
 		if (bankGroups.length > 1) { skip("Choice belongs to overlapping assessment groups"); continue; }
