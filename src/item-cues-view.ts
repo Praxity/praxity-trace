@@ -17,7 +17,7 @@ function summary(row: ItemCueRow): string {
 }
 
 function overview(view: ItemCuesView): string {
-	return table("Choices-only summary: course, then banks", ["Scope", "Right / total", "Guessing gets about", "Upper tail: at least this many", "Lower tail: at most this many", "Cover-the-options"], [view.course, ...view.banks].map(row => {
+	return table("Choices-only summary: course, then banks", ["Scope", "Right / total", "Guessing gets about", "Upper tail (at least this many)", "Lower tail (at most this many)", "Cover-the-options"], [view.course, ...view.banks].map(row => {
 		const score = row.choicesOnly;
 		return `<tr ${lessonTags(view.places, row.items.map(item => item.ref))}><th scope="row">${esc(row.label)}</th><td>${score ? `${score.right} / ${score.total}` : "Probes not run"}</td><td>${number(row.chanceExpected)}</td><td>${score ? score.tooFewItems ? "Too few items to compare with guessing" : probability(score.p) : "Probes not run"}</td><td>${score ? score.tooFewItems ? "Too few items to compare with guessing" : probability(score.pLow) : "Probes not run"}</td><td>${row.coverTheOptions?.status ?? "Probes not run"}</td></tr>`;
 	}).join(""));

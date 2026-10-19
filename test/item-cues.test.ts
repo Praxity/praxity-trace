@@ -231,6 +231,20 @@ test("pooled course scores sum lesson results with exact upper and lower tails",
 	assert.equal(binomialTail(0, Array(32).fill(0.25), "lower"), 0.75 ** 32);
 });
 
+test("summary tail headers keep meaningful sort names without YAML quoting", () => {
+	const tree = parseFragment(renderItemCues(itemCuesView(load())));
+	const headers: string[] = [];
+	const text = (node: DefaultTreeAdapterTypes.Node): string => "value" in node ? node.value : "childNodes" in node ? node.childNodes.map(text).join("") : "";
+	const walk = (node: DefaultTreeAdapterTypes.Node) => {
+		if ("tagName" in node && node.tagName === "th" && node.attrs.some(attr => attr.name === "scope" && attr.value === "col")) headers.push(text(node));
+		if ("childNodes" in node) node.childNodes.forEach(walk);
+	};
+	walk(tree);
+	assert.ok(headers.includes("Upper tail (at least this many)"));
+	assert.ok(headers.includes("Lower tail (at most this many)"));
+	assert.ok(headers.every(header => !header.includes(": ")), "Sort names must not require quoted YAML scalars");
+});
+
 test("independent probe permutations remove an authored first-key pattern and map every response back", async context => {
 	const raw = fixture(), lesson = raw.lessons[1]!;
 	raw.lessons = [lesson];
