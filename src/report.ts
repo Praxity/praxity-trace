@@ -23,6 +23,7 @@ import { COMMENTS_MARKUP, COMMENTS_SCRIPT, COMMENTS_STYLE } from "./comments.ts"
 import { THEME_HEAD_SCRIPT, THEME_SCRIPT, THEME_STYLE, THEME_SWITCH, themeable } from "./theme.ts";
 import { type LessonAnatomy, type Rhythm, rhythm } from "./anatomy.ts";
 import { lessonTitle, pageKey } from "./places.ts";
+import type { ItemCuesView } from "./item-cues.ts";
 
 export interface Report {
 	tool: { name: "Praxity Trace"; version: string };
@@ -45,13 +46,14 @@ export interface Report {
 	distinctions?: DistinctionsView;
 	availability?: AvailabilityView;
 	tasks?: TasksView;
+	itemCues?: ItemCuesView;
 	/** What to look for in each view (src/guides.ts), for agents reading this file. */
 	guides: Omit<typeof GUIDES, "tasks"> & Partial<Pick<typeof GUIDES, "tasks">>;
 	recommendations?: RecommendationsView;
 }
 
 /** Views that need a model's answer; each is drawn only when its answer is supplied. */
-export type ModelViews = Pick<Report, "alignment" | "tasks" | "concepts" | "terms" | "visuals" | "spacing" | "distinctions" | "availability">;
+export type ModelViews = Pick<Report, "alignment" | "tasks" | "concepts" | "terms" | "visuals" | "spacing" | "distinctions" | "availability" | "itemCues">;
 
 const { tasks: taskGuide, ...baseGuides } = GUIDES;
 

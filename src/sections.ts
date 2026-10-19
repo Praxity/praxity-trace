@@ -12,6 +12,7 @@ import { renderSpacing } from "./spacing.ts";
 import { renderTrace } from "./trace.ts";
 import { renderVisuals } from "./visuals.ts";
 import { renderTasks } from "./tasks.ts";
+import { renderItemCues } from "./item-cues-view.ts";
 
 /**
  * The report's sections in reading order: which views each draws, when each view has data, and
@@ -49,6 +50,7 @@ export const SECTIONS: Section[] = [
 				report.alignment ? renderAlignment(report.alignment, (positions) => (report.availability ? renderAvailability(report.availability, positions) : "")) : "",
 	},
 	{ views: [{ id: "tasks", present: (report) => Boolean(report.tasks) }], render: (report) => report.tasks ? `<section aria-labelledby="tasks">${renderTasks(report.tasks)}</section>` : "" },
+	{ views: [{ id: "item-cues", present: (report) => Boolean(report.itemCues) }], render: (report) => report.itemCues ? renderItemCues(report.itemCues) : "" },
 	{
 		views: [
 			{ id: "concepts", present: (report) => Boolean(report.concepts) },

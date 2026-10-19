@@ -10,6 +10,7 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { chromium, type Browser, type Locator, type Page } from "playwright";
 import type { Course } from "../src/inspect.ts";
 import type { Located } from "../src/places.ts";
+import { keyedChoices } from "../src/item-cues.ts";
 
 // The override runs this gate against an untouched worktree as well as the changed renderer.
 const sourceRoot = resolve(process.env.TRACE_A11Y_SOURCE_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), ".."));
@@ -88,6 +89,16 @@ async function reportFixture(directory: string, name: string, inputPath: string 
 		await writeFile(answer, JSON.stringify({ ...manifest, model: "synthetic-accessibility-fixture", ...payload }));
 		answers.push(`--${view}`, answer);
 	}
+	const cueItems = keyedChoices(course).items;
+	const cueBundle = join(directory, "answers", "item-cues");
+	cli(["prepare", "item-cues", input, "--out", cueBundle]);
+	const cueManifest = JSON.parse(await readFile(join(cueBundle, "manifest.json"), "utf8"));
+	const cueAnswer = join(cueBundle, "answer.json");
+	await writeFile(cueAnswer, JSON.stringify({ ...cueManifest,
+		choicesOnly: { model: "synthetic-accessibility-solver", answers: cueItems.map(item => ({ ref: item.ref, choice: 1, cue: "Synthetic wording cue" })) },
+		coverTheOptions: { model: "synthetic-accessibility-solver", answers: cueItems.map(item => ({ ref: item.ref, answer: "can't tell" })) },
+	}));
+	answers.push("--item-cues", cueAnswer);
 	const output = join(directory, "all-model-views");
 	cli(["report", input, "--out", output, ...answers]);
 	const bundle = join(directory, "answers", "recommendations");

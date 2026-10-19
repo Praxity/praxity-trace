@@ -1,6 +1,6 @@
 ---
 name: praxity-trace
-description: Chart a Praxity Studio course or static HTML export as a report of composition, pace, objectives, concepts and language. Use when reviewing a course's design.
+description: Chart a Praxity Studio course or static HTML export as a report of composition, pace, objectives, concepts, language and item cues. Use when reviewing a course's design or testing whether keyed choices disclose their answers.
 ---
 
 # Praxity Trace
@@ -23,6 +23,22 @@ Read the input coverage notice before interpreting schema 1 results. The text pr
 Structure contains Anatomy and Pace. Objective groups are part of the Course trace view, which view links call `trace`. Its Table mode lists all members, statement locations and what they build toward. The HTML and `report.json` no longer include page similarity.
 
 Before interpreting a view for the designer, read its entry in `report.json` under `guides`: the patterns worth noticing and what each could mean. Offer those readings as possibilities; a pattern that looks like a gap may be the course's intent.
+
+## Item cues
+
+`report <input> --out <dir>` always includes scripted item-cues measurements. It reports key position and length-rank spreads, convergence, stem echo, distractor absolutes and qualifiers, duplicate or near-duplicate options, shared leads and the hedged or consultation key pattern. Counts describe lexical cues, never distractor plausibility.
+
+To attack keyed choices without revealing their answers:
+
+1. Run `praxity-trace prepare item-cues <input> --out <new-empty-bundle>`. Use inspect projection 2 or a Studio HTML export with authored keys. Trace includes single-selection choices with exactly one known key, even when unscored; the report lists exclusions. Earlier schema 1 has no keys to inspect.
+2. Give `<bundle>/choices-only/prompt.md` and `items.json` to one fresh solver. Give only `<bundle>/cover-the-options/prompt.md` and its `items.json` to a separate fresh solver. Neither solver may be the item writer or see the other probe, source course, keys or feedback. The bundle deliberately omits `course.md`; `--comments` is rejected for this view.
+3. Each solver writes its folder's `answer.json` with `model` and `answers`. Choices-only rows are `{ "ref": "1.1.1", "choice": 2, "cue": "stem-independent wording cue, or guessed" }`, with a one-based option number. Cover-the-options rows are `{ "ref": "1.1.1", "answer": "short answer, or can't tell" }`. Each must answer every supplied item once.
+4. Combine the two untouched answer objects into `<bundle>/answer.json`: copy `view`, `promptVersion` and `courseHash` from `manifest.json`, then add `choicesOnly` and `coverTheOptions` with the matching solver objects. The root `prompt.md` shows the complete shape.
+5. Run `praxity-trace report <input> --item-cues <bundle>/answer.json --out <dir>`.
+
+Read `report.json.itemCues.banks[]`. Banks use authored assessment groups, then lesson banks for ungrouped choices. `cueCounts` counts each cue once per item; `items[].flags` names the cue and its option positions. `spreads` separates option counts, so three-option and four-option items are not compared on the same ranks. Length is visible character count including spaces; ties share the lower rank. Positions are authored order, before runtime shuffling. The scripted lexical rules are English-only.
+
+Each probe records `right`, `total`, `chanceExpected`, `p` and every response with its source ref; choices-only keeps the solver's named cue. The chance reference sums `1/options`. `p` is an exact one-sided binomial tail, using the Poisson-binomial extension when option counts differ. There is no fixed passing rate. Cover-the-options uses normalized literal key-text matching, so correct paraphrases remain unmatched. Its p is only a uniform-choice reference, since free-response guessing has no known probability. Answerability from the stem alone is not evidence of option cues. Inspect the responses before revising.
 
 ## Objective levels
 

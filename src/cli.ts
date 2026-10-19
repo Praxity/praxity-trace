@@ -22,14 +22,16 @@ import { buildReport, renderHtml } from "./report.ts";
 import { parseRecommendations, prepareRecommendations } from "./recommendations.ts";
 import { parseTasks, prepareTasks, tasksView } from "./tasks.ts";
 import { formatCommentsMarkdown, parseComments } from "./comments.ts";
+import { itemCuesView, parseItemCues, prepareItemCues } from "./item-cues.ts";
 
 const HELP = `Usage:
-  praxity-trace report <inspect.json|html-dir|-> --out <dir> [--alignment <answer.json>] [--tasks <answer.json>] [--concepts <answer.json>] [--terms <answer.json>] [--visuals <answer.json>] [--distinctions <answer.json>] [--recommendations <answer.json>]
-  praxity-trace prepare <alignment|tasks|concepts|terms|visuals|distinctions> <inspect.json|html-dir|-> --out <bundle-dir> [--comments <comments.json>]
+  praxity-trace report <inspect.json|html-dir|-> --out <dir> [--alignment <answer.json>] [--tasks <answer.json>] [--concepts <answer.json>] [--terms <answer.json>] [--visuals <answer.json>] [--distinctions <answer.json>] [--item-cues <answer.json>] [--recommendations <answer.json>]
+  praxity-trace prepare <alignment|tasks|concepts|terms|visuals|distinctions|item-cues> <inspect.json|html-dir|-> --out <bundle-dir> [--comments <comments.json>]
   praxity-trace prepare recommendations <inspect.json|html-dir|-> --report <report.json> --out <bundle-dir>
 
 <inspect.json> is the output of \`praxity inspect <course-dir> --schema 1\`; <html-dir> is an unzipped static HTML export; - reads inspect JSON from stdin.
 report writes report.html and report.json to <dir>.
+report always includes scripted item cues; --item-cues <answer.json> adds the two solver probes.
 prepare writes a bundle for a model reviewer; its answer.json feeds the matching report option.
 --comments adds the designer's comments on that view (downloaded from report.html) to the reviewer's prompt.
 Recommendations come last: build the report with every other answer, prepare from its report.json, then build again with --recommendations.`;
@@ -47,6 +49,7 @@ const { values, positionals } = parseArgs({
 		recommendations: { type: "string" },
 		report: { type: "string" },
 		comments: { type: "string" },
+		"item-cues": { type: "string" },
 		help: { type: "boolean", short: "h" },
 	},
 });
@@ -59,7 +62,7 @@ if (values.help) usage(0);
 if (!values.out) usage(2);
 const out = values.out as string;
 
-const PREPARE = { alignment: prepareAlignment, tasks: prepareTasks, concepts: prepareConcepts, terms: prepareTerms, visuals: prepareVisuals, distinctions: prepareDistinctions };
+const PREPARE = { alignment: prepareAlignment, tasks: prepareTasks, concepts: prepareConcepts, terms: prepareTerms, visuals: prepareVisuals, distinctions: prepareDistinctions, "item-cues": prepareItemCues };
 
 if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations") {
 	if (!values.report) usage(2);
@@ -68,10 +71,11 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 } else if (command === "prepare" && rest.length === 2 && Object.hasOwn(PREPARE, rest[0] as string)) {
 	const course = await readCourse(rest[1] as string);
 	const view = rest[0] as keyof typeof PREPARE;
+	if (view === "item-cues" && values.comments) throw new Error("Item-cues probes cannot include designer comments, which may disclose keys or feedback");
 	await PREPARE[view](course, out);
 	if (values.comments) {
 		// Designer comments on the section this view renders in steer the next answer.
-		const SECTION: Record<keyof typeof PREPARE, string> = { alignment: "alignment", tasks: "tasks", concepts: "concepts", terms: "language", visuals: "visuals", distinctions: "concepts" };
+		const SECTION: Record<keyof typeof PREPARE, string> = { alignment: "alignment", tasks: "tasks", concepts: "concepts", terms: "language", visuals: "visuals", distinctions: "concepts", "item-cues": "item-cues" };
 		const file = parseComments(await readFile(values.comments, "utf8"));
 		const mine = { ...file, comments: file.comments.filter((comment) => (comment.view === SECTION[view] || (view === "alignment" && comment.view === "trace" && comment.target.objectives?.length))) };
 		if (mine.comments.length) {
@@ -100,6 +104,7 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 	const availability = withSpacing.alignment ? availabilityView(course, withSpacing.alignment, shape.lessons) : undefined;
 	const derived = {
 		...withSpacing,
+		itemCues: itemCuesView(course, values["item-cues"] ? parseItemCues(await readFile(values["item-cues"], "utf8"), course) : undefined),
 		...(availability ? { availability } : {}),
 		...(values.tasks ? { tasks: tasksView(course, parseTasks(await readFile(values.tasks, "utf8"), course), withSpacing.alignment && availability ? { alignment: withSpacing.alignment, availability } : undefined) } : {}),
 	};
