@@ -1,0 +1,25 @@
+name: Review regression proof
+on: pull_request
+jobs:
+  regression-proof:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        implementation: [reverted, restored]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Restore exact reviewed production files for control
+        if: matrix.implementation == 'restored'
+        run: git restore --source=d4ad4b2ba10b86a219b82bc42ea5780f5b9081b9 -- src/cli.ts src/item-cues.ts src/item-cues-view.ts
+      - run: pnpm typecheck
+      - name: Five changed regressions
+        run: node --test --test-name-pattern='bundle CLI strips canaries|alsoCorrect means another valid|blind bundles fail closed|probe preparation requires projection|exclusions name curly' test/item-cues.test.ts

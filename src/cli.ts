@@ -22,7 +22,7 @@ import { buildReport, renderHtml } from "./report.ts";
 import { parseRecommendations, prepareRecommendations } from "./recommendations.ts";
 import { parseTasks, prepareTasks, tasksView } from "./tasks.ts";
 import { formatCommentsMarkdown, parseComments } from "./comments.ts";
-import { itemCuesView, parseItemCues, prepareItemCues, PROBE_INPUT_ERROR, requireProbeInput } from "./item-cues.ts";
+import { itemCuesView, parseItemCues, prepareItemCues } from "./item-cues.ts";
 
 const HELP = `Usage:
   praxity-trace report <inspect.json|html-dir|-> --out <dir> [--alignment <answer.json>] [--tasks <answer.json>] [--concepts <answer.json>] [--terms <answer.json>] [--visuals <answer.json>] [--distinctions <answer.json>] [--item-cues <answer.json>] [--recommendations <answer.json>]
@@ -33,7 +33,6 @@ const HELP = `Usage:
 report writes report.html and report.json to <dir>.
 report always includes scripted item cues; --item-cues <answer.json> adds the two solver probes.
 prepare writes a bundle for a model reviewer; its answer.json feeds the matching report option.
-prepare item-cues requires schema 1 inspect JSON with projection 2; HTML exports are supported only for scripted report checks.
 --comments adds the designer's comments on that view (downloaded from report.html) to the reviewer's prompt.
 Recommendations come last: build the report with every other answer, prepare from its report.json, then build again with --recommendations.`;
 
@@ -70,8 +69,8 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 	await prepareRecommendations(await readCourse(rest[1] as string), values.report as string, out);
 	console.log(JSON.stringify({ ok: true, bundle: out, prompt: join(out, "prompt.md"), answer: join(out, "answer.json") }));
 } else if (command === "prepare" && rest.length === 2 && Object.hasOwn(PREPARE, rest[0] as string)) {
+	const course = await readCourse(rest[1] as string);
 	const view = rest[0] as keyof typeof PREPARE;
-	const course = await readCourse(rest[1] as string, view === "item-cues");
 	if (view === "item-cues" && values.comments) throw new Error("Item-cues probes cannot include designer comments, which may disclose keys or feedback");
 	await PREPARE[view](course, out);
 	if (values.comments) {
@@ -148,16 +147,6 @@ async function readInput(path: string): Promise<string> {
 	return Buffer.concat(chunks).toString("utf8");
 }
 
-async function readCourse(path: string, probes = false): Promise<Course> {
-	if (path !== "-" && (await stat(path)).isDirectory()) {
-		if (probes) throw new Error(PROBE_INPUT_ERROR);
-		return readHtmlCourse(path);
-	}
-	const input = await readInput(path);
-	if (probes) {
-		let raw: unknown;
-		try { raw = JSON.parse(input); } catch (cause) { throw new Error(PROBE_INPUT_ERROR, { cause }); }
-		requireProbeInput(raw);
-	}
-	return parseCourse(input);
+async function readCourse(path: string): Promise<Course> {
+	return path !== "-" && (await stat(path)).isDirectory() ? readHtmlCourse(path) : parseCourse(await readInput(path));
 }
