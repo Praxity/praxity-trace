@@ -1,0 +1,76 @@
+name: Experimental portable CLI
+on:
+  push:
+    branches: [build/trace-92a164dd8]
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      SOURCE_REVISION: 92a164dd8573ff80fd24c61614b229f62f0eff2a
+      RELEASE_VERSION: 0.1.1-experimental.92a164dd8
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: 92a164dd8573ff80fd24c61614b229f62f0eff2a
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24.21.0
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm typecheck
+      - run: node --test test/package.test.ts test/item-cues.test.ts
+      - name: Package the exact clean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_REVISION"
+          test -z "$(git status --porcelain)"
+          node scripts/package.mjs --output "$RUNNER_TEMP/praxity-trace-$RELEASE_VERSION"
+          export PAYLOAD="$RUNNER_TEMP/praxity-trace-$RELEASE_VERSION"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto';
+          import { readFileSync, readdirSync, lstatSync } from 'node:fs';
+          import { join } from 'node:path';
+          const root = process.env.PAYLOAD;
+          const inventory = JSON.parse(readFileSync(join(root, 'inventory.json')));
+          assert.equal(inventory.source.revision, process.env.SOURCE_REVISION);
+          assert.equal(inventory.source.dirty, false);
+          const files = [];
+          function visit(path = '') {
+            for (const name of readdirSync(join(root, path))) {
+              const relative = path ? path + '/' + name : name;
+              const info = lstatSync(join(root, relative));
+              if (info.isDirectory()) visit(relative);
+              else { assert.ok(info.isFile(), relative); files.push(relative); }
+            }
+          }
+          visit();
+          assert.deepEqual(files.sort(), [...inventory.files.map(file => file.path), 'inventory.json'].sort());
+          for (const file of inventory.files) {
+            const bytes = readFileSync(join(root, file.path));
+            assert.equal(bytes.length, file.size, file.path);
+            assert.equal(createHash('sha256').update(bytes).digest('hex'), file.sha256, file.path);
+          }
+          for (const path of ['LICENSE', 'LICENSING.md', 'NOTICE.md', 'NOTICE.md', 'skill/SKILL.md']) assert.ok(files.includes(path), path);
+          assert.match(readFileSync(join(root, 'LICENSE'), 'utf8'), /PolyForm Perimeter/);
+          NODE
+          node "$PAYLOAD/src/cli.ts" --help
+          tar -czf "$RUNNER_TEMP/praxity-trace-$RELEASE_VERSION-portable.tar.gz" -C "$RUNNER_TEMP" "praxity-trace-$RELEASE_VERSION"
+          sha256sum "$RUNNER_TEMP/praxity-trace-$RELEASE_VERSION-portable.tar.gz" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Stage only the portable archive in the existing draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "v$RELEASE_VERSION" --repo "$GITHUB_REPOSITORY" --json isDraft,targetCommitish --jq 'select(.isDraft == true) | .targetCommitish' | grep -Fx "$SOURCE_REVISION"
+          gh release upload "v$RELEASE_VERSION" "$RUNNER_TEMP/praxity-trace-$RELEASE_VERSION-portable.tar.gz" --repo "$GITHUB_REPOSITORY"
