@@ -1,8 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { blockTexts, narrations, narrationText } from "../src/text.ts";
+import { blockTexts, formattedText, narrations, narrationText, previewLines, visibleText, tooltips } from "../src/text.ts";
 import { withPageNarration } from "../src/inspect.ts";
 import { sentences } from "../src/language.ts";
+
+test("typed Markdown projects glossary terms without definitions and preserves escaped literal syntax", () => {
+	const value = "Use [Red square]{TOOLTIP_CANARY: the key says Red square; {nested: true}} beside \\[literal]{shown}.";
+	const texts = [{ ref: "option", role: "option", format: "markdown" as const, value, location: null }, { ref: "definition", role: "glossary-definition", format: "plain" as const, value: "Definition stays separate", location: null }];
+	assert.equal(formattedText(texts[0]!), "Use Red square beside [literal]{shown}.");
+	assert.deepEqual(visibleText({ typedTexts: texts }), ["Use Red square beside [literal]{shown}."]);
+	const block = { id: "choice", type: "assessment", line: 1, data: { typedTexts: texts } };
+	assert.equal(blockTexts(block).screen, "Use Red square beside [literal]{shown}.");
+	assert.deepEqual(previewLines([block], ""), [{ kind: "item", text: "Use Red square beside [literal]{shown}." }]);
+	assert.equal(tooltips(block.data)[0]!.text, "Definition stays separate");
+});
 
 test("narration is read once for every view: page and block scripts, audio length, blanks left out", () => {
 	const page = { narration: "Welcome to the page.", narrationDuration: 2.5 };

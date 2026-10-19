@@ -34,6 +34,7 @@ function projectedHtml(html: string, screen = true): string {
 }
 function markdownText(value: string): string {
 	return value
+		.replace(RAW_TOOLTIP, "$1")
 		.replace(/(?<!\\)\[([^\]]+)\]\([^)]*\)/g, "$1")
 		.replace(/(?<!\\)\*\*(.*?)\*\*|(?<!\\)__(.*?)__/g, (_match, a: string | undefined, b: string | undefined) => a ?? b ?? "")
 		.replace(/(?<!\\)\*([^*\s][^*]*?)\*/g, "$1")
@@ -128,7 +129,7 @@ export const stripTags = (html: string, replacement = " ") => {
 /** Studio citation syntax, rendered as a footnote marker and a sources list, not body text. */
 const FOOTNOTE = /@footer(?:\{[^}]*\}|\.insert)/g;
 // A definition may hold one level of braces, such as a code example: [dictionary]{like `{"key": 1}`}.
-const RAW_TOOLTIP = /\[([^\]]+)\]\{((?:[^{}]|\{[^{}]*\})+)\}/g;
+const RAW_TOOLTIP = /(?<!\\)\[([^\]]+)\]\{((?:[^{}]|\{[^{}]*\})+)\}/g;
 
 const ENTITIES: Record<string, string> = { "&quot;": '"', "&#39;": "'", "&amp;": "&", "&lt;": "<", "&gt;": ">" };
 const decode = (text: string) => text.replace(/&(?:quot|#39|amp|lt|gt);/g, (entity) => ENTITIES[entity] ?? entity);

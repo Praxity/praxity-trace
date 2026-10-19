@@ -240,8 +240,8 @@ test("summary tail headers keep meaningful sort names without YAML quoting", () 
 		if ("childNodes" in node) node.childNodes.forEach(walk);
 	};
 	walk(tree);
-	assert.ok(headers.includes("Upper tail (at least this many)"));
-	assert.ok(headers.includes("Lower tail (at most this many)"));
+	assert.ok(headers.includes("Chance of this many or more"));
+	assert.ok(headers.includes("Chance of this few or fewer"));
 	assert.ok(headers.every(header => !header.includes(": ")), "Sort names must not require quoted YAML scalars");
 });
 
@@ -288,7 +288,7 @@ test("cover answers need semantic judgement, never literal scoring or free-respo
 	view = itemCuesView(course, parsed); cover = view.course.coverTheOptions!;
 	assert.equal(cover.right, 1); assert.equal(cover.judged, 3); assert.equal(cover.pending, 6);
 	assert.equal(cover.status, "partly judged");
-	assert.deepEqual(cover.outcomes, { matches: 1, differs: 1, cantTell: 1 });
+	assert.deepEqual(cover.outcomes, { matches: 1, differs: 1, cantTell: 1, alsoCorrect: 0 });
 	assert.equal(view.banks[1]!.coverTheOptions!.right, 1);
 	assert.match(renderItemCues(view), /separate-judge/);
 	assert.throws(() => parseItemCues(JSON.stringify({ view: "item-cues", promptVersion: `${PROMPT_VERSION}-projection-2`, courseHash: courseHash(course), ...answer, coverTheOptions: { ...answer.coverTheOptions, answers: answer.coverTheOptions.answers.map(row => ({ ...row, coverJudgement: "wrong" })) } }), course), /coverJudgement/);
@@ -352,12 +352,12 @@ test("position spreads use known fixed order and longest counts include ties wit
 });
 
 test("hedges exclude May, ability and negation; consultation stays a bank share", () => {
-	for (const key of ["May", "People who could not use a mouse", "The person may not enter", "The person might not enter", "Consult the person"]) {
+	for (const key of ["May", "Submit in May each year", "People who could not use a mouse", "The person may not enter", "The person might not enter", "Consult the person"]) {
 		const raw = replaceOptions(fixture(), [key, "June", "July", "August"]), row = itemCuesView(parseCourse(JSON.stringify(raw))).banks[1]!;
 		assert.ok(!row.items[0]!.flags.some(flag => flag.cue === "hedged-key"), key);
 		assert.equal(row.consultation!.count, key.startsWith("Consult") ? 1 : 0);
 	}
-	for (const key of ["Usually a different response", "Often a different response", "This may improve access", "This might improve access", "It can depend on context"]) {
+	for (const key of ["Usually a different response", "Often a different response", "This may improve access", "May improve access", "This might improve access", "It can depend on context"]) {
 		const row = itemCuesView(parseCourse(JSON.stringify(replaceOptions(fixture(), [key, "June", "July", "August"])))).banks[1]!;
 		assert.ok(row.items[0]!.flags.some(flag => flag.cue === "hedged-key"), key);
 	}
@@ -403,6 +403,13 @@ test("bundle CLI strips attribute, hidden and post-response canaries for exporte
 	b.texts.filter(text => text.role === "option").forEach((text, i) => { if (i === 0) { text.value = prose; text.format = "html"; } }); b.assessment.options[0]!.label = prose;
 	b.texts[0]!.value = prose; b.texts[0]!.format = "html";
 	await writeFile(join(dir, "legacy.json"), JSON.stringify(legacy)); await writeFile(join(dir, "typed.json"), JSON.stringify(raw));
+	const markdown = structuredClone(raw), markdownBlock = markdown.lessons[1]!.pages[0]!.blocks[0]!;
+	const tooltip = "[Red]{TOOLTIP_CANARY: the correct option is Red; {nested: true}}";
+	markdownBlock.texts[0]!.value = tooltip; markdownBlock.texts[0]!.format = "markdown";
+	markdownBlock.texts.filter(text => text.role === "option")[0]!.value = tooltip;
+	markdownBlock.texts.filter(text => text.role === "option")[0]!.format = "markdown";
+	markdownBlock.assessment.options[0]!.label = tooltip;
+	await writeFile(join(dir, "typed-markdown.json"), JSON.stringify(markdown));
 	const exported = join(dir, "export"); await mkdir(exported);
 	const native = { stem: [{ type: "text", data: { content: prose, feedback: "NESTED_FEEDBACK_CANARY" } }], response: { type: "choice", selectionMode: "single", options: [{ label: prose, isCorrect: true }, { label: "Blue", isCorrect: false }] } };
 	const legacyNative = structuredClone(legacy); Object.assign(legacyNative.lessons[0]!.pages[0]!.blocks[0]!.data, native); delete (legacyNative.lessons[0]!.pages[0]!.blocks[0]!.data as { question?: string }).question;
@@ -410,7 +417,7 @@ test("bundle CLI strips attribute, hidden and post-response canaries for exporte
 	const attr = JSON.stringify({ type: "assessment", data: native }).replace(/&/g, "&amp;").replace(/'/g, "&#39;");
 	await writeFile(join(exported, "lesson.html"), `<html lang="en"><head><title>Synthetic</title></head><body><article class="deck-slide" data-deck-slide="p"><div data-block-id="choice" data-block-type="assessment" data-block-json='${attr}'><form>Red Blue</form></div></article></body></html>`);
 	const scan = async (path: string): Promise<void> => { for (const entry of await readdir(path, { withFileTypes: true })) { const file = join(path, entry.name); if (entry.isDirectory()) await scan(file); else assert.doesNotMatch(await readFile(file, "utf8"), /\w+_CANARY|data-correct|data-feedback|<span|"correct"/, file); } };
-	for (const [name, input] of [["legacy", join(dir, "legacy.json")], ["legacy-native", join(dir, "legacy-native.json")], ["typed", join(dir, "typed.json")], ["export", exported]]) {
+	for (const [name, input] of [["legacy", join(dir, "legacy.json")], ["legacy-native", join(dir, "legacy-native.json")], ["typed", join(dir, "typed.json")], ["typed-markdown", join(dir, "typed-markdown.json")], ["export", exported]]) {
 		const out = join(dir, `bundle-${name}`), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", input!, "--out", out], { encoding: "utf8" });
 		assert.equal(cli.status, 0, cli.stderr); await scan(out);
 		const rows = JSON.parse(await readFile(join(out, "choices-only/items.json"), "utf8"));
@@ -422,6 +429,88 @@ test("bundle CLI strips attribute, hidden and post-response canaries for exporte
 	assert.match(await readFile(join(out, "prompt.md"), "utf8"), /operator records the actual model names/);
 	assert.match(await readFile(join(out, "prompt.md"), "utf8"), /separate fresh judge agent/);
 	assert.match(await readFile(join(out, "choices-only/prompt.md"), "utf8"), /only-true-on-its-own/);
+});
+
+test("tiny probabilities below the exponent boundary render as escaped readable text", () => {
+	const raw = fixture(), lesson = raw.lessons[1]!;
+	raw.lessons = [lesson];
+	lesson.pages[0]!.blocks = Array.from({ length: 32 }, (_, i) => {
+		const block = structuredClone(lesson.pages[0]!.blocks[0]!); block.ref = `tiny-${i}`;
+		block.texts.forEach((text, j) => { text.ref = `tiny-${i}/text-${j}`; }); return block;
+	});
+	const course = parseCourse(JSON.stringify(raw)), items = keyedChoices(course).items;
+	const answer = { choicesOnly: { model: "synthetic", answers: items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "synthetic", answers: items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+	const view = itemCuesView(course, answer), html = renderItemCues(view);
+	assert.equal(view.course.choicesOnly!.p, 1 / 4 ** 32);
+	assert.match(view.course.choicesOnly!.p.toPrecision(4), /e-/);
+	assert.match(html, /p (?:&lt;|&#60;) 0\.001/);
+	assert.doesNotMatch(html, /p <|p = \d+(?:\.\d+)?e-/);
+});
+
+test("questions on one page have distinct visible labels and source lines in every item table", () => {
+	const course = load(), view = itemCuesView(course, parseItemCues(JSON.stringify(payload()), course));
+	const labels = view.course.items.map(item => (item as unknown as { label?: string }).label);
+	assert.ok(labels.every(label => typeof label === "string" && label.length > 3));
+	assert.equal(new Set(labels).size, 9);
+	assert.ok(view.course.choicesOnly!.items.every(item => Object.hasOwn(item, "label")));
+	assert.ok(view.course.coverTheOptions!.items.every(item => Object.hasOwn(item, "label")));
+	const html = renderItemCues(view);
+	assert.match(html, /1\.1\.1/); assert.match(html, /1\.1\.2/);
+	const text = (node: DefaultTreeAdapterTypes.Node): string => "value" in node ? node.value : "childNodes" in node ? node.childNodes.map(text).join(" ") : "";
+	const walk = (node: DefaultTreeAdapterTypes.Node) => {
+		if ("tagName" in node && node.tagName === "table") {
+			const caption = node.childNodes.find(child => "tagName" in child && child.tagName === "caption");
+			if (caption && /item measurements|choices-only responses|stem answers needing judgement/.test(text(caption))) {
+				const rows = "childNodes" in node ? node.childNodes.flatMap(child => "tagName" in child && child.tagName === "tbody" ? child.childNodes : []) : [];
+				for (const row of rows) if ("childNodes" in row) {
+					const head = row.childNodes.find(child => "tagName" in child && child.tagName === "th");
+					assert.ok(head); assert.match(text(head), /\d+\.\d+\.\d+/); assert.match(text(head), /\.prax:\d+/);
+				}
+			}
+		}
+		if ("childNodes" in node) node.childNodes.forEach(walk);
+	}; walk(parseFragment(html));
+});
+
+test("alsoCorrect means an answerable stem with a non-unique key, separately counted", () => {
+	const course = load(), raw = payload();
+	const judgement = { ...raw.coverTheOptions.answers[0]!, answer: "A different defensible answer", coverJudgement: "alsoCorrect" };
+	const answer = parseItemCues(JSON.stringify({ ...raw, coverTheOptions: { ...raw.coverTheOptions, judgeModel: "fresh-judge", answers: [judgement, ...raw.coverTheOptions.answers.slice(1)] } }), course);
+	const view = itemCuesView(course, answer), cover = view.course.coverTheOptions!;
+	assert.equal(cover.outcomes.alsoCorrect, 1); assert.equal(cover.outcomes.matches, 0);
+	assert.equal(cover.outcomes.differs, 0); assert.equal(cover.outcomes.cantTell, 0);
+	assert.equal(cover.right, 1); assert.equal(cover.pending, 8); assert.equal(cover.judged, 1);
+	assert.equal(view.banks[0]!.coverTheOptions!.outcomes.alsoCorrect, 1);
+	assert.equal(view.banks[0]!.coverTheOptions!.right, 1);
+	assert.equal(view.banks[1]!.coverTheOptions!.right, null);
+	const html = renderItemCues(view);
+	assert.match(html, /Stem answerable, key not unique/);
+	assert.match(html, /single best answer/);
+});
+
+test("small-bank limits are evaluated separately for high and low tails", () => {
+	const course = load(), view = itemCuesView(course, parseItemCues(JSON.stringify(payload()), course));
+	assert.equal(view.banks[0]!.choicesOnly!.tooFewItems, false);
+	assert.equal(view.banks[0]!.choicesOnly!.tooFewItemsLow, true);
+	assert.equal(view.banks[1]!.choicesOnly!.tooFewItems, true);
+	assert.equal(view.banks[1]!.choicesOnly!.tooFewItemsLow, true);
+	const html = renderItemCues(view);
+	assert.match(html, /Chance of this few or fewer: Too few items to compare with guessing/);
+	assert.match(html, /Something may make the key look wrong/);
+});
+
+test("absent bank patterns do not prescribe changes and spreads use separate tables", async () => {
+	const raw = fixture(); raw.lessons = [raw.lessons[1]!];
+	const row = raw.lessons[0]!.pages[0]!.blocks[0]!; row.assessment.options.forEach((option, i) => { option.correct = i === 2; });
+	const html = renderItemCues(itemCuesView(parseCourse(JSON.stringify(raw))));
+	assert.match(html, /No convergence pattern above guessing/);
+	assert.match(html, /No consultation pattern to inspect/);
+	assert.doesNotMatch(html, /Vary two elements|Write distractors that also consult/);
+	assert.match(html, /1 key longest/); assert.doesNotMatch(html, /\b1 items\b|\b1 keys\b|\?\./);
+	assert.doesNotMatch(html, /Not a length rank/);
+	assert.match(html, /<caption>Course: 4-option items \(1\), key position<\/caption>/);
+	assert.match(html, /<caption>Course: 4-option items \(1\), key length rank<\/caption>/);
+	for (const file of ["src/item-cues.ts", "src/item-cues-view.ts"]) assert.notEqual((await readFile(resolve(file), "utf8"))[0], "\uFEFF");
 });
 
 test("exported and inspect multiple-selection choices with one true key stay excluded", async context => {
@@ -443,7 +532,7 @@ test("empty courses omit the view, and stems missing media or code carry a visib
 	page.blocks.push({ id: "code", type: "code", line: 10, data: { code: "example()" } });
 	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-media-")); context.after(() => rm(dir, { recursive: true, force: true }));
 	await prepareItemCues(course, dir);
-	assert.match(await readFile(join(dir, "cover-the-options/items.json"), "utf8"), /Stem depends on non-text content/);
+	assert.doesNotMatch(await readFile(join(dir, "cover-the-options/items.json"), "utf8"), /Stem depends on non-text content/);
 	const answer = { choicesOnly: { model: "solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "stem", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	assert.match(renderItemCues(itemCuesView(course, answer)), /Stem depends on non-text content/);
 });

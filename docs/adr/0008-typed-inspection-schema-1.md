@@ -28,3 +28,10 @@ Sentence splitting keeps blank-line paragraph breaks and separate structural ite
 The shared screen projection now removes hidden descendants and post-response HTML elements before text conversion, including hidden attributes, inline display/visibility hiding and known feedback classes. Attributes never become screen prose. Explicit feedback fields remain in their separate channel. Item-cues selects its stems and options through that projection, never through raw labels or a second parser. The schema 1 interpretation fingerprint advances to `trace-inspect/4`, invalidating older answers. Item-cues uses prompt version `item-cues/2` because blind option order, structured cue codes and cover-answer judgements changed. Other prompts retain their versions; their schema 1 answers are invalidated by the fingerprint.
 
 Item-cues consumes optional authored `assessment.shuffle` when supplied. Projection 2 output that omits it remains shuffle-unknown; missing metadata never establishes fixed order. The HTML adapter preserves `response.selectionMode` and `response.shuffle` in its existing course model.
+
+
+## Markdown glossary projection
+
+Typed Markdown now uses the shared glossary rule to retain a term and remove its tooltip definition from screen text. Escaped literal glossary syntax stays literal; separately projected glossary definitions stay in the tooltip channel. This applies to every caller of the shared text projection, including bundles and page previews. The schema 1 interpretation fingerprint advances to `trace-inspect/5` so cached answers based on the earlier leaked definitions are rejected.
+
+Item-cues advances to `item-cues/3`. Its blind stem input contains only the supplied stem, while missing-media qualifications stay in the report and judge view. The separate judge can return `alsoCorrect` for a defensible different answer, counted as stem answerability with a non-unique key. Author review must establish that the options make the key the single best answer. Existing CLI command shapes and field names remain unchanged.
