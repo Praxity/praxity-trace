@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { parseFragment, type DefaultTreeAdapterTypes } from "parse5";
 import { parseCourse, courseHash } from "../src/inspect.ts";
-import { binomialTail, CUES, itemCuesView, keyedChoices, parseItemCues, prepareItemCues, probeOrder, PROMPT_VERSION } from "../src/item-cues.ts";
+import { binomialTail, CUES, itemCuesView, keyedChoices, parseItemCues as readItemCues, prepareItemCues, probeOrder, PROMPT_VERSION } from "../src/item-cues.ts";
 import { renderItemCues } from "../src/item-cues-view.ts";
 import { readHtmlCourse } from "../src/html.ts";
 
@@ -31,14 +31,20 @@ function fixture() {
 }
 const load = () => parseCourse(JSON.stringify(fixture()));
 function probeMetadata(course: ReturnType<typeof load>) {
-	return { seed: 0, optionOrder: Object.fromEntries(keyedChoices(course).items.map(item => [item.ref, probeOrder(item, 0)])),
-		masked: { model: "synthetic-masked", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: probeOrder(item, 0).indexOf(item.key) + 1, cue: "guessed" as const, note: "Masked cue" })) } };
+	return { bundleId: "synthetic-bundle", seed: 0, optionOrder: Object.fromEntries(keyedChoices(course).items.map(item => [item.ref, probeOrder(item, 0)])),
+		masked: { bundleId: "synthetic-bundle", probe: "masked", model: "synthetic-masked", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: probeOrder(item, 0).indexOf(item.key) + 1, cue: "guessed" as const, note: "Masked cue" })) } };
+}
+function operatorFor(course: ReturnType<typeof load>) {
+	return { ...probeMetadata(course), view: "item-cues", promptVersion: `${PROMPT_VERSION}-projection-2`, courseHash: courseHash(course) };
+}
+function parseItemCues(json: string, course: ReturnType<typeof load>, operator = operatorFor(course)) {
+	return readItemCues(json, course, JSON.stringify(operator));
 }
 function payload() {
 	const course = load();
 	return { ...probeMetadata(course), view: "item-cues", promptVersion: `${PROMPT_VERSION}-projection-2`, courseHash: courseHash(course),
-		choicesOnly: { model: "synthetic-solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed", note: "synthetic wording cue" })) },
-		coverTheOptions: { model: "synthetic-stem-solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+		choicesOnly: { bundleId: "synthetic-bundle", probe: "choices-only", model: "synthetic-solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed", note: "synthetic wording cue" })) },
+		coverTheOptions: { bundleId: "synthetic-bundle", probe: "cover-the-options", model: "synthetic-stem-solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 }
 
 test("exact one-sided binomial tails and heterogeneous chance use literal probabilities", () => {
@@ -143,14 +149,14 @@ test("answers reject stale hashes, versions, refs, duplicate/missing responses a
 
 test("bundle contains only whitelisted probe prose, no key metadata, feedback or other course context", async context => {
 	const directory = await mkdtemp(join(tmpdir(), "trace-item-cues-bundle-"));
-	context.after(() => rm(directory, { recursive: true, force: true }));
+	context.after(async () => { await rm(directory, { recursive: true, force: true }); await rm(`${directory}-review`, { recursive: true, force: true }); });
 	await prepareItemCues(load(), directory, 0);
 	assert.deepEqual((await readdir(directory)).sort(), ["choices-only", "cover-the-options", "manifest.json", "masked", "prompt.md"]);
 	const choices = JSON.parse(await readFile(join(directory, "choices-only/items.json"), "utf8"));
 	const stems = JSON.parse(await readFile(join(directory, "cover-the-options/items.json"), "utf8"));
-	assert.deepEqual(Object.keys(choices[0]), ["ref", "options"]);
+	assert.deepEqual(Object.keys(choices[0]), ["ref", "bundleId", "probe", "options"]);
 	assert.deepEqual([...choices[0].options].sort(), ["Red square", "Red circle", "Blue square", "Green dot"].sort());
-	assert.deepEqual(Object.keys(stems[0]), ["ref", "stem"]);
+	assert.deepEqual(Object.keys(stems[0]), ["ref", "bundleId", "probe", "stem"]);
 	assert.equal(stems[1].stem, "Find amber violet");
 	assert.ok(!JSON.stringify(choices).includes("Find amber violet"));
 	assert.ok(!JSON.stringify(stems).includes("Consult the person"));
@@ -176,7 +182,7 @@ test("CLI prepares item-cues and always reports scripted cues; optional answers 
 	const directory = await mkdtemp(join(tmpdir(), "trace-item-cues-cli-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const input = join(directory, "inspect.json"), answer = join(directory, "answer.json"), out = join(directory, "report");
-	await writeFile(input, JSON.stringify(fixture())); await writeFile(answer, JSON.stringify(payload()));
+	await writeFile(input, JSON.stringify(fixture())); await writeFile(answer, JSON.stringify(payload())); await writeFile(join(directory, "operator.json"), JSON.stringify(operatorFor(load())));
 	const cli = (...args: string[]) => { const result = spawnSync(process.execPath, [resolve("src/cli.ts"), ...args], { encoding: "utf8" }); assert.equal(result.status, 0, result.stderr); };
 	cli("prepare", "item-cues", input, "--out", join(directory, "bundle"));
 	cli("report", input, "--out", out);
@@ -212,13 +218,132 @@ test("duplicate detection preserves signs, quantities and meaningful symbols", (
 	}
 });
 
-test("masked bundle keeps function words, numbers, punctuation and consistent same-length content words", async context => {
+async function maskedFixture(context: { after: (cleanup: () => Promise<void>) => void }, stem: string, options: string[], html = false) {
+	const dir = await mkdtemp(join(tmpdir(), "trace-r1-mask-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	const raw = replaceOptions(fixture(), options), block = raw.lessons[1]!.pages[0]!.blocks[0]!;
+	block.texts[0]!.value = stem; block.texts[0]!.format = html ? "html" : "plain";
+	const course = parseCourse(JSON.stringify(raw)), bundle = join(dir, "bundle");
+	await prepareItemCues(course, bundle, 17);
+	const operator = JSON.parse(await readFile(join(`${bundle}-review`, "operator.json"), "utf8"));
+	const rows = JSON.parse(await readFile(join(bundle, "masked/items.json"), "utf8"));
+	const row = rows.find((row: { ref: string }) => row.ref === "2.1.1");
+	const aligned = row ? { stem: row.stem, options: options.map((_, i) => row.options[operator.optionOrder["2.1.1"].indexOf(i)]) } : null;
+	return { course, bundle, operator, aligned, dir };
+}
+
+test("masked stem/key overlap has literal shared words", async context => {
+	const result = await maskedFixture(context, "Which cell?", ["A cell", "A wall", "A pipe", "A wire"]);
+	assert.deepEqual(result.aligned, { stem: "Which xepe?", options: ["A xepe", "A rori", "A vevi", "A mife"] });
+});
+
+test("masked a/an agreement preserves literal vowel initials", async context => {
+	const result = await maskedFixture(context, "This is an", ["apple", "banana", "orange", "pear"]);
+	assert.deepEqual(result.aligned, { stem: "This is an", options: ["arulo", "qupuwi", "amigaf", "tezo"] });
+});
+
+test("masked singular/plural agreement keeps a shared base and trailing s", async context => {
+	const result = await maskedFixture(context, "These cells are", ["cells", "cell", "walls", "wall"]);
+	assert.deepEqual(result.aligned, { stem: "These xepes are", options: ["xepes", "xepe", "roris", "rori"] });
+});
+
+test("masked allow-listed HTML stem preserves literal overlap without markup", async context => {
+	const result = await maskedFixture(context, "<p>Which <strong>cell</strong>?</p>", ["A cell", "A wall", "A pipe", "A wire"], true);
+	assert.deepEqual(result.aligned, { stem: "Which xepe ?", options: ["A xepe", "A rori", "A vevi", "A mife"] });
+});
+
+test("masked Run Bin Map Log collision case is injective at seed 17", async context => {
+	const result = await maskedFixture(context, "Which?", ["Run", "Bin", "Map", "Log"]);
+	assert.deepEqual(result.aligned, { stem: "Which?", options: ["Taw", "Men", "Zuj", "Tef"] });
+});
+
+test("masked exhausted replacement space fails closed", async context => {
+	const result = await maskedFixture(context, "Which?", ["BCDFGHJKLMNPQRSTVWXYZ", "B C D F G H J K L M N P Q R S T V W X Y Z", "X", "Y"]);
+	assert.equal(result.aligned, null);
+	assert.deepEqual(result.operator.masked, { applies: false, reason: "mask-space", detail: "Masked probe not applicable: no unused same-length form for an item at 2.1.1. Guessing cues are unverified." });
+	const answer = { ...payload(), ...result.operator, masked: { ...result.operator.masked, bundleId: result.operator.bundleId, probe: "masked" } };
+	for (const probe of [answer.choicesOnly, answer.coverTheOptions]) probe.bundleId = result.operator.bundleId;
+	const view = itemCuesView(result.course, readItemCues(JSON.stringify(answer), result.course, JSON.stringify(result.operator)));
+	assert.equal(view.course.masked?.applies, false); assert.equal("p" in view.course.masked!, false);
+	assert.match(renderItemCues(view), /no unused same-length form/);
+});
+
+test("masked digits use a literal consistent per-item scrambling", async context => {
+	const result = await maskedFixture(context, "Is 100 > 20?", ["100", "-20.5%", "20", "00"]);
+	assert.deepEqual(result.aligned, { stem: "Is 722 > 12?", options: ["722", "-12.4%", "12", "22"] });
+});
+
+test("masked accents normalize to NFC before assigning words", async context => {
+	const result = await maskedFixture(context, "Which café?", ["café", "cafe\u0301", "résumé", "wire"]);
+	assert.deepEqual(result.aligned, { stem: "Which koxi?", options: ["koxi", "koxi", "lejava", "mife"] });
+});
+
+test("French and missing course.locale never produce a masked score", async context => {
+	const dir = await mkdtemp(join(tmpdir(), "trace-mask-language-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	for (const locale of ["fr-CA", "", undefined]) {
+		const raw = fixture(), metadata: { locale?: string } = raw.course;
+		if (locale === undefined) delete metadata.locale; else metadata.locale = locale;
+		const course = parseCourse(JSON.stringify(raw)), bundle = join(dir, locale === undefined ? "missing" : locale || "blank");
+		await prepareItemCues(course, bundle, 17);
+		const operator = JSON.parse(await readFile(join(`${bundle}-review`, "operator.json"), "utf8"));
+		assert.deepEqual(JSON.parse(await readFile(join(bundle, "masked/items.json"), "utf8")), []);
+		const answer = { ...payload(), ...operator, masked: { ...operator.masked, bundleId: operator.bundleId, probe: "masked" } };
+		for (const probe of [answer.choicesOnly, answer.coverTheOptions]) probe.bundleId = operator.bundleId;
+		const view = itemCuesView(course, readItemCues(JSON.stringify(answer), course, JSON.stringify(operator)));
+		for (const row of [view.course, ...view.banks]) {
+			assert.deepEqual(row.masked, { applies: false, reason: "language", detail: "Masked probe not applicable: course.locale does not confirm English. Guessing cues are unverified." });
+			assert.equal("p" in row.masked!, false); assert.equal("pLow" in row.masked!, false);
+		}
+		assert.match(renderItemCues(view), /course.locale does not confirm English/);
+		assert.equal(itemCuesView(course).course.masked?.applies, false);
+	}
+});
+
+test("operator evidence stays outside every solver-readable bundle file", async context => {
+	const result = await maskedFixture(context, "Which cell?", ["A cell", "A wall", "A pipe", "A wire"]);
+	const scan = async (path: string): Promise<void> => { for (const entry of await readdir(path, { withFileTypes: true })) {
+		const file = join(path, entry.name);
+		if (entry.isDirectory()) await scan(file);
+		else assert.doesNotMatch(await readFile(file, "utf8"), /\bseed\b|optionOrder|"17"|\b17\b/, file);
+	} };
+	await scan(result.bundle);
+	assert.doesNotMatch(await readFile(join(result.bundle, "masked/prompt.md"), "utf8"), /only-true-on-its-own|textbook-wording/);
+	assert.equal(result.operator.seed, 17); assert.ok(result.operator.optionOrder["2.1.1"]);
+	await assert.rejects(readFile(join(result.bundle, "operator.json")), /ENOENT/);
+});
+
+test("answers reject another bundle's identity and swapped probe tags", async context => {
+	const result = await maskedFixture(context, "Which cell?", ["A cell", "A wall", "A pipe", "A wire"]);
+	await prepareItemCues(result.course, join(result.dir, "other"), 29);
+	const other = JSON.parse(await readFile(join(result.dir, "other-review/operator.json"), "utf8"));
+	const answer = { ...payload(), ...result.operator, masked: payload().masked };
+	for (const probe of [answer.choicesOnly, answer.masked, answer.coverTheOptions]) probe.bundleId = result.operator.bundleId;
+	assert.doesNotThrow(() => readItemCues(JSON.stringify(answer), result.course, JSON.stringify(result.operator)));
+	assert.throws(() => readItemCues(JSON.stringify(answer), result.course, JSON.stringify(other)), /bundleId/);
+	const crossed = { ...answer, ...other, choicesOnly: answer.choicesOnly, masked: answer.masked, coverTheOptions: answer.coverTheOptions };
+	assert.throws(() => readItemCues(JSON.stringify(crossed), result.course, JSON.stringify(other)), /bundleId\/probe/);
+	const swapped = { ...answer, masked: answer.choicesOnly, choicesOnly: answer.masked };
+	assert.throws(() => readItemCues(JSON.stringify(swapped), result.course, JSON.stringify(result.operator)), /bundleId\/probe/);
+});
+
+test("masked report rows show authored text with expandable masked detail", async context => {
+	const result = await maskedFixture(context, "Which cell?", ["A cell", "A wall", "A pipe", "A wire"]);
+	const answer = { ...payload(), ...result.operator, masked: payload().masked };
+	for (const probe of [answer.choicesOnly, answer.masked, answer.coverTheOptions]) probe.bundleId = result.operator.bundleId;
+	const view = itemCuesView(result.course, readItemCues(JSON.stringify(answer), result.course, JSON.stringify(result.operator)));
+	assert.ok(view.course.masked?.applies);
+	const row = view.course.masked.items.find(row => row.ref === "2.1.1")!;
+	assert.equal(row.key, "A cell"); assert.equal(row.stem, "Which cell?");
+	assert.equal(row.masked!.key, "A xepe");
+	assert.match(renderItemCues(view), /A cell<details><summary>Masked key<\/summary>/);
+});
+
+test("masked bundle keeps function words, digit counts, punctuation and consistent same-length content words", async context => {
 	const dir = await mkdtemp(join(tmpdir(), "trace-mask-")); context.after(() => rm(dir, { recursive: true, force: true }));
 	const source = ["The copper pipe is at -2.5°C, usually.", "The copper wire is at <20%, never!", "A COPPER pipe may bend; 42 > 7.", "Copper's pipe isn't blue: 123."];
 	const course = parseCourse(JSON.stringify(replaceOptions(fixture(), source)));
 	for (const name of ["a", "b"]) await prepareItemCues(course, join(dir, name), 17);
-	const manifest = JSON.parse(await readFile(join(dir, "a/manifest.json"), "utf8"));
-	assert.equal(manifest.promptVersion, "item-cues/7-projection-2");
+	const manifest = JSON.parse(await readFile(join(dir, "a-review/operator.json"), "utf8"));
+	assert.equal(manifest.promptVersion, "item-cues/8-projection-2");
 	assert.equal(manifest.seed, 17);
 	const a = await readFile(join(dir, "a/masked/items.json"), "utf8");
 	assert.equal(a, await readFile(join(dir, "b/masked/items.json"), "utf8"));
@@ -229,7 +354,7 @@ test("masked bundle keeps function words, numbers, punctuation and consistent sa
 	ordered.forEach((original, i) => {
 		const actual = masked[i]!;
 		assert.equal([...actual].length, [...original].length);
-		assert.equal(actual.replace(/[A-Za-z]/g, ""), original.replace(/[A-Za-z]/g, ""));
+		assert.equal(actual.replace(/[A-Za-z0-9]/g, ""), original.replace(/[A-Za-z0-9]/g, ""));
 		const originalWords = original.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g)!;
 		const actualWords = actual.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g)!;
 		originalWords.forEach((word, j) => {
@@ -255,12 +380,17 @@ test("CLI seeds record distinct repeatable orders and both option probes score t
 		const bundle = join(dir, String(seed));
 		const prepared = run("prepare", "item-cues", input, "--out", bundle, "--seed", String(seed));
 		assert.equal(prepared.status, 0, prepared.stderr);
-		const manifest = JSON.parse(await readFile(join(bundle, "manifest.json"), "utf8")); manifests.push(manifest);
+		const paths = JSON.parse(prepared.stdout);
+		assert.equal(paths.operator, join(`${bundle}-review`, "operator.json"));
+		assert.equal(paths.answer, join(`${bundle}-review`, "answer.json"));
+		const manifest = JSON.parse(await readFile(join(`${bundle}-review`, "operator.json"), "utf8")); manifests.push(manifest);
 		assert.equal(manifest.seed, seed);
 		const choices = JSON.parse(await readFile(join(bundle, "choices-only/items.json"), "utf8"));
 		const answers = keyedChoices(course).items.map(item => ({ ref: item.ref, choice: choices.find((row: { ref: string }) => row.ref === item.ref).options.indexOf(item.options[item.key]) + 1, cue: "guessed", note: "Synthetic" }));
-		const answer = { ...payload(), ...manifest, choicesOnly: { model: "plain", answers }, masked: { model: "masked", answers } };
-		const path = join(dir, `answer-${seed}.json`); await writeFile(path, JSON.stringify(answer));
+		const answer = { ...payload(), ...manifest, choicesOnly: { bundleId: "synthetic-bundle", probe: "choices-only", model: "plain", answers }, masked: { bundleId: "synthetic-bundle", probe: "masked", model: "masked", answers } };
+		answer.bundleId = manifest.bundleId;
+		for (const probe of [answer.choicesOnly, answer.masked, answer.coverTheOptions]) probe.bundleId = manifest.bundleId;
+		const path = join(`${bundle}-review`, "answer.json"); await writeFile(path, JSON.stringify(answer));
 		const reported = run("report", input, "--out", join(bundle, "report"), "--item-cues", path);
 		assert.equal(reported.status, 0, reported.stderr);
 		const view = JSON.parse(await readFile(join(bundle, "report/report.json"), "utf8")).itemCues;
@@ -271,7 +401,7 @@ test("CLI seeds record distinct repeatable orders and both option probes score t
 	}
 	assert.notDeepEqual(manifests[0].optionOrder, manifests[1].optionOrder);
 	for (const name of ["random-a", "random-b"]) await prepareItemCues(course, join(dir, name));
-	const randomA = JSON.parse(await readFile(join(dir, "random-a/manifest.json"), "utf8")), randomB = JSON.parse(await readFile(join(dir, "random-b/manifest.json"), "utf8"));
+	const randomA = JSON.parse(await readFile(join(dir, "random-a-review/operator.json"), "utf8")), randomB = JSON.parse(await readFile(join(dir, "random-b-review/operator.json"), "utf8"));
 	assert.ok(Number.isSafeInteger(randomA.seed)); assert.ok(Number.isSafeInteger(randomB.seed)); assert.notEqual(randomA.seed, randomB.seed);
 	await prepareItemCues(course, join(dir, "replayed"), randomA.seed);
 	for (const file of ["manifest.json", "choices-only/items.json", "masked/items.json"]) assert.equal(await readFile(join(dir, "random-a", file), "utf8"), await readFile(join(dir, "replayed", file), "utf8"));
@@ -287,9 +417,12 @@ test("masked answers reject missing rows, invalid choices and altered permutatio
 	bad(answer => { answer.masked.answers.pop(); }, /every eligible/);
 	bad(answer => { answer.masked.answers[0]!.choice = 0; }, /one-based/);
 	bad(answer => { answer.masked.answers[0]!.ref = "missing"; }, /unique eligible/);
-	bad(answer => { answer.optionOrder["1.1.1"] = [0, 0, 0, 0]; }, /permutation/);
-	bad(answer => { delete answer.optionOrder["1.1.1"]; }, /every eligible/);
-	bad(answer => { answer.seed = 1.5; }, /seed/);
+	const operator = operatorFor(course); operator.optionOrder["1.1.1"] = [0, 0, 0, 0];
+	assert.throws(() => parseItemCues(JSON.stringify(payload()), course, operator), /permutation/);
+	delete operator.optionOrder["1.1.1"];
+	assert.throws(() => parseItemCues(JSON.stringify(payload()), course, operator), /every eligible/);
+	const invalidSeed = operatorFor(course); invalidSeed.seed = 1.5;
+	assert.throws(() => parseItemCues(JSON.stringify(payload()), course, invalidSeed), /seed/);
 });
 
 test("masked pooled tails and report wording use the guessing-cue probe independently of plain choices", () => {
@@ -299,7 +432,7 @@ test("masked pooled tails and report wording use the guessing-cue probe independ
 		row.choice = answer.optionOrder[item.ref]!.indexOf((item.key + 1) % item.options.length) + 1;
 	}
 	const view = itemCuesView(course, parseItemCues(JSON.stringify(answer), course));
-	assert.equal(view.course.masked!.right, 0); assert.equal(view.course.masked!.p, 1); assert.equal(view.course.masked!.pLow, 0.75 ** 9);
+	assert.equal((view.course.masked as import("../src/item-cues.ts").ProbeScore).right, 0); assert.equal((view.course.masked as import("../src/item-cues.ts").ProbeScore).p, 1); assert.equal((view.course.masked as import("../src/item-cues.ts").ProbeScore).pLow, 0.75 ** 9);
 	assert.equal(view.course.choicesOnly!.right, 9);
 	const html = renderItemCues(view);
 	assert.match(html, /Guessing-cue gate: the masked solver picked the key on 0 of 9/);
@@ -313,15 +446,15 @@ test("pooled course scores sum lesson results with exact upper and lower tails",
 	raw.lessons[1]!.pages[0]!.blocks[0]!.texts = raw.lessons[1]!.pages[0]!.blocks[0]!.texts.filter(text => !text.ref.endsWith("/3"));
 	raw.lessons[1]!.pages[0]!.blocks[0]!.assessment.options.pop();
 	const course = parseCourse(JSON.stringify(raw));
-	const answer = { ...probeMetadata(course), choicesOnly: { model: "operator-recorded", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed" as const, note: "Synthetic" })) }, coverTheOptions: { model: "operator-recorded", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+	const answer = { ...probeMetadata(course), choicesOnly: { bundleId: "synthetic-bundle", probe: "choices-only", model: "operator-recorded", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed" as const, note: "Synthetic" })) }, coverTheOptions: { bundleId: "synthetic-bundle", probe: "cover-the-options", model: "operator-recorded", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	const view = itemCuesView(course, answer);
 	assert.equal(view.course.choicesOnly!.right, 9);
 	assert.equal(view.course.choicesOnly!.total, 9);
 	assert.equal(view.course.choicesOnly!.right, view.banks.reduce((sum, bank) => sum + bank.choicesOnly!.right, 0));
 	assert.equal(view.course.choicesOnly!.chanceExpected, 2 + 1 / 3);
 	assert.equal(view.course.choicesOnly!.p, 1 / (4 ** 8 * 3));
-	assert.equal(view.course.masked!.p, 1 / (4 ** 8 * 3));
-	assert.equal(view.course.masked!.pLow, 1);
+	assert.equal((view.course.masked as import("../src/item-cues.ts").ProbeScore).p, 1 / (4 ** 8 * 3));
+	assert.equal((view.course.masked as import("../src/item-cues.ts").ProbeScore).pLow, 1);
 	assert.equal(view.course.choicesOnly!.pLow, 1);
 	assert.equal(view.banks[1]!.choicesOnly!.p, 1 / 3);
 	assert.equal(view.banks[1]!.choicesOnly!.pLow, 1);
@@ -367,7 +500,7 @@ test("independent probe permutations remove an authored first-key pattern and ma
 	const course = parseCourse(JSON.stringify(raw)), items = keyedChoices(course).items;
 	assert.ok(items.every(item => item.key === 0));
 	assert.equal(new Set(items.map(item => probeOrder(item).indexOf(0))).size, 4);
-	const answer = { ...probeMetadata(course), choicesOnly: { model: "constant-first", answers: items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "Always first in the probe" })) }, coverTheOptions: { model: "stem-solver", answers: items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+	const answer = { ...probeMetadata(course), choicesOnly: { bundleId: "synthetic-bundle", probe: "choices-only", model: "constant-first", answers: items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "Always first in the probe" })) }, coverTheOptions: { bundleId: "synthetic-bundle", probe: "cover-the-options", model: "stem-solver", answers: items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	const right = itemCuesView(course, answer).course.choicesOnly!.right;
 	assert.ok(right > 0 && right < 32);
 	for (const row of answer.choicesOnly.answers) row.choice = probeOrder(items.find(item => item.ref === row.ref)!).indexOf(0) + 1;
@@ -378,12 +511,12 @@ test("independent probe permutations remove an authored first-key pattern and ma
 	await prepareItemCues(parseCourse(JSON.stringify(raw)), join(dir, "flipped"), 0);
 	assert.equal(await readFile(join(dir, "first/choices-only/items.json"), "utf8"), await readFile(join(dir, "flipped/choices-only/items.json"), "utf8"));
 	const manifest = JSON.parse(await readFile(join(dir, "first/manifest.json"), "utf8"));
-	assert.deepEqual(Object.keys(manifest), ["view", "promptVersion", "courseHash", "seed", "optionOrder"]);
+	assert.deepEqual(Object.keys(manifest), ["view", "promptVersion", "courseHash", "bundleId", "masked"]);
 });
 
 test("cover answers need semantic judgement, never literal scoring or free-response p values", () => {
 	const raw = fixture(), course = parseCourse(JSON.stringify(replaceOptions(raw, ["0 degrees Celsius", "10 degrees Celsius", "20 degrees Celsius", "30 degrees Celsius"])));
-	const answer = { ...probeMetadata(course), choicesOnly: { model: "choice-solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "stem-solver", judgeModel: "separate-judge", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "Zero degrees Celsius", coverJudgement: undefined as "matches" | "differs" | "cantTell" | undefined })) } };
+	const answer = { ...probeMetadata(course), choicesOnly: { bundleId: "synthetic-bundle", probe: "choices-only", model: "choice-solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { bundleId: "synthetic-bundle", probe: "cover-the-options", model: "stem-solver", judgeModel: "separate-judge", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "Zero degrees Celsius", coverJudgement: undefined as "matches" | "differs" | "cantTell" | undefined })) } };
 	let view = itemCuesView(course, answer), cover = view.course.coverTheOptions!;
 	assert.equal(cover.right, null); assert.equal(cover.pending, 9); assert.equal(cover.status, "not judged");
 	assert.ok(!Object.hasOwn(cover, "p"));
@@ -542,8 +675,8 @@ test("bundle CLI strips canaries from typed inspect inputs and refuses unsupport
 	}
 	const out = join(dir, "bundle-typed");
 	assert.doesNotMatch(await readFile(join(out, "cover-the-options/prompt.md"), "utf8"), /literal|paraphrases remain/);
-	assert.match(await readFile(join(out, "prompt.md"), "utf8"), /operator records the actual model names/);
-	assert.match(await readFile(join(out, "prompt.md"), "utf8"), /separate fresh judge agent/);
+	assert.match(await readFile(join(`${out}-review`, "prompt.md"), "utf8"), /operator records the actual model names/);
+	assert.match(await readFile(join(`${out}-review`, "prompt.md"), "utf8"), /separate fresh judge agent/);
 	assert.match(await readFile(join(out, "choices-only/prompt.md"), "utf8"), /only-true-on-its-own/);
 });
 
@@ -555,7 +688,7 @@ test("tiny probabilities below the exponent boundary render as escaped readable 
 		block.texts.forEach((text, j) => { text.ref = `tiny-${i}/text-${j}`; }); return block;
 	});
 	const course = parseCourse(JSON.stringify(raw)), items = keyedChoices(course).items;
-	const answer = { ...probeMetadata(course), choicesOnly: { model: "synthetic", answers: items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "synthetic", answers: items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+	const answer = { ...probeMetadata(course), choicesOnly: { bundleId: "synthetic-bundle", probe: "choices-only", model: "synthetic", answers: items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { bundleId: "synthetic-bundle", probe: "cover-the-options", model: "synthetic", answers: items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	const view = itemCuesView(course, answer), html = renderItemCues(view);
 	assert.equal(view.course.choicesOnly!.p, 1 / 4 ** 32);
 	assert.match(view.course.choicesOnly!.p.toPrecision(4), /e-/);
@@ -650,9 +783,9 @@ test("empty courses omit the view, and stems missing media or code carry a visib
 	const course = load(), page = course.lessons[1]!.pages[0]!;
 	page.blocks.push({ id: "code", type: "code", line: 10, data: { code: "example()" } });
 	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-media-")); context.after(() => rm(dir, { recursive: true, force: true }));
-	await prepareItemCues(course, dir);
-	assert.doesNotMatch(await readFile(join(dir, "cover-the-options/items.json"), "utf8"), /Stem depends on non-text content/);
-	const answer = { ...probeMetadata(course), choicesOnly: { model: "solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "stem", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+	await prepareItemCues(course, join(dir, "bundle"));
+	assert.doesNotMatch(await readFile(join(dir, "bundle/cover-the-options/items.json"), "utf8"), /Stem depends on non-text content/);
+	const answer = { ...probeMetadata(course), choicesOnly: { bundleId: "synthetic-bundle", probe: "choices-only", model: "solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { bundleId: "synthetic-bundle", probe: "cover-the-options", model: "stem", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	assert.match(renderItemCues(itemCuesView(course, answer)), /Stem depends on non-text content/);
 });
 
@@ -882,6 +1015,7 @@ test("report setup commands appear only on course rows and the skill reads the m
 	assert.equal((html.match(/praxity-trace prepare item-cues course.json/g) ?? []).length, 2, "One course instruction per display mode, never repeated per bank");
 	assert.match(html, /praxity inspect.*course-folder.*--schema 1.*course.json/);
 	const skill = await readFile(resolve("skill/SKILL.md"), "utf8");
-	assert.match(skill, /Copy the full manifest, including `view`, `promptVersion`, `courseHash`, `seed` and `optionOrder`/);
+	assert.match(skill, /Copy `view`, `promptVersion`, `courseHash` and `bundleId` from the bundle manifest/);
+	assert.match(skill, /Keep `seed` and `optionOrder` exclusively in the sibling `operator.json`/);
 	assert.doesNotMatch(skill, /Use `item-cues\/\d/);
 });

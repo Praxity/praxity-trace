@@ -93,11 +93,11 @@ async function reportFixture(directory: string, name: string, inputPath: string 
 	const cueBundle = join(directory, "answers", "item-cues");
 	cli(["prepare", "item-cues", input, "--out", cueBundle]);
 	const cueManifest = JSON.parse(await readFile(join(cueBundle, "manifest.json"), "utf8"));
-	const cueAnswer = join(cueBundle, "answer.json");
+	const cueAnswer = join(`${cueBundle}-review`, "answer.json");
 	await writeFile(cueAnswer, JSON.stringify({ ...cueManifest,
-		masked: { model: "synthetic-masked-solver", answers: cueItems.map(item => ({ ref: item.ref, choice: 1, cue: "guessed", note: "Synthetic masked cue" })) },
-		choicesOnly: { model: "synthetic-accessibility-solver", answers: cueItems.map(item => ({ ref: item.ref, choice: 1, cue: "guessed", note: "Synthetic wording cue" })) },
-		coverTheOptions: { model: "synthetic-accessibility-solver", answers: cueItems.map(item => ({ ref: item.ref, answer: "can't tell" })) },
+		masked: { bundleId: cueManifest.bundleId, probe: "masked", model: "synthetic-masked-solver", answers: cueItems.map(item => ({ ref: item.ref, choice: 1, cue: "guessed", note: "Synthetic masked cue" })) },
+		choicesOnly: { bundleId: cueManifest.bundleId, probe: "choices-only", model: "synthetic-accessibility-solver", answers: cueItems.map(item => ({ ref: item.ref, choice: 1, cue: "guessed", note: "Synthetic wording cue" })) },
+		coverTheOptions: { bundleId: cueManifest.bundleId, probe: "cover-the-options", model: "synthetic-accessibility-solver", answers: cueItems.map(item => ({ ref: item.ref, answer: "can't tell" })) },
 	}));
 	answers.push("--item-cues", cueAnswer);
 	const output = join(directory, "all-model-views");

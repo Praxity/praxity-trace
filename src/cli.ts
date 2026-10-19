@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { appendFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import { parseAlignment, prepareAlignment } from "./alignment.ts";
 import { alignmentView } from "./alignment-view.ts";
@@ -22,7 +22,7 @@ import { buildReport, renderHtml } from "./report.ts";
 import { parseRecommendations, prepareRecommendations } from "./recommendations.ts";
 import { parseTasks, prepareTasks, tasksView } from "./tasks.ts";
 import { formatCommentsMarkdown, parseComments } from "./comments.ts";
-import { itemCuesView, parseItemCues, prepareItemCues, PROBE_INPUT_ERROR, PROBE_JSON_ERROR, ProbeInputError, requireProbeInput } from "./item-cues.ts";
+import { itemCuesReviewDirectory, itemCuesView, parseItemCues, prepareItemCues, PROBE_INPUT_ERROR, PROBE_JSON_ERROR, ProbeInputError, requireProbeInput } from "./item-cues.ts";
 
 const HELP = `Usage:
   praxity-trace report <inspect.json|html-dir|-> --out <dir> [--alignment <answer.json>] [--tasks <answer.json>] [--concepts <answer.json>] [--terms <answer.json>] [--visuals <answer.json>] [--distinctions <answer.json>] [--item-cues <answer.json>] [--recommendations <answer.json>]
@@ -34,7 +34,7 @@ report writes report.html and report.json to <dir>.
 report always includes scripted item cues; --item-cues <answer.json> adds the three solver probes.
 prepare writes a bundle for a model reviewer; its answer.json feeds the matching report option.
 prepare item-cues requires schema 1 inspect JSON with projection 2; HTML exports are supported only for scripted report checks.
---seed <integer> sets item-cues option order and masking; the default seed is random and recorded.
+--seed <integer> sets item-cues option order and masking; the default seed is random and recorded outside the bundle in <bundle>-review/operator.json.
 --comments adds the designer's comments on that view (downloaded from report.html) to the reviewer's prompt.
 Recommendations come last: build the report with every other answer, prepare from its report.json, then build again with --recommendations.`;
 
@@ -90,7 +90,8 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 			await appendFile(join(out, "prompt.md"), `\n## Designer comments\n\nThe designer left these comments on the previous report's ${SECTION[view]} section. Follow them where they correct or constrain your answer (for example, keep objectives separate that you would otherwise group); they override your own judgment on the points they cover.${stale}\n\n${formatCommentsMarkdown(mine).split("\n").slice(4).join("\n")}`);
 		}
 	}
-	console.log(JSON.stringify({ ok: true, bundle: out, prompt: join(out, "prompt.md"), answer: join(out, "answer.json") }));
+	const review = view === "item-cues" ? itemCuesReviewDirectory(out) : out;
+	console.log(JSON.stringify({ ok: true, bundle: out, prompt: join(review, "prompt.md"), answer: join(review, "answer.json"), ...(view === "item-cues" ? { operator: join(review, "operator.json") } : {}) }));
 } else if (command === "report" && rest.length === 1) {
 	const course = await readCourse(rest[0] as string);
 	const models = {
@@ -111,7 +112,7 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 	const availability = withSpacing.alignment ? availabilityView(course, withSpacing.alignment, shape.lessons) : undefined;
 	const derived = {
 		...withSpacing,
-		itemCues: itemCuesView(course, values["item-cues"] ? parseItemCues(await readFile(values["item-cues"], "utf8"), course) : undefined),
+		itemCues: itemCuesView(course, values["item-cues"] ? parseItemCues(await readFile(values["item-cues"], "utf8"), course, await readFile(join(dirname(values["item-cues"]), "operator.json"), "utf8")) : undefined),
 		...(availability ? { availability } : {}),
 		...(values.tasks ? { tasks: tasksView(course, parseTasks(await readFile(values.tasks, "utf8"), course), withSpacing.alignment && availability ? { alignment: withSpacing.alignment, availability } : undefined) } : {}),
 	};
