@@ -135,6 +135,8 @@ async function build(directory) {
 		await collect(join(root, path), path, new Set(), true);
 	}
 	await localContent(join(root, "skill"));
+	// The tasks prompt cites the coding guide by package path; the skill no longer links it.
+	await localContent(join(root, "docs/task-coding-guide.md"));
 	for (const name of Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies }).sort()) {
 		await dependency(name, root, join("node_modules", name));
 	}
