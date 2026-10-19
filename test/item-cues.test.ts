@@ -460,11 +460,12 @@ test("questions on one page have distinct visible labels and source lines in eve
 	const walk = (node: DefaultTreeAdapterTypes.Node) => {
 		if ("tagName" in node && node.tagName === "table") {
 			const caption = node.childNodes.find(child => "tagName" in child && child.tagName === "caption");
-			if (caption && /item measurements|choices-only responses|stem answers needing judgement/.test(text(caption))) {
+			if (caption && /item measurements|choices-only responses|stem answers and judgements/.test(text(caption))) {
 				const rows = "childNodes" in node ? node.childNodes.flatMap(child => "tagName" in child && child.tagName === "tbody" ? child.childNodes : []) : [];
 				for (const row of rows) if ("childNodes" in row) {
 					const head = row.childNodes.find(child => "tagName" in child && child.tagName === "th");
 					assert.ok(head); assert.match(text(head), /\d+\.\d+\.\d+/); assert.match(text(head), /\.prax:\d+/);
+					assert.doesNotMatch(text(head), /^\s*\d+\.\d+\s+\d+\.\d+\.\d+/);
 				}
 			}
 		}
@@ -472,7 +473,7 @@ test("questions on one page have distinct visible labels and source lines in eve
 	}; walk(parseFragment(html));
 });
 
-test("alsoCorrect means an answerable stem with a non-unique key, separately counted", () => {
+test("alsoCorrect means another valid free answer, separately counted without claiming the offered key is not unique", () => {
 	const course = load(), raw = payload();
 	const judgement = { ...raw.coverTheOptions.answers[0]!, answer: "A different defensible answer", coverJudgement: "alsoCorrect" };
 	const answer = parseItemCues(JSON.stringify({ ...raw, coverTheOptions: { ...raw.coverTheOptions, judgeModel: "fresh-judge", answers: [judgement, ...raw.coverTheOptions.answers.slice(1)] } }), course);
@@ -484,8 +485,10 @@ test("alsoCorrect means an answerable stem with a non-unique key, separately cou
 	assert.equal(view.banks[0]!.coverTheOptions!.right, 1);
 	assert.equal(view.banks[1]!.coverTheOptions!.right, null);
 	const html = renderItemCues(view);
-	assert.match(html, /Stem answerable, key not unique/);
-	assert.match(html, /single best answer/);
+	assert.match(html, /Another valid answer/);
+	assert.match(html, /Check that only one offered option is correct/);
+	assert.doesNotMatch(html, /non-unique key|key not unique/);
+	assert.match(html, /1 stem answerable: 0 match the key, 1 give another valid answer/);
 });
 
 test("small-bank limits are evaluated separately for high and low tails", () => {
@@ -535,4 +538,74 @@ test("empty courses omit the view, and stems missing media or code carry a visib
 	assert.doesNotMatch(await readFile(join(dir, "cover-the-options/items.json"), "utf8"), /Stem depends on non-text content/);
 	const answer = { choicesOnly: { model: "solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "stem", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	assert.match(renderItemCues(itemCuesView(course, answer)), /Stem depends on non-text content/);
+});
+
+
+test("blind bundles fail closed on unconsumed markup in either stems or options, including unknown constructs", async context => {
+	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-unparsed-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	const shapes = [
+		"[Red [square]]{NESTED_CANARY: Red square is the key}",
+		String.raw`[Red \] square]{ESCAPED_CANARY: Red square is the key}`,
+		"[Red]{DEFINITION_CANARY: Red square is the key ]{nested {deeper}}}",
+		"[[UNPARSED_CANARY: future syntax]]",
+	];
+	const raw = fixture(), template = raw.lessons[1]!.pages[0]!.blocks[0]!;
+	raw.lessons = [raw.lessons[1]!];
+	raw.lessons[0]!.pages[0]!.blocks = [...shapes.flatMap((shape, i) => ["prompt", "option"].map(role => {
+		const block = structuredClone(template); block.ref = `edge-${i}-${role}`;
+		block.texts.forEach((text, j) => {
+			text.ref = `${block.ref}/text-${j}`;
+			if (text.role === role && (role === "prompt" || j === 1)) { text.format = "markdown"; text.value = shape; }
+		});
+		if (role === "option") block.assessment.options[0]!.label = shape;
+		return block;
+	})), template];
+	const input = join(dir, "inspect.json"), out = join(dir, "bundle");
+	await writeFile(input, JSON.stringify(raw));
+	const prepared = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", input, "--out", out], { encoding: "utf8" });
+	assert.equal(prepared.status, 0, prepared.stderr);
+	let files = 0;
+	const scan = async (path: string): Promise<void> => { for (const entry of await readdir(path, { withFileTypes: true })) {
+		const file = join(path, entry.name); if (entry.isDirectory()) await scan(file); else { files++; assert.doesNotMatch(await readFile(file, "utf8"), /[A-Z_]+_CANARY|Red square is the key|future syntax/, file); }
+	} };
+	await scan(out); assert.equal(files, 6);
+	for (const probe of ["choices-only", "cover-the-options"]) {
+		const rows = JSON.parse(await readFile(join(out, probe, "items.json"), "utf8"));
+		assert.deepEqual(rows.map((row: { ref: string }) => row.ref), ["1.1.9"]);
+	}
+	const report = join(dir, "report"), reported = spawnSync(process.execPath, [resolve("src/cli.ts"), "report", input, "--out", report], { encoding: "utf8" });
+	assert.equal(reported.status, 0, reported.stderr);
+	const view = JSON.parse(await readFile(join(report, "report.json"), "utf8")).itemCues;
+	assert.equal(view.excludedCount, 8); assert.equal(view.course.count, 1);
+	assert.deepEqual(view.excluded.map((row: { reason: string }) => row.reason), Array(8).fill("Markup could not be removed safely"));
+	assert.match(await readFile(join(report, "report.html"), "utf8"), /Excluded items \(8\)/);
+	const excludedOnly = structuredClone(raw); excludedOnly.lessons[0]!.pages[0]!.blocks.pop();
+	const only = itemCuesView(parseCourse(JSON.stringify(excludedOnly)));
+	assert.equal(only.course.count, 0); assert.match(renderItemCues(only), /Excluded items \(8\)/);
+});
+
+test("cover answers sort by action needed and show solver names in visible text", () => {
+	const course = load(), raw = payload();
+	const judgements = ["matches", "alsoCorrect", "cantTell", "differs", undefined, "matches", "matches", "matches", "matches"];
+	const answer = parseItemCues(JSON.stringify({ ...raw, coverTheOptions: { ...raw.coverTheOptions, judgeModel: "fresh-judge", answers: raw.coverTheOptions.answers.map((row, i) => ({ ...row, coverJudgement: judgements[i] })) } }), course);
+	const html = renderItemCues(itemCuesView(course, answer));
+	const tables: string[][] = [];
+	const text = (node: DefaultTreeAdapterTypes.Node): string => "value" in node ? node.value : "childNodes" in node ? node.childNodes.map(text).join("") : "";
+	const walk = (node: DefaultTreeAdapterTypes.Node) => {
+		if ("tagName" in node && node.tagName === "table") {
+			const caption = node.childNodes.find(child => "tagName" in child && child.tagName === "caption");
+			if (caption && text(caption) === "Course: stem answers and judgements") {
+				const body = node.childNodes.find(child => "tagName" in child && child.tagName === "tbody");
+				assert.ok(body && "childNodes" in body);
+				tables.push(body.childNodes.filter(child => "tagName" in child && child.tagName === "tr").map(row => text(row).match(/1\.1\.\d|2\.1\.\d/)![0]));
+			}
+		}
+		if ("childNodes" in node) node.childNodes.forEach(walk);
+	}; walk(parseFragment(html));
+	assert.deepEqual(tables, [["1.1.5", "1.1.4", "1.1.3", "1.1.2", "1.1.1", "1.1.6", "1.1.7", "1.1.8", "2.1.1"]]);
+	const visible = text(parseFragment(html));
+	assert.match(visible, /Stem solver: synthetic-stem-solver\./);
+	assert.match(visible, /Choices-only solver: synthetic-solver\./);
+	assert.match(visible, /6 stems answerable/);
+	assert.doesNotMatch(visible, /stem solver responses\.|solver responses/);
 });
