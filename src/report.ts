@@ -52,7 +52,7 @@ export interface Report {
 	recommendations?: RecommendationsView;
 }
 
-/** Views that need a model's answer; each is drawn only when its answer is supplied. */
+/** Additional views supplied by the caller; item cues also include scripted measurements. */
 export type ModelViews = Pick<Report, "alignment" | "tasks" | "concepts" | "terms" | "visuals" | "spacing" | "distinctions" | "availability" | "itemCues">;
 
 const { tasks: taskGuide, ...baseGuides } = GUIDES;
