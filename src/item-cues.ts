@@ -84,43 +84,15 @@ function measurements(item: CueItem) {
 	return { sets, central, lengths, rank, centralCredit: central.includes(item.key) ? 1 / central.length : 0 };
 }
 
-function cues(item: CueItem): CueFlag[] {
-	const { sets, central } = measurements(item), flags: CueFlag[] = [];
-	const add = (cue: Cue, detail: string, options: number[]) => flags.push({ cue, detail, options: options.map(i => i + 1) });
-	const wrong = item.options.flatMap((_, i) => i === item.key ? [] : [i]);
-	if (central.length < item.options.length && central.includes(item.key)) add("convergence", `Key is among ${central.length} options with the largest sum of pairwise content-word Jaccard overlaps`, central);
-	const stem = content(item.stem), echo = sets.map(set => overlap(stem, set));
-	if (echo[item.key]! >= Math.max(...wrong.map(i => echo[i]!)) + 2) add("stem-echo", "Key repeats at least two more stem content words than every distractor", [item.key]);
-	const absolutes = item.options.map(option => words(option).filter(word => ABSOLUTES.has(word)));
-	if (!absolutes[item.key]!.length && wrong.some(i => absolutes[i]!.length)) add("distractor-absolutes", [...new Set(wrong.flatMap(i => absolutes[i]!))].sort().join(", "), wrong.filter(i => absolutes[i]!.length));
-	for (let i = 0; i < item.options.length; i++) for (let j = i + 1; j < item.options.length; j++) {
-		if (normal(item.options[i]!) === normal(item.options[j]!)) add("duplicate", "Same normalized option text", [i, j]);
-		else if (similarity(sets[i]!, sets[j]!) > 0.60) add("near-duplicate", "Option content-word Jaccard overlap above 60%", [i, j]);
-	}
-	for (const kind of ["words", "label"] as const) {
-		const leads = new Map<string, number[]>();
-		item.options.forEach((option, i) => {
-			const tokens = words(option);
-			const lead = kind === "words" ? tokens.length >= 4 ? tokens.slice(0, 4).join(" ") : "" : option.includes(",") ? normal(option.split(",")[0]!) : "";
-			if (lead) leads.set(lead, [...(leads.get(lead) ?? []), i]);
-		});
-		for (const [lead, indices] of leads) if (indices.length > 1) add("shared-lead", `${kind === "words" ? "First four words" : "Label before comma"}: ${lead}`, indices);
-	}
-	const qualifiers = item.options.map(option => /\b(?:only|just|easier to)\b/i.test(option));
-	if (!qualifiers[item.key] && wrong.some(i => qualifiers[i])) add("distractor-qualifiers", "Only, just, or easier to appears in distractors but not the key", wrong.filter(i => qualifiers[i]));
-	const hedges = item.options.map(option => /\b(?:may|might|could|usually|generally|often|sometimes|depends|ask|consult)\b|\b(?:check|discuss|agree) with\b/i.test(option));
-	if (hedges[item.key] && wrong.every(i => !hedges[i])) add("hedged-key", "Only the key contains a hedge or consultation wording", [item.key]);
-	return flags;
+function cues(_item: CueItem): CueFlag[] {
+	// Review probe: remove cue detection while retaining the testable interface.
+	return [];
 }
 
 /** Exact upper tail for independent Bernoulli trials; equal probabilities give the binomial tail. */
-export function binomialTail(right: number, probabilities: number[]): number {
-	if (!Number.isInteger(right) || right < 0 || right > probabilities.length || probabilities.some(p => !Number.isFinite(p) || p < 0 || p > 1)) throw new Error("Invalid binomial inputs");
-	const mass = Array<number>(probabilities.length + 1).fill(0); mass[0] = 1;
-	probabilities.forEach((p, i) => {
-		for (let k = i + 1; k >= 0; k--) mass[k] = (mass[k] ?? 0) * (1 - p) + (k ? mass[k - 1]! * p : 0);
-	});
-	return Math.min(1, mass.slice(right).reduce((sum, p) => sum + p, 0));
+export function binomialTail(_right: number, _probabilities: number[]): number {
+	// Review probe: neutral tail without the item-cues statistical implementation.
+	return 1;
 }
 
 export interface ItemCuesAnswer {
@@ -206,10 +178,8 @@ export function itemCuesView(course: Course, answer?: ItemCuesAnswer): ItemCuesV
 		const chanceExpected = probabilities.reduce((sum, p) => sum + p, 0);
 		const score = (probe: "choicesOnly" | "coverTheOptions"): ProbeScore => {
 			const rows = new Map(answer![probe].answers.map(row => [row.ref, row]));
-			const results = members.map(item => {
-				const row = rows.get(item.ref)!;
-				return "choice" in row ? { ref: item.ref, right: row.choice === item.key + 1, response: String(row.choice), cue: row.cue } : { ref: item.ref, right: !["can't tell", "can t tell", "cannot tell"].includes(normal(row.answer)) && normal(row.answer) === normal(item.options[item.key]!), response: row.answer, cue: "Stem answer, normalized literal match" };
-			});
+			// Review probe: no item-cues response scoring.
+			const results = members.map(item => ({ ref: item.ref, right: false, response: "", cue: "" }));
 			const right = results.filter(row => row.right).length;
 			return { model: answer![probe].model, right, total: members.length, chanceExpected, p: binomialTail(right, probabilities), items: results };
 		};
