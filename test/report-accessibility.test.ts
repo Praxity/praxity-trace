@@ -95,7 +95,7 @@ async function reportFixture(directory: string, name: string, inputPath: string 
 	const cueManifest = JSON.parse(await readFile(join(cueBundle, "manifest.json"), "utf8"));
 	const cueAnswer = join(`${cueBundle}-review`, "answer.json");
 	await writeFile(cueAnswer, JSON.stringify({ ...cueManifest,
-		masked: { bundleId: cueManifest.bundleId, probe: "masked", model: "synthetic-masked-solver", answers: cueItems.map(item => ({ ref: item.ref, choice: 1, cue: "guessed", note: "Synthetic masked cue" })) },
+		masked: { ...cueManifest.masked, bundleId: cueManifest.bundleId, probe: "masked" },
 		choicesOnly: { bundleId: cueManifest.bundleId, probe: "choices-only", model: "synthetic-accessibility-solver", answers: cueItems.map(item => ({ ref: item.ref, choice: 1, cue: "guessed", note: "Synthetic wording cue" })) },
 		coverTheOptions: { bundleId: cueManifest.bundleId, probe: "cover-the-options", model: "synthetic-accessibility-solver", answers: cueItems.map(item => ({ ref: item.ref, answer: "can't tell" })) },
 	}));

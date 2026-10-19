@@ -10,10 +10,8 @@ export interface Reading {
 
 export const GUIDES = {
 	"item-cues": [
-		{ see: "Masked far below guessing", could: "Something may make the key look wrong. Read the solver's notes and compare the keyed wording with the other options." },
-		{ see: "No scripted cues, but masked above guessing", could: "Compare masked stem/option overlap, a/an and singular/plural agreement, length and wording structure. Use the pooled course result, including both tails." },
-		{ see: "Masked not applicable", could: "Read its reason. Nominal course locale is insufficient. The screen checks supplied lesson lang, a 20% pooled English keep-word share and a keep word in every stem of four or more words. This limited screen cannot identify language with certainty. Unsafe masking forms also disable the probe. Missing tail probabilities and small-bank flags leave guessing cues unverified." },
-		{ see: "Plain choices-only above guessing", could: "Does the stem matter? Subject knowledge may identify the only generally true option. This is a stem diagnostic; use masked results for guessing cues." },
+		{ see: "Masked scoring on hold", could: "Schema 1, projection 2 has no language provenance. The masked gate is unavailable until Studio supplies provenance and Trace verifies it. Read language-unconfirmed detail, including any supplied non-English lesson lang. Stop and ask; never compute masked tails by hand or use a hand-masked fallback." },
+		{ see: "Plain choices-only above guessing", could: "Does the stem matter? Subject knowledge may identify the only generally true option. This remains a stem diagnostic and cannot supply the unavailable masked gate." },
 		{ see: "Keys concentrated at a position or length rank", could: "Compare the authored options across the bank, allowing for ties and runtime shuffling." },
 		{ see: "Cover-the-options answers need judgement", could: "Have a separate fresh judge compare each stem, answer and key by meaning. A paraphrase can match; non-text content can explain why the solver could not tell.", mode: "table" },
 	],

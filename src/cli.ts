@@ -31,7 +31,7 @@ const HELP = `Usage:
 
 <inspect.json> is the output of \`praxity inspect <course-dir> --schema 1\`; <html-dir> is an unzipped static HTML export; - reads inspect JSON from stdin.
 report writes report.html and report.json to <dir>.
-report always includes scripted item cues; --item-cues <answer.json> adds the three solver probes.
+report always includes scripted item cues; --item-cues <answer.json> adds choices-only and cover-the-options diagnostics; masked scoring is on hold.
 prepare writes a bundle for a model reviewer; its answer.json feeds the matching report option.
 prepare item-cues requires schema 1 inspect JSON with projection 2; HTML exports are supported only for scripted report checks.
 --seed <integer> sets item-cues option order and masking; the default seed is random and recorded outside the bundle in <bundle>-review/operator.json.

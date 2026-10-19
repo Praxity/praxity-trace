@@ -6,60 +6,21 @@ For typed inspection schema 1, freshness uses the producer `revision` and a Trac
 
 ## Item-cue probes
 
-Prompt version `item-cues/9`, with the projection suffix, prepares three isolated
-solver folders. The 2026-10-19 assessment-writing evaluation masked options
-only. This version adds the masked stem: the probe represents a test-wise
-learner who sees the question but does not know the subject. That evaluation's
-49% versus 20% result does not validate this expanded probe.
+Prompt version `item-cues/10`, with the projection suffix, prepares two runnable diagnostics and one held masked folder. The 2026-10-19 assessment-writing evaluation masked options only. The dormant text transform adds the masked stem: the probe represents a test-wise learner who sees the question but does not know the subject. That evaluation's 49% versus 20% result does not validate this expanded probe.
 
-One deterministic, injective dictionary spans each item's stem and options.
-Text is normalized to NFC first. Content words become same-length pseudo-words,
-preserving common article-sound exceptions and a shared base plus trailing `s`
-for regular singular/plural forms. Silent-h hour, honest, honour/honor and heir
-families take a vowel onset; uni-, use, usu-, ur-, eu-, one and once take a
-consonant onset. All-caps initialisms use the first letter name: A E F H I L M N
-O R S X take an. Generated forms are checked against the same sound rule. This
-small table covers common exceptions and spelled initialisms only, not general
-pronunciation or acronyms spoken as words. Singular -us, -is and -ss words stay
-whole. Other irregular inflections remain separate words. Function and cue
-words and punctuation remain. Digits now use one consistent scrambled per-item
-map, matching the evaluation and hand-run fallback's scrambling rule. Its exact
-digit assignments need not match the evaluation script. Replacements cannot
-reuse another word's output, equal a kept word or equal any source word. If no
-unused form remains, or a content word retains a combining mark after NFC,
-the entire masked probe is unavailable with
-`{applies: false, reason: "mask-space", detail}`.
+Current inspect schema 1, projection 2 has no locale provenance. Its `course.locale` may be a producer default; neither that value nor a keep-word percentage can confirm English. Masked preparation, parsing and reporting therefore always return `{applies: false, reason: "language-unconfirmed", detail}`. Supplied non-English lesson `lang` remains an additional veto in the detail. There is no override flag. The pooled 20% text screen is removed as an authorizer.
 
-Inspect projection 2's `course.locale` may be a producer default, not authored
-or resolved language. It cannot establish English by itself. Trace retains an
-optional lesson `lang` when supplied and rejects any included item's explicitly
-non-English lesson. It also requires nominal English course metadata and a
-deterministic text screen over all included stems: at least 20% of word tokens
-must occur in the English keep list, and each stem of four or more words must
-have at least one such token. Options do not contribute to this screen.
+This is the activation boundary: Studio must first report locale provenance (Studio backlog, 2026-10-19), and a follow-up Trace PR must verify that producer contract before enabling masked scoring. Consuming provenance, a separate English-discriminating deny-only evidence list and per-bank partial accounting are outside this change. A text screen cannot authorize scoring. Until activation, the masked gate is unavailable: stop and ask; never compute tails manually or use a hand-masked fallback. Rubato's own gate wording is maintained separately.
 
-The threshold was calibrated on five existing English projection-2 fixtures:
-examples 13/30, procedural 13/20, judgment 10/22, awareness 3/6 and Lantern Marsh
-29/53. Their shares span 43.3% to 65.0%, with no long stem lacking a keep word.
-Synthetic French and Spanish fixtures have 0/34 and 0/31. The 20% floor leaves
-margin below these English fixtures; it is a limited English/French/Spanish
-screen, not language identification or confirmation of producer provenance.
-Missing or non-English metadata, a conflicting lesson lang, low pooled share
-or a long stem without a keep word yields
-`{applies: false, reason: "language", detail}` with the measured share, counts
-and threshold in detail, and no scores or probabilities. Small-bank flags also
-leave their tail unverified. This changes the evidence emphasized, not ADR
-0004's rule against composite course grades or pass/fail scores.
+Every unavailable course and bank omits masked counts, chance expectation, `p`, `pLow` and small-bank flags. No masked solver rows are written. The held answer echoes its bundle ID, probe tag and refusal. Parsing recomputes eligibility from the course, rejects forged `applies: true` answers and discards injected scores. Reporting also recomputes eligibility rather than trusting the answer. HTML states the real hold reason. Plain `choicesOnly` remains the "does the stem matter?" diagnostic, with its existing exact tails. `coverTheOptions` still requires a separate semantic judge. This does not change ADR 0004's rule against composite grades.
 
-A scored course or bank `masked` has `applies: true` and the existing probe
-score fields, including exact `p` and `pLow`. Its item rows show authored text;
-`items[].masked` retains the masked stem, response and key in expandable report
-details. Plain `choicesOnly` remains the "does the stem matter?" diagnostic.
-`coverTheOptions` still requires a separate semantic judge.
+The dormant masking transform uses one deterministic injective dictionary across each item's stem and options, normalizing text to NFC. It preserves common article sounds and regular singular/plural bases. Silent-h hour, honest, honour/honor and heir families take a vowel onset. A closed you-sound word list includes unicorn, university, utility, useful and European; it does not classify all uni-/ur- words alike. Explicit spoken acronyms SMART, SCORM, HIPAA and LAN remain distinct from spelled MRI, HIV and X-ray. Spelled initials A E F H I L M N O R S X take an. Generated forms retain the selected sound class. This is a bounded common-exception table, not a pronunciation engine, and never learns from keys or authored articles.
+
+Raw capitalization preserves KPIs/APIs plurals; an explicit menu base preserves menus when the singular is absent. Singular virus, radius, analysis and glass stay whole. Other irregular inflections remain separate. Function words, including I, cue words and punctuation remain. Digits use one consistent per-item scrambling map. Replacements never reuse another word's output, equal a kept word or equal any source word. Exhausted replacement spaces or residual combining marks fail the transform closed. These pure text rules remain tested while masked preparation and scoring are held.
 
 Preparation writes solver inputs under `<bundle>/` and operator evidence in the
 sibling `<bundle>-review/` folder. Only its `operator.json` records `seed` and
-`optionOrder`, zero-based source indices for both option probes. Neither the
+`optionOrder`, zero-based source indices for the plain option diagnostic. Neither the
 bundle manifest nor root prompt contains these. The operator combines answers
 in `<bundle>-review/answer.json`; report reads the adjacent `operator.json`.
 The CLI returns the operator prompt, combined-answer and operator-file paths.
@@ -69,11 +30,11 @@ workspace, or supply its files inline. Solvers receive neither the operator
 workspace nor the review folder, source course, keys, feedback or another probe.
 The solver-readable root prompt contains no pointer to operator evidence.
 
-The manifest and each probe's items carry an independent random 128-bit
+The manifest and each runnable probe's items carry an independent random 128-bit
 `bundleId`; the operator file associates it with the seed. Identity has no
 derivation from a guessable replay seed. Every solver answer must
 echo that ID and its exact `probe` tag. Report rejects another bundle's answer
 and swapped masked/plain probe objects before scoring. Course hash and prompt
 version validation also apply to the operator file, and recorded permutations
 must match its seed. A random default seed varies each run; `--seed` replays
-masked content and order, while each preparation receives a new random ID. Repetition does not establish statistical independence between runs.
+plain option order, while each preparation receives a new random ID. Repetition does not establish statistical independence between runs.
