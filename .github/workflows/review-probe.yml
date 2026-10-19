@@ -1,0 +1,25 @@
+name: Review guard proof
+
+on: pull_request
+
+jobs:
+  guard-proof:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        guard: [present, reverted]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - if: matrix.guard == 'present'
+        run: git show d8f2184f3ac6d614bfd507326c56f9d24bcc116d:src/item-cues.ts > src/item-cues.ts
+      - run: pnpm typecheck
+      - run: node --test test/review-probe-guard.test.ts
