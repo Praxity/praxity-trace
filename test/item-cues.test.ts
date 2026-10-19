@@ -31,7 +31,7 @@ function fixture() {
 	return { ok: true, schema: "praxity-inspect/1", projectionVersion: 2, studioVersion: "synthetic", revision: "a".repeat(64), course: { title: "Synthetic cue banks", locale: "en" }, lessons: [lesson("leaking", [...planted]), lesson("clean", [{ options: balanced }])] };
 }
 const load = () => parseCourse(JSON.stringify(fixture()));
-const HOLD_DETAIL = "Masked scoring is on hold: included lessons lack confirmed authored English language provenance in this inspect input. Stop and ask; do not compute masked tails by hand.";
+const HOLD_DETAIL = "Masked scoring is on hold: included lessons lack confirmed authored English language provenance in this inspect input. Add locale: en to course.yaml or lang: en per lesson. Use a Studio build with inspect language provenance and re-run praxity inspect. Stop and ask; do not compute masked tails by hand.";
 const HELD = { applies: false as const, reason: "language-unconfirmed" as const, detail: HOLD_DETAIL };
 function probeMetadata(course: ReturnType<typeof load>) {
 	return { bundleId: "synthetic-bundle", seed: 0, optionOrder: Object.fromEntries(keyedChoices(course).items.map(item => [item.ref, probeOrder(item, 0)])),
@@ -509,7 +509,7 @@ test("masked bundle keeps function words, digit counts, punctuation and consiste
 	const course = parseCourse(JSON.stringify(replaceOptions(fixture(), source)));
 	for (const name of ["a", "b"]) await prepareItemCues(course, join(dir, name), 17);
 	const manifest = JSON.parse(await readFile(join(dir, "a-review/operator.json"), "utf8"));
-	assert.equal(manifest.promptVersion, "item-cues/11-projection-2");
+	assert.equal(manifest.promptVersion, "item-cues/12-projection-2");
 	assert.equal(manifest.seed, 17);
 	const a = await readFile(join(dir, "a/masked/items.json"), "utf8");
 	assert.equal(withoutIdentity(a), withoutIdentity(await readFile(join(dir, "b/masked/items.json"), "utf8")));
@@ -1232,7 +1232,7 @@ test("authored English lesson provenance activates preparation parsing and repor
 });
 
 test("missing malformed default and foreign lesson evidence fail closed without borrowing another lesson", async context => {
-	for (const [language, reason] of [[undefined, "language-unconfirmed"], [null, "language-unconfirmed"], [{ value: "en" }, "language-unconfirmed"], [{ value: 42, source: "lesson" }, "language-unconfirmed"], [{ value: "en", source: "workspace" }, "language-unconfirmed"], [{ source: "default" }, "language"], [{ value: "fr" }, "language"], [{ value: "en", source: "default" }, "language"], [{ value: "", source: "lesson" }, "language"], [{ value: "eng", source: "lesson" }, "language"], [{ value: "fr-CA", source: "lesson" }, "language"]] as const) {
+	for (const [language, reason] of [[undefined, "language-unconfirmed"], [null, "language-unconfirmed"], [{ value: "en" }, "language-unconfirmed"], [{ value: 42, source: "lesson" }, "language-unconfirmed"], [{ value: "en", source: "workspace" }, "language-unconfirmed"], [{ source: "default" }, "language-unconfirmed"], [{ value: "fr" }, "language-unconfirmed"], [{ value: "en", source: "default" }, "language-unconfirmed"], [{ value: "", source: "lesson" }, "language"], [{ value: "eng", source: "lesson" }, "language"], [{ value: "fr-CA", source: "lesson" }, "language"]] as const) {
 		const raw = authored(); Object.assign(raw.lessons[1]!, { language });
 		const result = await activated(context, raw);
 		assert.equal(result.rows.length, 8, JSON.stringify(language));
@@ -1283,11 +1283,11 @@ test("deny-only text conflicts screen every stem with options despite an erroneo
 		["On doit toujours appeler", french],
 		["Quel choix?", french],
 		["Which of these is the one that you would choose?", french],
-		["Was machen Sie in einem Brandfall?", ["Immer melden", "Nie melden", "Nur warten", "Sie m?ssen gehen"]],
-		["Was tun Sie bei Rauch in einem B?ro?", ["Immer melden", "Nie melden", "Nur warten", "Sie m?ssen gehen"]],
-		["Qual ? a fun??o do plano no local?", ["Sempre chamar", "Nunca chamar", "Chamar depois", "N?o chamar"]],
-		["A qui?n se llama si no funciona?", ["Siempre llamar", "Nunca llamar", "Llamar despu?s", "No llamar"]],
-		["Qui a re?u le message?", ["Le but principal", "On appelle", "Avec le responsable", "Vrai ou faux"]],
+		["Was machen Sie in einem Brandfall?", ["Immer melden", "Nie melden", "Nur warten", "Sie müssen gehen"]],
+		["Was tun Sie bei Rauch in einem Büro?", ["Immer melden", "Nie melden", "Nur warten", "Sie müssen gehen"]],
+		["Qual é a função do plano no local?", ["Sempre chamar", "Nunca chamar", "Chamar depois", "Não chamar"]],
+		["A quién se llama si no funciona?", ["Siempre llamar", "Nunca llamar", "Llamar después", "No llamar"]],
+		["Qui a reçu le message?", ["Le but principal", "On appelle", "Avec le responsable", "Vrai ou faux"]],
 	] as const;
 	for (const [stem, options] of cases) {
 		const raw = authored(); replaceOptions(raw, [...options]); raw.lessons[1]!.pages[0]!.blocks[0]!.texts[0]!.value = stem;
@@ -1304,7 +1304,7 @@ test("deny-only text conflicts screen every stem with options despite an erroneo
 	const template = structuredClone(raw.lessons[0]!.pages[0]!.blocks[0]!);
 	raw.lessons[0]!.pages[0]!.blocks = Array.from({ length: 9 }, (_, i) => {
 		const block = structuredClone(template); block.ref = `mixed/${i}`;
-		block.texts.forEach((text, j) => { text.ref = `${block.ref}/text/${j}`; if (text.role === "prompt") text.value = i < 4 ? "Which action should you take?" : ["Qui a re?u", "Le but principal", "Que fait-on", "Vrai ou faux?", "Quel choix?"][i - 4]!; });
+		block.texts.forEach((text, j) => { text.ref = `${block.ref}/text/${j}`; if (text.role === "prompt") text.value = i < 4 ? "Which action should you take?" : ["Qui a reçu", "Le but principal", "Que fait-on", "Vrai ou faux?", "Quel choix?"][i - 4]!; });
 		return block;
 	});
 	const result = await activated(context, raw); assert.equal(result.rows.length, 0); assert.equal(result.view.course.count, 9);
@@ -1394,10 +1394,10 @@ test("German banks on both sides of the former pooled floor remain unavailable",
 		"Was ist die beste Antwort an einen unzufriedenen Kunden?",
 		"Was tun Sie, wenn ein Kollege die Daten an Dritte senden will?",
 		"Was passiert, wenn ein Patient die Medikamente nicht einnimmt?",
-		"Wie oft muss die Anlage in einem Jahr gepr?ft werden?",
+		"Wie oft muss die Anlage in einem Jahr geprüft werden?",
 		"Was ist in diesem Fall die richtige Meldung?",
-		"Was gilt f?r Besucher in der Produktionshalle?",
-		"Was sagen Sie einem Kunden, der eine R?ckerstattung will?",
+		"Was gilt für Besucher in der Produktionshalle?",
+		"Was sagen Sie einem Kunden, der eine Rückerstattung will?",
 		"Wer ist richtig?", "Was ist ein Beinahe-Unfall?",
 	];
 	for (const stems of [german, [...german, "Was machen Sie in einem Brandfall?"]]) {
@@ -1432,4 +1432,80 @@ test("the three review populations cannot launder French options or a separate F
 		const foreignBank = result.view.banks.at(-1)!; assert.equal(foreignBank.count, 16); noMaskedScore(foreignBank.masked);
 		if (scenario === "separate-bank") { const good = result.view.banks[0]!.masked; assert.ok(good.applies && good.status === "scored"); assert.equal(good.total, 1); }
 	}
+});
+
+test("English training items retain single homographs in stems and options", async context => {
+	const cases = ["Who may file a qui tam lawsuit?", "The dos and don'ts of email security", "According to Le Chatelier's principle", "A cultural faux pas", "Why was DES replaced by AES?", "Lists files in DOS", "The AUX cable", "Gravida 3, para 2", "La Niña", "Offered à la carte", "Des Moines", "A QUAL-quan design", "UNE standards"];
+	for (const text of cases) for (const field of ["stem", "option"]) {
+		const raw = authored();
+		replaceOptions(raw, field === "option" ? [text, "The patient", "The auditor", "The visitor"] : ["The employee", "The patient", "The auditor", "The visitor"]);
+		raw.lessons[1]!.pages[0]!.blocks[0]!.texts[0]!.value = field === "stem" ? text : "Which response is appropriate?";
+		const result = await activated(context, raw);
+		assert.equal(result.rows.length, 9, `${field}: ${text}`);
+		for (const row of [result.view.course, ...result.view.banks]) { assert.ok(row.masked.applies && row.masked.status === "scored"); assert.equal(row.masked.total, row.count); }
+	}
+});
+
+test("homographs need a distinct second marker or no English evidence within the same item", async context => {
+	assert.deepEqual(englishEvidence("Which dos dos?"), { words: 3, evidence: 1, conflicts: [] });
+	assert.deepEqual(englishEvidence("Which dos para?"), { words: 3, evidence: 1, conflicts: ["dos", "para"] });
+	assert.deepEqual(englishEvidence("dos"), { words: 1, evidence: 0, conflicts: ["dos"] });
+	assert.deepEqual(englishEvidence("Which brandfall appeler responsable machen llamar choisir?"), { words: 7, evidence: 1, conflicts: [] });
+	for (const [stem, options] of [["Which dos?", ["Para", "Blue", "Green", "Red"]], ["Le but principal", balanced]] as const) {
+		const raw = authored(); replaceOptions(raw, [...options]); raw.lessons[1]!.pages[0]!.blocks[0]!.texts[0]!.value = stem;
+		const result = await activated(context, raw);
+		assert.equal(result.rows.length, 8); noMaskedScore(result.view.course.masked); noMaskedScore(result.view.banks[1]!.masked);
+	}
+	const raw = authored(); raw.lessons[0]!.pages[0]!.blocks[0]!.texts[0]!.value = "Which para?";
+	raw.lessons[1]!.pages[0]!.blocks[0]!.texts[0]!.value = "Which dos?";
+	assert.equal((await activated(context, raw)).rows.length, 9, "Markers in different items do not reinforce each other");
+});
+
+test("undeclared course language and malformed provenance stay unconfirmed with an actionable remedy", async context => {
+	for (const language of [{ value: "en", source: "default" }, { value: "fr", source: "default" }, { value: "fr" }]) {
+		const raw = authored(); Object.assign(raw.course.language, { declared: null, source: "default" });
+		for (const lesson of raw.lessons) Object.assign(lesson, { language });
+		const result = await activated(context, raw);
+		assert.equal(result.rows.length, 0);
+		for (const row of [result.view.course, ...result.view.banks]) {
+			noMaskedScore(row.masked); assert.ok(!row.masked.applies); assert.equal(row.masked.reason, "language-unconfirmed");
+			assert.match(row.masked.detail, /locale: en.*course\.yaml/); assert.match(row.masked.detail, /lang: en.*lesson/);
+			assert.match(row.masked.detail, /Studio build.*inspect language provenance/); assert.doesNotMatch(row.masked.detail, /conflict/i);
+		}
+	}
+});
+
+test("accented listed markers are exercised as complete Unicode tokens", () => {
+	for (const word of ["müssen", "não", "você", "são", "reçu"]) {
+		assert.deepEqual(englishEvidence(word), { words: 1, evidence: 0, conflicts: [word] });
+		assert.deepEqual(englishEvidence(`Which ${word}?`), { words: 2, evidence: 1, conflicts: [word] });
+	}
+});
+
+test("item-cue fixtures are UTF-8 and contain no lossy question marks inside words", async () => {
+	const source = new TextDecoder("utf-8", { fatal: true }).decode(await readFile(resolve("test/item-cues.test.ts")));
+	assert.doesNotMatch(source, /[A-Za-z]\?+[a-z]/);
+	for (const word of ["müssen", "não", "você", "são", "reçu"]) assert.ok(source.includes(word), word);
+});
+
+test("activated masked probes omit and reject subject-knowledge cue codes", async context => {
+	const result = await activated(context);
+	assert.equal(result.rows.length, 9);
+	const masked = await readFile(join(result.bundle, "masked/prompt.md"), "utf8"), plain = await readFile(join(result.bundle, "choices-only/prompt.md"), "utf8");
+	for (const cue of ["only-true-on-its-own", "textbook-wording"]) {
+		assert.ok(!masked.includes(cue), cue); assert.ok(plain.includes(cue), cue);
+		const answer = structuredClone(result.answer); answer.masked.answers[0]!.cue = cue;
+		assert.throws(() => readItemCues(JSON.stringify(answer), result.course, JSON.stringify(result.operator)), /masked.*cue/);
+		const plainAnswer = structuredClone(result.answer); plainAnswer.choicesOnly.answers[0]!.cue = cue;
+		assert.doesNotThrow(() => readItemCues(JSON.stringify(plainAnswer), result.course, JSON.stringify(result.operator)));
+	}
+	const tables: Array<{ caption: string; text: string }> = [];
+	const text = (node: DefaultTreeAdapterTypes.Node): string => "value" in node ? node.value : "childNodes" in node ? node.childNodes.map(text).join("") : "";
+	const walk = (node: DefaultTreeAdapterTypes.Node) => {
+		if ("tagName" in node && node.tagName === "table") { const caption = node.childNodes.find(child => "tagName" in child && child.tagName === "caption"); if (caption) tables.push({ caption: text(caption), text: text(node) }); }
+		if ("childNodes" in node) node.childNodes.forEach(walk);
+	}; walk(parseFragment(renderItemCues(result.view)));
+	const maskedTables = tables.filter(row => row.caption.includes("Masked guessing-cue probe"));
+	assert.ok(maskedTables.length > 0);
+	for (const table of maskedTables) assert.doesNotMatch(table.text, /Only option true on its own|Textbook wording/);
 });
