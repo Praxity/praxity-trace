@@ -8,9 +8,14 @@ import { assessmentStem, oneLine, previewText, visibleText } from "./text.ts";
 
 export const PROMPT_VERSION = "item-cues/5";
 export const PROBE_INPUT_ERROR = "Prepare item-cues from `praxity inspect <course> --schema 1` output. HTML exports aren't supported for blind probes yet.";
+export const PROBE_JSON_ERROR = "Expected `praxity inspect --schema 1` JSON.";
+const PROBE_KEYS_ERROR = "This inspect output has no answer keys (projection 2). Re-run `praxity inspect <course> --schema 1` with current Studio.";
 
 export function requireProbeInput(input: unknown): void {
-	if (!record(input) || input.schema !== "praxity-inspect/1" || input.projectionVersion !== 2) throw new Error(PROBE_INPUT_ERROR);
+	if (record(input) && input.schema === "praxity-html/0") throw new Error(PROBE_INPUT_ERROR);
+	if (!record(input) || !["praxity-inspect/0", "praxity-inspect/1"].includes(input.schema as string)) throw new Error(PROBE_JSON_ERROR);
+	if (input.schema === "praxity-inspect/0" || input.projectionVersion === undefined || (typeof input.projectionVersion === "number" && input.projectionVersion < 2)) throw new Error(PROBE_KEYS_ERROR);
+	if (input.projectionVersion !== 2) throw new Error("Unsupported inspect projection. Blind probes require projection 2.");
 }
 const STOP = new Set("a an the and or but if then than that this these those as at by for from in into of on to with about after before during which what who how when where why is are was were be been being has have had do does did can could might will would should it its they their them he his she her you your we our one each some such more most best first directly following choose identify".split(" "));
 const ABSOLUTES = new Set("always never none every completely absolutely entirely all must necessarily".split(" "));

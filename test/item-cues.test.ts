@@ -420,7 +420,7 @@ test("bundle CLI strips canaries from typed inspect inputs and refuses unsupport
 	for (const [name, input] of [["legacy", join(dir, "legacy.json")], ["legacy-native", join(dir, "legacy-native.json")], ["typed", join(dir, "typed.json")], ["typed-markdown", join(dir, "typed-markdown.json")], ["export", exported]]) {
 		const out = join(dir, `bundle-${name}`), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", input!, "--out", out], { encoding: "utf8" });
 		if (!["typed", "typed-markdown"].includes(name!)) {
-			assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes("HTML exports aren't supported for blind probes yet."));
+			assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(name === "export" ? "HTML exports aren't supported for blind probes yet." : "This inspect output has no answer keys (projection 2)."));
 			await assert.rejects(readdir(out), { code: "ENOENT" });
 			continue;
 		}
@@ -631,16 +631,18 @@ test("probe preparation requires projection-2 schema-1 inspect JSON, including s
 	await writeFile(join(exported, "lesson.html"), `<html lang="en"><body><article class="deck-slide" data-deck-slide="p"><div data-block-type="assessment" data-block-json='${native}'>Red Blue</div></article></body></html>`);
 	const schema0 = { ok: true, schema: "praxity-inspect/0", studioVersion: "synthetic", course: { title: "Synthetic", locale: "en" }, lessons: [] };
 	const missingProjection = { ...fixture(), projectionVersion: undefined };
-	const inputs = ["<html>not inspect</html>", "plain prose", "{}", JSON.stringify(schema0), JSON.stringify(missingProjection)];
-	for (const [i, input] of inputs.entries()) {
+	const expectedJson = "Expected `praxity inspect --schema 1` JSON.";
+	const expectedKeys = "This inspect output has no answer keys (projection 2). Re-run `praxity inspect <course> --schema 1` with current Studio.";
+	const inputs = [["<html>not inspect</html>", expectedJson], ["plain prose", expectedJson], ["{}", expectedJson], [JSON.stringify(schema0), expectedKeys], [JSON.stringify(missingProjection), expectedKeys], [JSON.stringify({ ...fixture(), projectionVersion: 1 }), expectedKeys]];
+	for (const [i, [input, expected]] of inputs.entries()) {
 		const out = join(dir, `stdin-${i}`), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", "-", "--out", out], { input, encoding: "utf8" });
-		assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(refusal), cli.stderr);
+		assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(expected!), cli.stderr);
 		await assert.rejects(readdir(out), { code: "ENOENT" });
 	}
 	const out = join(dir, "html-bundle"), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", exported, "--out", out], { encoding: "utf8" });
 	assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(refusal), cli.stderr); await assert.rejects(readdir(out), { code: "ENOENT" });
 	await assert.rejects(prepareItemCues(await readHtmlCourse(exported), out), error => error instanceof Error && error.message === refusal);
-	await assert.rejects(prepareItemCues(parseCourse(JSON.stringify(schema0)), out), error => error instanceof Error && error.message === refusal);
+	await assert.rejects(prepareItemCues(parseCourse(JSON.stringify(schema0)), out), error => error instanceof Error && error.message === expectedKeys);
 	const report = join(dir, "report"), reported = spawnSync(process.execPath, [resolve("src/cli.ts"), "report", exported, "--out", report], { encoding: "utf8" });
 	assert.equal(reported.status, 0, reported.stderr);
 	assert.deepEqual((await readdir(report)).sort(), ["report.html", "report.json"]);
