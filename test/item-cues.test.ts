@@ -394,7 +394,7 @@ test("writing checks, general qualifiers and structured solver causes have separ
 	assert.match(renderItemCues(itemCuesView(load())), /A bank can pass them all and still give away its keys/);
 });
 
-test("bundle CLI strips attribute, hidden and post-response canaries for exported HTML and both inspect formats", async context => {
+test("bundle CLI strips canaries from typed inspect inputs and refuses unsupported probe sources", async context => {
 	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-leaks-")); context.after(() => rm(dir, { recursive: true, force: true }));
 	const prose = `<span data-correct="ATTRIBUTE_CANARY" data-feedback="ATTRIBUTE_FEEDBACK_CANARY">Red</span><span hidden>HIDDEN_CANARY</span><span aria-hidden="true">ARIA_CANARY</span><span style="display:none">STYLE_CANARY</span><span class="praxity-assessment-feedback">POST_RESPONSE_CANARY</span><script>SCRIPT_CANARY</script>`;
 	const data = { question: prose, options: [{ text: prose, correct: true, feedback: "FEEDBACK_FIELD_CANARY" }, { text: "Blue", correct: false }], selectionMode: "single" };
@@ -419,6 +419,11 @@ test("bundle CLI strips attribute, hidden and post-response canaries for exporte
 	const scan = async (path: string): Promise<void> => { for (const entry of await readdir(path, { withFileTypes: true })) { const file = join(path, entry.name); if (entry.isDirectory()) await scan(file); else assert.doesNotMatch(await readFile(file, "utf8"), /\w+_CANARY|data-correct|data-feedback|<span|"correct"/, file); } };
 	for (const [name, input] of [["legacy", join(dir, "legacy.json")], ["legacy-native", join(dir, "legacy-native.json")], ["typed", join(dir, "typed.json")], ["typed-markdown", join(dir, "typed-markdown.json")], ["export", exported]]) {
 		const out = join(dir, `bundle-${name}`), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", input!, "--out", out], { encoding: "utf8" });
+		if (!["typed", "typed-markdown"].includes(name!)) {
+			assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes("HTML exports aren't supported for blind probes yet."));
+			await assert.rejects(readdir(out), { code: "ENOENT" });
+			continue;
+		}
 		assert.equal(cli.status, 0, cli.stderr); await scan(out);
 		const rows = JSON.parse(await readFile(join(out, "choices-only/items.json"), "utf8"));
 		assert.ok(rows.some((row: { options: string[] }) => row.options.includes("Red")));
@@ -486,9 +491,9 @@ test("alsoCorrect means another valid free answer, separately counted without cl
 	assert.equal(view.banks[1]!.coverTheOptions!.right, null);
 	const html = renderItemCues(view);
 	assert.match(html, /Another valid answer/);
-	assert.match(html, /Check that only one offered option is correct/);
+	assert.match(html, /Tighten the stem so only the key fits, or make the options settle which answer is best/);
 	assert.doesNotMatch(html, /non-unique key|key not unique/);
-	assert.match(html, /1 stem answerable: 0 match the key, 1 give another valid answer/);
+	assert.match(html, /1 stem answerable: 0 match the key, 1 gives another valid answer/);
 });
 
 test("small-bank limits are evaluated separately for high and low tails", () => {
@@ -577,11 +582,17 @@ test("blind bundles fail closed on unconsumed markup in either stems or options,
 	assert.equal(reported.status, 0, reported.stderr);
 	const view = JSON.parse(await readFile(join(report, "report.json"), "utf8")).itemCues;
 	assert.equal(view.excludedCount, 8); assert.equal(view.course.count, 1);
-	assert.deepEqual(view.excluded.map((row: { reason: string }) => row.reason), Array(8).fill("Markup could not be removed safely"));
+	assert.ok(view.excluded.every((row: { reason: string; label: string }) => /Brackets left in (question|option 1): square bracket/.test(row.reason) && /Remove the brackets or check this item by hand/.test(row.reason) && /Red|UNPARSED|Which symbol is specified/.test(row.label)));
+	const html = await readFile(join(report, "report.html"), "utf8");
+	assert.match(html, /8 items left out; see Excluded items/);
+	assert.match(html, /move a glossary term out of another term/);
+	assert.match(html, /Otherwise check the item by hand/);
 	assert.match(await readFile(join(report, "report.html"), "utf8"), /Excluded items \(8\)/);
 	const excludedOnly = structuredClone(raw); excludedOnly.lessons[0]!.pages[0]!.blocks.pop();
 	const only = itemCuesView(parseCourse(JSON.stringify(excludedOnly)));
 	assert.equal(only.course.count, 0); assert.match(renderItemCues(only), /Excluded items \(8\)/);
+	assert.match(renderItemCues(only), /8 items left out/);
+	assert.doesNotMatch(renderItemCues(only), /If keys are unavailable, export/);
 });
 
 test("cover answers sort by action needed and show solver names in visible text", () => {
@@ -608,4 +619,46 @@ test("cover answers sort by action needed and show solver names in visible text"
 	assert.match(visible, /Choices-only solver: synthetic-solver\./);
 	assert.match(visible, /6 stems answerable/);
 	assert.doesNotMatch(visible, /stem solver responses\.|solver responses/);
+});
+
+
+test("probe preparation requires projection-2 schema-1 inspect JSON, including stdin, while HTML scripted reports still work", async context => {
+	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-inspect-only-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	const refusal = "Prepare item-cues from `praxity inspect <course> --schema 1` output. HTML exports aren't supported for blind probes yet.";
+	const exported = join(dir, "html"); await mkdir(exported);
+	const data = { question: String.raw`Which colour?<span style="display:/*c*/none">COMMENT_CANARY</span><span style="display:n\6f ne">ESCAPED_CANARY</span>`, options: [{ text: "Red", correct: true }, { text: "Blue", correct: false }] };
+	const native = JSON.stringify({ type: "assessment", data }).replace(/&/g, "&amp;").replace(/'/g, "&#39;");
+	await writeFile(join(exported, "lesson.html"), `<html lang="en"><body><article class="deck-slide" data-deck-slide="p"><div data-block-type="assessment" data-block-json='${native}'>Red Blue</div></article></body></html>`);
+	const schema0 = { ok: true, schema: "praxity-inspect/0", studioVersion: "synthetic", course: { title: "Synthetic", locale: "en" }, lessons: [] };
+	const missingProjection = { ...fixture(), projectionVersion: undefined };
+	const inputs = ["<html>not inspect</html>", "plain prose", "{}", JSON.stringify(schema0), JSON.stringify(missingProjection)];
+	for (const [i, input] of inputs.entries()) {
+		const out = join(dir, `stdin-${i}`), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", "-", "--out", out], { input, encoding: "utf8" });
+		assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(refusal), cli.stderr);
+		await assert.rejects(readdir(out), { code: "ENOENT" });
+	}
+	const out = join(dir, "html-bundle"), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", exported, "--out", out], { encoding: "utf8" });
+	assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(refusal), cli.stderr); await assert.rejects(readdir(out), { code: "ENOENT" });
+	await assert.rejects(prepareItemCues(await readHtmlCourse(exported), out), error => error instanceof Error && error.message === refusal);
+	await assert.rejects(prepareItemCues(parseCourse(JSON.stringify(schema0)), out), error => error instanceof Error && error.message === refusal);
+	const report = join(dir, "report"), reported = spawnSync(process.execPath, [resolve("src/cli.ts"), "report", exported, "--out", report], { encoding: "utf8" });
+	assert.equal(reported.status, 0, reported.stderr);
+	assert.deepEqual((await readdir(report)).sort(), ["report.html", "report.json"]);
+	assert.equal(JSON.parse(await readFile(join(report, "report.json"), "utf8")).itemCues.course.count, 1);
+	const accepted = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", "-", "--out", join(dir, "accepted")], { input: JSON.stringify(fixture()), encoding: "utf8" });
+	assert.equal(accepted.status, 0, accepted.stderr);
+});
+
+test("exclusions name curly brackets and singular and plural cover summaries agree", () => {
+	const course = load(), raw = payload();
+	const judgements = ["matches", "alsoCorrect", "differs", "differs", "cantTell", "matches", "matches", "matches", "matches"];
+	const answer = parseItemCues(JSON.stringify({ ...raw, coverTheOptions: { ...raw.coverTheOptions, answers: raw.coverTheOptions.answers.map((row, i) => ({ ...row, coverJudgement: judgements[i] })) } }), course);
+	const html = renderItemCues(itemCuesView(course, answer));
+	assert.match(html, /1 gives another valid answer; 2 differ/);
+	assert.match(html, /1 matches the key/);
+	assert.doesNotMatch(html, /1 give another|2 differs/);
+	const edited = fixture(); edited.lessons[1]!.pages[0]!.blocks[0]!.texts[0]!.value = "Which set {2, 4}?";
+	const view = itemCuesView(parseCourse(JSON.stringify(edited)));
+	assert.match(view.excluded[0]!.reason, /question: curly bracket/);
+	assert.match(view.excluded[0]!.reason, /Remove the brackets or check this item by hand/);
 });
