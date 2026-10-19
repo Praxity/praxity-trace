@@ -10,8 +10,9 @@ export interface Reading {
 
 export const GUIDES = {
 	"item-cues": [
-		{ see: "Choices-only far below guessing", could: "Something may make the key look wrong. Read the solver's notes and compare the keyed wording with the other options." },
-		{ see: "No scripted cues, but choices-only above guessing", could: "Look for options true on their own, keys in textbook wording, or options of different kinds. Use the pooled course result, including both tails." },
+		{ see: "Masked far below guessing", could: "Something may make the key look wrong. Read the solver's notes and compare the keyed wording with the other options." },
+		{ see: "No scripted cues, but masked above guessing", could: "Compare option length, qualification and wording structure. Use the pooled course result, including both tails." },
+		{ see: "Plain choices-only above guessing", could: "Does the stem matter? Subject knowledge may identify the only generally true option. This is a stem diagnostic; use masked results for guessing cues." },
 		{ see: "Keys concentrated at a position or length rank", could: "Compare the authored options across the bank, allowing for ties and runtime shuffling." },
 		{ see: "Cover-the-options answers need judgement", could: "Have a separate fresh judge compare each stem, answer and key by meaning. A paraphrase can match; non-text content can explain why the solver could not tell.", mode: "table" },
 	],

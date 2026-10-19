@@ -30,9 +30,13 @@ function fixture() {
 	return { ok: true, schema: "praxity-inspect/1", projectionVersion: 2, studioVersion: "synthetic", revision: "a".repeat(64), course: { title: "Synthetic cue banks", locale: "en" }, lessons: [lesson("leaking", [...planted]), lesson("clean", [{ options: balanced }])] };
 }
 const load = () => parseCourse(JSON.stringify(fixture()));
+function probeMetadata(course: ReturnType<typeof load>) {
+	return { seed: 0, optionOrder: Object.fromEntries(keyedChoices(course).items.map(item => [item.ref, probeOrder(item, 0)])),
+		masked: { model: "synthetic-masked", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: probeOrder(item, 0).indexOf(item.key) + 1, cue: "guessed" as const, note: "Masked cue" })) } };
+}
 function payload() {
 	const course = load();
-	return { view: "item-cues", promptVersion: `${PROMPT_VERSION}-projection-2`, courseHash: courseHash(course),
+	return { ...probeMetadata(course), view: "item-cues", promptVersion: `${PROMPT_VERSION}-projection-2`, courseHash: courseHash(course),
 		choicesOnly: { model: "synthetic-solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed", note: "synthetic wording cue" })) },
 		coverTheOptions: { model: "synthetic-stem-solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 }
@@ -140,8 +144,8 @@ test("answers reject stale hashes, versions, refs, duplicate/missing responses a
 test("bundle contains only whitelisted probe prose, no key metadata, feedback or other course context", async context => {
 	const directory = await mkdtemp(join(tmpdir(), "trace-item-cues-bundle-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
-	await prepareItemCues(load(), directory);
-	assert.deepEqual((await readdir(directory)).sort(), ["choices-only", "cover-the-options", "manifest.json", "prompt.md"]);
+	await prepareItemCues(load(), directory, 0);
+	assert.deepEqual((await readdir(directory)).sort(), ["choices-only", "cover-the-options", "manifest.json", "masked", "prompt.md"]);
 	const choices = JSON.parse(await readFile(join(directory, "choices-only/items.json"), "utf8"));
 	const stems = JSON.parse(await readFile(join(directory, "cover-the-options/items.json"), "utf8"));
 	assert.deepEqual(Object.keys(choices[0]), ["ref", "options"]);
@@ -150,14 +154,14 @@ test("bundle contains only whitelisted probe prose, no key metadata, feedback or
 	assert.equal(stems[1].stem, "Find amber violet");
 	assert.ok(!JSON.stringify(choices).includes("Find amber violet"));
 	assert.ok(!JSON.stringify(stems).includes("Consult the person"));
-	for (const file of ["manifest.json", "prompt.md", "choices-only/items.json", "choices-only/prompt.md", "cover-the-options/items.json", "cover-the-options/prompt.md"]) {
+	for (const file of ["manifest.json", "prompt.md", "choices-only/items.json", "choices-only/prompt.md", "cover-the-options/items.json", "cover-the-options/prompt.md", "masked/items.json", "masked/prompt.md"]) {
 		assert.doesNotMatch(await readFile(join(directory, file), "utf8"), /FEEDBACK_CANARY|KEY_CANARY|"correct"|"key"|"keyPosition"|"scoring"|Synthetic cue banks/);
 	}
 	await assert.rejects(prepareItemCues(load(), directory), /empty output/);
 	const changed = fixture();
 	for (const lesson of changed.lessons) for (const block of lesson.pages[0]!.blocks) block.assessment.options.forEach((option, i) => { option.correct = i === 1; });
-	await prepareItemCues(parseCourse(JSON.stringify(changed)), join(directory, "flipped"));
-	for (const file of ["choices-only/items.json", "cover-the-options/items.json"]) assert.equal(await readFile(join(directory, file), "utf8"), await readFile(join(directory, "flipped", file), "utf8"), "Key changes cannot affect probe text or option order");
+	await prepareItemCues(parseCourse(JSON.stringify(changed)), join(directory, "flipped"), 0);
+	for (const file of ["choices-only/items.json", "masked/items.json", "cover-the-options/items.json"]) assert.equal(await readFile(join(directory, file), "utf8"), await readFile(join(directory, "flipped", file), "utf8"), "Key changes cannot affect probe text or option order");
 });
 
 test("HTML exports and schema 0 use their existing keyed option projection", async () => {
@@ -168,7 +172,7 @@ test("HTML exports and schema 0 use their existing keyed option projection", asy
 	assert.equal(keyedChoices(legacy).items[0]!.key, 1);
 });
 
-test("CLI prepares item-cues and always reports scripted cues; optional answers score both probes", async context => {
+test("CLI prepares item-cues and always reports scripted cues; optional answers score all probes", async context => {
 	const directory = await mkdtemp(join(tmpdir(), "trace-item-cues-cli-"));
 	context.after(() => rm(directory, { recursive: true, force: true }));
 	const input = join(directory, "inspect.json"), answer = join(directory, "answer.json"), out = join(directory, "report");
@@ -200,18 +204,124 @@ function replaceOptions(raw: ReturnType<typeof fixture>, options: string[], key 
 	return raw;
 }
 
+test("duplicate detection preserves signs, quantities and meaningful symbols", () => {
+	for (const pair of [["-2", "2"], ["−2", "2"], ["+2", "2"], ["2%", "2"], ["2°", "2"], ["<2", ">2"], ["2/3", "23"], ["2.5", "25"], ["2,5", "25"]]) {
+		const course = parseCourse(JSON.stringify(replaceOptions(fixture(), [...pair, "Blue!", " blue "])));
+		const flags = itemCuesView(course).banks[1]!.items[0]!.flags.filter(flag => flag.cue === "duplicate");
+		assert.deepEqual(flags.map(flag => flag.options), [[3, 4]], pair.join(" vs "));
+	}
+});
+
+test("masked bundle keeps function words, numbers, punctuation and consistent same-length content words", async context => {
+	const dir = await mkdtemp(join(tmpdir(), "trace-mask-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	const source = ["The copper pipe is at -2.5°C, usually.", "The copper wire is at <20%, never!", "A COPPER pipe may bend; 42 > 7.", "Copper's pipe isn't blue: 123."];
+	const course = parseCourse(JSON.stringify(replaceOptions(fixture(), source)));
+	for (const name of ["a", "b"]) await prepareItemCues(course, join(dir, name), 17);
+	const manifest = JSON.parse(await readFile(join(dir, "a/manifest.json"), "utf8"));
+	assert.equal(manifest.promptVersion, "item-cues/7-projection-2");
+	assert.equal(manifest.seed, 17);
+	const a = await readFile(join(dir, "a/masked/items.json"), "utf8");
+	assert.equal(a, await readFile(join(dir, "b/masked/items.json"), "utf8"));
+	const masked = JSON.parse(a).find((item: { ref: string }) => item.ref === "2.1.1").options as string[];
+	const ordered = manifest.optionOrder["2.1.1"].map((i: number) => source[i]) as string[];
+	const keep = new Set("the is at usually never a may isn't".split(" "));
+	const mappings = new Map<string, string>();
+	ordered.forEach((original, i) => {
+		const actual = masked[i]!;
+		assert.equal([...actual].length, [...original].length);
+		assert.equal(actual.replace(/[A-Za-z]/g, ""), original.replace(/[A-Za-z]/g, ""));
+		const originalWords = original.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g)!;
+		const actualWords = actual.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g)!;
+		originalWords.forEach((word, j) => {
+			const fake = actualWords[j]!, lower = word.toLowerCase();
+			if (keep.has(lower)) assert.equal(fake, word);
+			else {
+				assert.notEqual(fake.toLowerCase(), lower);
+				assert.equal(fake.length, word.length);
+				if (mappings.has(lower)) assert.equal(fake.toLowerCase(), mappings.get(lower));
+				mappings.set(lower, fake.toLowerCase());
+			}
+		});
+	});
+	assert.doesNotMatch(a, /FEEDBACK_CANARY|KEY_CANARY/);
+});
+
+test("CLI seeds record distinct repeatable orders and both option probes score through the manifest", async context => {
+	const dir = await mkdtemp(join(tmpdir(), "trace-seeds-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	const course = load(), input = join(dir, "course.json"); await writeFile(input, JSON.stringify(fixture()));
+	const run = (...args: string[]) => spawnSync(process.execPath, [resolve("src/cli.ts"), ...args], { encoding: "utf8" });
+	const manifests = [];
+	for (const seed of [17, 29]) {
+		const bundle = join(dir, String(seed));
+		const prepared = run("prepare", "item-cues", input, "--out", bundle, "--seed", String(seed));
+		assert.equal(prepared.status, 0, prepared.stderr);
+		const manifest = JSON.parse(await readFile(join(bundle, "manifest.json"), "utf8")); manifests.push(manifest);
+		assert.equal(manifest.seed, seed);
+		const choices = JSON.parse(await readFile(join(bundle, "choices-only/items.json"), "utf8"));
+		const answers = keyedChoices(course).items.map(item => ({ ref: item.ref, choice: choices.find((row: { ref: string }) => row.ref === item.ref).options.indexOf(item.options[item.key]) + 1, cue: "guessed", note: "Synthetic" }));
+		const answer = { ...payload(), ...manifest, choicesOnly: { model: "plain", answers }, masked: { model: "masked", answers } };
+		const path = join(dir, `answer-${seed}.json`); await writeFile(path, JSON.stringify(answer));
+		const reported = run("report", input, "--out", join(bundle, "report"), "--item-cues", path);
+		assert.equal(reported.status, 0, reported.stderr);
+		const view = JSON.parse(await readFile(join(bundle, "report/report.json"), "utf8")).itemCues;
+		for (const probe of ["choicesOnly", "masked"]) {
+			assert.equal(view.course[probe].right, 9); assert.equal(view.course[probe].p, 1 / 4 ** 9); assert.equal(view.course[probe].pLow, 1);
+			assert.equal(view.banks[0][probe].right, 8); assert.equal(view.banks[1][probe].right, 1);
+		}
+	}
+	assert.notDeepEqual(manifests[0].optionOrder, manifests[1].optionOrder);
+	for (const name of ["random-a", "random-b"]) await prepareItemCues(course, join(dir, name));
+	const randomA = JSON.parse(await readFile(join(dir, "random-a/manifest.json"), "utf8")), randomB = JSON.parse(await readFile(join(dir, "random-b/manifest.json"), "utf8"));
+	assert.ok(Number.isSafeInteger(randomA.seed)); assert.ok(Number.isSafeInteger(randomB.seed)); assert.notEqual(randomA.seed, randomB.seed);
+	await prepareItemCues(course, join(dir, "replayed"), randomA.seed);
+	for (const file of ["manifest.json", "choices-only/items.json", "masked/items.json"]) assert.equal(await readFile(join(dir, "random-a", file), "utf8"), await readFile(join(dir, "replayed", file), "utf8"));
+	for (const seed of ["bad", "1.5", "9007199254740992"]) {
+		const result = run("prepare", "item-cues", input, "--out", join(dir, `bad-${seed}`), "--seed", seed);
+		assert.notEqual(result.status, 0); assert.match(result.stderr, /safe integer/);
+	}
+});
+
+test("masked answers reject missing rows, invalid choices and altered permutation metadata", () => {
+	const course = load();
+	const bad = (change: (answer: ReturnType<typeof payload>) => void, error: RegExp) => { const answer = payload(); change(answer); assert.throws(() => parseItemCues(JSON.stringify(answer), course), error); };
+	bad(answer => { answer.masked.answers.pop(); }, /every eligible/);
+	bad(answer => { answer.masked.answers[0]!.choice = 0; }, /one-based/);
+	bad(answer => { answer.masked.answers[0]!.ref = "missing"; }, /unique eligible/);
+	bad(answer => { answer.optionOrder["1.1.1"] = [0, 0, 0, 0]; }, /permutation/);
+	bad(answer => { delete answer.optionOrder["1.1.1"]; }, /every eligible/);
+	bad(answer => { answer.seed = 1.5; }, /seed/);
+});
+
+test("masked pooled tails and report wording use the guessing-cue probe independently of plain choices", () => {
+	const course = load(), answer = payload();
+	for (const row of answer.masked.answers) {
+		const item = keyedChoices(course).items.find(item => item.ref === row.ref)!;
+		row.choice = answer.optionOrder[item.ref]!.indexOf((item.key + 1) % item.options.length) + 1;
+	}
+	const view = itemCuesView(course, parseItemCues(JSON.stringify(answer), course));
+	assert.equal(view.course.masked!.right, 0); assert.equal(view.course.masked!.p, 1); assert.equal(view.course.masked!.pLow, 0.75 ** 9);
+	assert.equal(view.course.choicesOnly!.right, 9);
+	const html = renderItemCues(view);
+	assert.match(html, /Guessing-cue gate: the masked solver picked the key on 0 of 9/);
+	assert.match(html, /Does the stem matter\? Plain choices-only diagnostic: 9 of 9/);
+	assert.match(html, /Masked guessing-cue summary: course, then banks/);
+	assert.match(html, /Masked guessing-cue responses/);
+});
+
 test("pooled course scores sum lesson results with exact upper and lower tails", () => {
 	const raw = fixture();
 	raw.lessons[1]!.pages[0]!.blocks[0]!.texts = raw.lessons[1]!.pages[0]!.blocks[0]!.texts.filter(text => !text.ref.endsWith("/3"));
 	raw.lessons[1]!.pages[0]!.blocks[0]!.assessment.options.pop();
 	const course = parseCourse(JSON.stringify(raw));
-	const answer = { choicesOnly: { model: "operator-recorded", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed" as const, note: "Synthetic" })) }, coverTheOptions: { model: "operator-recorded", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+	const answer = { ...probeMetadata(course), choicesOnly: { model: "operator-recorded", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed" as const, note: "Synthetic" })) }, coverTheOptions: { model: "operator-recorded", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	const view = itemCuesView(course, answer);
 	assert.equal(view.course.choicesOnly!.right, 9);
 	assert.equal(view.course.choicesOnly!.total, 9);
 	assert.equal(view.course.choicesOnly!.right, view.banks.reduce((sum, bank) => sum + bank.choicesOnly!.right, 0));
 	assert.equal(view.course.choicesOnly!.chanceExpected, 2 + 1 / 3);
 	assert.equal(view.course.choicesOnly!.p, 1 / (4 ** 8 * 3));
+	assert.equal(view.course.masked!.p, 1 / (4 ** 8 * 3));
+	assert.equal(view.course.masked!.pLow, 1);
 	assert.equal(view.course.choicesOnly!.pLow, 1);
 	assert.equal(view.banks[1]!.choicesOnly!.p, 1 / 3);
 	assert.equal(view.banks[1]!.choicesOnly!.pLow, 1);
@@ -257,23 +367,23 @@ test("independent probe permutations remove an authored first-key pattern and ma
 	const course = parseCourse(JSON.stringify(raw)), items = keyedChoices(course).items;
 	assert.ok(items.every(item => item.key === 0));
 	assert.equal(new Set(items.map(item => probeOrder(item).indexOf(0))).size, 4);
-	const answer = { choicesOnly: { model: "constant-first", answers: items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "Always first in the probe" })) }, coverTheOptions: { model: "stem-solver", answers: items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+	const answer = { ...probeMetadata(course), choicesOnly: { model: "constant-first", answers: items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "Always first in the probe" })) }, coverTheOptions: { model: "stem-solver", answers: items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	const right = itemCuesView(course, answer).course.choicesOnly!.right;
 	assert.ok(right > 0 && right < 32);
 	for (const row of answer.choicesOnly.answers) row.choice = probeOrder(items.find(item => item.ref === row.ref)!).indexOf(0) + 1;
 	assert.equal(itemCuesView(course, answer).course.choicesOnly!.right, 32);
 	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-order-")); context.after(() => rm(dir, { recursive: true, force: true }));
-	await prepareItemCues(course, join(dir, "first"));
+	await prepareItemCues(course, join(dir, "first"), 0);
 	for (const block of lesson.pages[0]!.blocks) block.assessment.options.forEach((option, i) => { option.correct = i === 2; });
-	await prepareItemCues(parseCourse(JSON.stringify(raw)), join(dir, "flipped"));
+	await prepareItemCues(parseCourse(JSON.stringify(raw)), join(dir, "flipped"), 0);
 	assert.equal(await readFile(join(dir, "first/choices-only/items.json"), "utf8"), await readFile(join(dir, "flipped/choices-only/items.json"), "utf8"));
 	const manifest = JSON.parse(await readFile(join(dir, "first/manifest.json"), "utf8"));
-	assert.deepEqual(Object.keys(manifest), ["view", "promptVersion", "courseHash"]);
+	assert.deepEqual(Object.keys(manifest), ["view", "promptVersion", "courseHash", "seed", "optionOrder"]);
 });
 
 test("cover answers need semantic judgement, never literal scoring or free-response p values", () => {
 	const raw = fixture(), course = parseCourse(JSON.stringify(replaceOptions(raw, ["0 degrees Celsius", "10 degrees Celsius", "20 degrees Celsius", "30 degrees Celsius"])));
-	const answer = { choicesOnly: { model: "choice-solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "stem-solver", judgeModel: "separate-judge", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "Zero degrees Celsius", coverJudgement: undefined as "matches" | "differs" | "cantTell" | undefined })) } };
+	const answer = { ...probeMetadata(course), choicesOnly: { model: "choice-solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "stem-solver", judgeModel: "separate-judge", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "Zero degrees Celsius", coverJudgement: undefined as "matches" | "differs" | "cantTell" | undefined })) } };
 	let view = itemCuesView(course, answer), cover = view.course.coverTheOptions!;
 	assert.equal(cover.right, null); assert.equal(cover.pending, 9); assert.equal(cover.status, "not judged");
 	assert.ok(!Object.hasOwn(cover, "p"));
@@ -445,7 +555,7 @@ test("tiny probabilities below the exponent boundary render as escaped readable 
 		block.texts.forEach((text, j) => { text.ref = `tiny-${i}/text-${j}`; }); return block;
 	});
 	const course = parseCourse(JSON.stringify(raw)), items = keyedChoices(course).items;
-	const answer = { choicesOnly: { model: "synthetic", answers: items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "synthetic", answers: items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+	const answer = { ...probeMetadata(course), choicesOnly: { model: "synthetic", answers: items.map(item => ({ ref: item.ref, choice: probeOrder(item).indexOf(item.key) + 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "synthetic", answers: items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	const view = itemCuesView(course, answer), html = renderItemCues(view);
 	assert.equal(view.course.choicesOnly!.p, 1 / 4 ** 32);
 	assert.match(view.course.choicesOnly!.p.toPrecision(4), /e-/);
@@ -542,7 +652,7 @@ test("empty courses omit the view, and stems missing media or code carry a visib
 	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-media-")); context.after(() => rm(dir, { recursive: true, force: true }));
 	await prepareItemCues(course, dir);
 	assert.doesNotMatch(await readFile(join(dir, "cover-the-options/items.json"), "utf8"), /Stem depends on non-text content/);
-	const answer = { choicesOnly: { model: "solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "stem", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
+	const answer = { ...probeMetadata(course), choicesOnly: { model: "solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { model: "stem", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	assert.match(renderItemCues(itemCuesView(course, answer)), /Stem depends on non-text content/);
 });
 
@@ -574,8 +684,8 @@ test("blind bundles fail closed on unconsumed markup in either stems or options,
 	const scan = async (path: string): Promise<void> => { for (const entry of await readdir(path, { withFileTypes: true })) {
 		const file = join(path, entry.name); if (entry.isDirectory()) await scan(file); else { files++; assert.doesNotMatch(await readFile(file, "utf8"), /[A-Z_]+_CANARY|Red square is the key|future syntax/, file); }
 	} };
-	await scan(out); assert.equal(files, 6);
-	for (const probe of ["choices-only", "cover-the-options"]) {
+	await scan(out); assert.equal(files, 8);
+	for (const probe of ["choices-only", "masked", "cover-the-options"]) {
 		const rows = JSON.parse(await readFile(join(out, probe, "items.json"), "utf8"));
 		assert.deepEqual(rows.map((row: { ref: string }) => row.ref), ["1.1.9"]);
 	}
@@ -705,8 +815,8 @@ test("HTML probe eligibility allows only inventoried paragraphs and tooltips acr
 		let files = 0;
 		const scan = async (path: string): Promise<void> => { for (const entry of await readdir(path, { withFileTypes: true })) {
 			const file = join(path, entry.name); if (entry.isDirectory()) await scan(file); else { files++; assert.doesNotMatch(await readFile(file, "utf8"), /[A-Z_]+_CANARY|Red square is the key|data-tooltip-content/, file); }
-		} }; await scan(out); assert.equal(files, 6);
-		for (const probe of ["choices-only", "cover-the-options"]) {
+		} }; await scan(out); assert.equal(files, 8);
+		for (const probe of ["choices-only", "masked", "cover-the-options"]) {
 			const rows = JSON.parse(await readFile(join(out, probe, "items.json"), "utf8")); assert.deepEqual(rows.map((row: { ref: string }) => row.ref), ["1.1.15", "1.1.16"]);
 		}
 		assert.ok(JSON.parse(await readFile(join(out, "choices-only/items.json"), "utf8")).every((row: { options: string[] }) => row.options.includes("Red square")));
@@ -772,6 +882,6 @@ test("report setup commands appear only on course rows and the skill reads the m
 	assert.equal((html.match(/praxity-trace prepare item-cues course.json/g) ?? []).length, 2, "One course instruction per display mode, never repeated per bank");
 	assert.match(html, /praxity inspect.*course-folder.*--schema 1.*course.json/);
 	const skill = await readFile(resolve("skill/SKILL.md"), "utf8");
-	assert.match(skill, /Copy `view`, `promptVersion` and `courseHash` from the manifest/);
+	assert.match(skill, /Copy the full manifest, including `view`, `promptVersion`, `courseHash`, `seed` and `optionOrder`/);
 	assert.doesNotMatch(skill, /Use `item-cues\/\d/);
 });

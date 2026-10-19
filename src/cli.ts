@@ -31,9 +31,10 @@ const HELP = `Usage:
 
 <inspect.json> is the output of \`praxity inspect <course-dir> --schema 1\`; <html-dir> is an unzipped static HTML export; - reads inspect JSON from stdin.
 report writes report.html and report.json to <dir>.
-report always includes scripted item cues; --item-cues <answer.json> adds the two solver probes.
+report always includes scripted item cues; --item-cues <answer.json> adds the three solver probes.
 prepare writes a bundle for a model reviewer; its answer.json feeds the matching report option.
 prepare item-cues requires schema 1 inspect JSON with projection 2; HTML exports are supported only for scripted report checks.
+--seed <integer> sets item-cues option order and masking; the default seed is random and recorded.
 --comments adds the designer's comments on that view (downloaded from report.html) to the reviewer's prompt.
 Recommendations come last: build the report with every other answer, prepare from its report.json, then build again with --recommendations.`;
 
@@ -50,6 +51,7 @@ const { values, positionals } = parseArgs({
 		recommendations: { type: "string" },
 		report: { type: "string" },
 		comments: { type: "string" },
+		seed: { type: "string" },
 		"item-cues": { type: "string" },
 		help: { type: "boolean", short: "h" },
 	},
@@ -62,6 +64,7 @@ const usage = (code: number): never => {
 if (values.help) usage(0);
 if (!values.out) usage(2);
 const out = values.out as string;
+if (values.seed !== undefined && !(command === "prepare" && rest[0] === "item-cues")) throw new Error("--seed is only supported by prepare item-cues");
 
 const PREPARE = { alignment: prepareAlignment, tasks: prepareTasks, concepts: prepareConcepts, terms: prepareTerms, visuals: prepareVisuals, distinctions: prepareDistinctions, "item-cues": prepareItemCues };
 
@@ -73,7 +76,10 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 	const view = rest[0] as keyof typeof PREPARE;
 	const course = await readCourse(rest[1] as string, view === "item-cues");
 	if (view === "item-cues" && values.comments) throw new Error("Item-cues probes cannot include designer comments, which may disclose keys or feedback");
-	await PREPARE[view](course, out);
+	if (view === "item-cues") {
+		if (values.seed !== undefined && !/^-?\d+$/.test(values.seed)) throw new Error("Item-cues seed must be a safe integer");
+		await prepareItemCues(course, out, values.seed === undefined ? undefined : Number(values.seed));
+	} else await PREPARE[view](course, out);
 	if (values.comments) {
 		// Designer comments on the section this view renders in steer the next answer.
 		const SECTION: Record<keyof typeof PREPARE, string> = { alignment: "alignment", tasks: "tasks", concepts: "concepts", terms: "language", visuals: "visuals", distinctions: "concepts", "item-cues": "item-cues" };
