@@ -1,0 +1,44 @@
+name: Review fail-first proof
+on:
+  pull_request:
+jobs:
+  proof:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        mutation: [restored, allowlist, fixture, messages]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Restore the exact reviewed files
+        run: git restore --source=4ffd2708c8159a2ac546e9fa87a0ca3afce851ff -- src test
+      - name: Revert only the selected fix
+        shell: bash
+        env:
+          MUTATION: ${{ matrix.mutation }}
+        run: |
+          case "$MUTATION" in
+            allowlist) git restore --source=e4e8f2c -- src/item-cues.ts ;;
+            messages) git restore --source=d4ad4b2 -- src/cli.ts src/item-cues.ts ;;
+            fixture) python3 -c 'from pathlib import Path; p=Path("test/report-accessibility.test.ts"); s=p.read_text(); assert s.count("const input = join(fixtures, \"examples.projection2.inspect.json\");") == 1; p.write_text(s.replace("const input = join(fixtures, \"examples.projection2.inspect.json\");", "const input = join(fixtures, \"examples.inspect.json\");"))' ;;
+          esac
+      - run: pnpm typecheck
+      - name: Run the retained regressions
+        shell: bash
+        env:
+          MUTATION: ${{ matrix.mutation }}
+        run: |
+          case "$MUTATION" in
+            allowlist) node --test --test-name-pattern='HTML probe eligibility|HTML allow-list refuses' test/item-cues.test.ts ;;
+            messages) node --test --test-name-pattern='probe preparation requires projection-2' test/item-cues.test.ts ;;
+            fixture) node --test --test-name-pattern='all-model-views fixture prepares' test/report-accessibility.test.ts ;;
+            restored) node --test --test-name-pattern='HTML probe eligibility|HTML allow-list refuses|probe preparation requires projection-2|all-model-views fixture prepares' test/item-cues.test.ts test/report-accessibility.test.ts ;;
+          esac
