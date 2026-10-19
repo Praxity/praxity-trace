@@ -246,10 +246,10 @@ test("packager validates arguments and fails before writing when a runtime depen
 	for (const args of [[], ["--output"], ["--output", ""], ["--unknown"], ["unexpected"]]) assert.match(run([packager, ...args], scratch, 2).stderr, /Usage:/);
 	assert.match(run([packager, "--help"], scratch).stdout, /Usage:/);
 	const fake = join(scratch, "isolated source");
-	for (const path of ["scripts", "src", "data", "skill"]) await mkdir(join(fake, path), { recursive: true });
+	for (const path of ["scripts", "src", "data", "skill", "docs"]) await mkdir(join(fake, path), { recursive: true });
 	await cp(packager, join(fake, "scripts/package.mjs"));
 	for (const path of ["LICENSE", "LICENSING.md", "NOTICE.md"]) await writeFile(join(fake, path), "Synthetic licence\n");
-	for (const path of ["src/cli.ts", "data/bloom-verbs.json", "data/tubelex-en.tsv.gz", "skill/SKILL.md"]) await writeFile(join(fake, path), "synthetic\n");
+	for (const path of ["src/cli.ts", "data/bloom-verbs.json", "data/tubelex-en.tsv.gz", "skill/SKILL.md", "docs/task-coding-guide.md"]) await writeFile(join(fake, path), "synthetic\n");
 	await writeFile(join(fake, "package.json"), JSON.stringify({ name: "praxity-trace", version: "0.1.1", engines: { node: ">=24.18" }, dependencies: { "trace-test-missing-runtime-dependency": "1.0.0" } }));
 	const output = join(scratch, "must not exist");
 	assert.match(run([join(fake, "scripts/package.mjs"), "--output", output], scratch, 1).stderr, /trace-test-missing-runtime-dependency/);
