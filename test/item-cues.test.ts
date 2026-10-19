@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -40,6 +41,7 @@ function operatorFor(course: ReturnType<typeof load>) {
 function parseItemCues(json: string, course: ReturnType<typeof load>, operator = operatorFor(course)) {
 	return readItemCues(json, course, JSON.stringify(operator));
 }
+const withoutIdentity = (text: string) => JSON.stringify(JSON.parse(text), (key, value) => key === "bundleId" ? undefined : value);
 function payload() {
 	const course = load();
 	return { ...probeMetadata(course), view: "item-cues", promptVersion: `${PROMPT_VERSION}-projection-2`, courseHash: courseHash(course),
@@ -167,7 +169,7 @@ test("bundle contains only whitelisted probe prose, no key metadata, feedback or
 	const changed = fixture();
 	for (const lesson of changed.lessons) for (const block of lesson.pages[0]!.blocks) block.assessment.options.forEach((option, i) => { option.correct = i === 1; });
 	await prepareItemCues(parseCourse(JSON.stringify(changed)), join(directory, "flipped"), 0);
-	for (const file of ["choices-only/items.json", "masked/items.json", "cover-the-options/items.json"]) assert.equal(await readFile(join(directory, file), "utf8"), await readFile(join(directory, "flipped", file), "utf8"), "Key changes cannot affect probe text or option order");
+	for (const file of ["choices-only/items.json", "masked/items.json", "cover-the-options/items.json"]) assert.equal(withoutIdentity(await readFile(join(directory, file), "utf8")), withoutIdentity(await readFile(join(directory, "flipped", file), "utf8")), "Key changes cannot affect probe text or option order");
 });
 
 test("HTML exports and schema 0 use their existing keyed option projection", async () => {
@@ -218,12 +220,12 @@ test("duplicate detection preserves signs, quantities and meaningful symbols", (
 	}
 });
 
-async function maskedFixture(context: { after: (cleanup: () => Promise<void>) => void }, stem: string, options: string[], html = false) {
+async function maskedFixture(context: { after: (cleanup: () => Promise<void>) => void }, stem: string, options: string[], html = false, seed = 17) {
 	const dir = await mkdtemp(join(tmpdir(), "trace-r1-mask-")); context.after(() => rm(dir, { recursive: true, force: true }));
 	const raw = replaceOptions(fixture(), options), block = raw.lessons[1]!.pages[0]!.blocks[0]!;
 	block.texts[0]!.value = stem; block.texts[0]!.format = html ? "html" : "plain";
 	const course = parseCourse(JSON.stringify(raw)), bundle = join(dir, "bundle");
-	await prepareItemCues(course, bundle, 17);
+	await prepareItemCues(course, bundle, seed);
 	const operator = JSON.parse(await readFile(join(`${bundle}-review`, "operator.json"), "utf8"));
 	const rows = JSON.parse(await readFile(join(bundle, "masked/items.json"), "utf8"));
 	const row = rows.find((row: { ref: string }) => row.ref === "2.1.1");
@@ -239,6 +241,143 @@ test("masked stem/key overlap has literal shared words", async context => {
 test("masked a/an agreement preserves literal vowel initials", async context => {
 	const result = await maskedFixture(context, "This is an", ["apple", "banana", "orange", "pear"]);
 	assert.deepEqual(result.aligned, { stem: "This is an", options: ["arulo", "qupuwi", "amigaf", "tezo"] });
+});
+
+test("masked silent-h article sounds preserve the hour honour heir umbrella case", async context => {
+	const result = await maskedFixture(context, "This rain cover is an", ["umbrella", "hour", "honour", "heir"]);
+	assert.deepEqual(result.aligned, { stem: "This bogu civuc is an", options: ["iqoyuzap", "orun", "awepor", "itut"] });
+});
+
+test("masked you-sound article exception preserves unicorn against vowel-sound distractors", async context => {
+	const result = await maskedFixture(context, "This magical animal is a", ["unicorn", "apple", "orange", "eagle"]);
+	assert.deepEqual(result.aligned, { stem: "This gefezaw oxugoj is a", options: ["jirezip", "arulo", "amigaf", "aqine"] });
+});
+
+test("masked initialisms and university preserve an MRI and a university", async context => {
+	const result = await maskedFixture(context, "Which is the correct phrase?", ["an MRI", "a university", "an honest heir", "a European user"]);
+	assert.deepEqual(result.aligned, { stem: "Which is the tifacey yaqovo?", options: ["an ODU", "a vucepapafi", "an atedap itut", "a Rugomane weka"] });
+});
+
+test("generated pseudo-words also retain the requested article sound class", async context => {
+	const result = await maskedFixture(context, "Which apple?", ["apple", "banana", "orange", "pear"], false, 25);
+	assert.deepEqual(result.aligned, { stem: "Which ijaza?", options: ["ijaza", "kaxiyi", "apiyez", "hapu"] });
+});
+
+test("masked singular us is ss endings do not become regular plurals", async context => {
+	const result = await maskedFixture(context, "Which is a singular noun?", ["virus", "radius", "analysis", "glass"]);
+	assert.deepEqual(result.aligned, { stem: "Which is a tagecele nihu?", options: ["jacak", "zocati", "ahubopam", "fokoz"] });
+});
+
+test("masked residual combining marks fail closed at seeds zero and three", async context => {
+	const result = await maskedFixture(context, "Which is the correct symbol?", ["q\u0301", "x\u0301", "f\u0301", "j\u0301"]);
+	for (const seed of [0, 3]) {
+		const bundle = join(result.dir, `seed-${seed}`);
+		await prepareItemCues(result.course, bundle, seed);
+		const manifest = JSON.parse(await readFile(join(bundle, "manifest.json"), "utf8"));
+		assert.deepEqual(manifest.masked, { applies: false, reason: "mask-space", detail: "Masked probe not applicable: a content word still has a combining mark after NFC at 2.1.1. Guessing cues are unverified." });
+		assert.deepEqual(JSON.parse(await readFile(join(bundle, "masked/items.json"), "utf8")), []);
+	}
+});
+
+function courseWithStems(stems: string[]) {
+	const raw = fixture(), lesson = raw.lessons[0]!, template = lesson.pages[0]!.blocks[0]!;
+	raw.lessons = [lesson];
+	lesson.pages[0]!.blocks = stems.map((stem, i) => {
+		const block = structuredClone(template); block.ref = `choice/${i}`;
+		block.texts.forEach((text, j) => { text.ref = `choice/${i}/text/${j}`; if (text.role === "prompt") text.value = stem; });
+		block.assessment.options.forEach((option, j) => { option.ref = `choice/${i}/option/${j}`; });
+		return block;
+	});
+	return raw;
+}
+
+test("producer-default en does not let French or Spanish stems run masked", async context => {
+	const dir = await mkdtemp(join(tmpdir(), "trace-r2-language-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	const languages = JSON.parse(await readFile(resolve("test/fixtures/item-cues-language.json"), "utf8")) as Record<string, string[]>;
+	for (const [language, stems] of Object.entries(languages)) {
+		const raw = courseWithStems(stems), manifest: { locale?: string } = {};
+		raw.course.locale = manifest.locale ?? "en";
+		const course = parseCourse(JSON.stringify(raw)), bundle = join(dir, language);
+		await prepareItemCues(course, bundle, 17);
+		const status = JSON.parse(await readFile(join(bundle, "manifest.json"), "utf8")).masked;
+		assert.equal(status.applies, false); assert.equal(status.reason, "language");
+		assert.match(status.detail, /English keep-word share 0\.000/);
+		assert.deepEqual(JSON.parse(await readFile(join(bundle, "masked/items.json"), "utf8")), []);
+	}
+});
+
+test("English share threshold applies even to stems shorter than four words", async context => {
+	const course = parseCourse(JSON.stringify(courseWithStems(["Quel choix?", "Qué opción?"])));
+	const status = itemCuesView(course).course.masked;
+	assert.ok(status && !status.applies); assert.equal(status.reason, "language");
+	assert.match(status.detail, /English keep-word share 0\.000 \(0\/4; minimum 0\.200\)/);
+});
+
+test("English keep-share threshold includes exactly twenty percent", async context => {
+	const dir = await mkdtemp(join(tmpdir(), "trace-r2-threshold-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	for (const [name, stem, applies] of [["boundary", "Which copper pipes carry water?", true], ["below", "Which copper pipes carry clean water?", false]] as const) {
+		const course = parseCourse(JSON.stringify(courseWithStems([stem]))), bundle = join(dir, name);
+		await prepareItemCues(course, bundle, 17);
+		const status = JSON.parse(await readFile(join(bundle, "manifest.json"), "utf8")).masked;
+		assert.equal(status.applies, applies);
+		if (!applies) assert.match(status.detail, /English keep-word share 0\.167 \(1\/6; minimum 0\.200\)/);
+	}
+});
+
+test("one French lesson fails the per-stem check even when pooled English share passes", async context => {
+	const raw = fixture(); raw.lessons[1]!.pages[0]!.blocks[0]!.texts[0]!.value = "Il faut toujours appeler le responsable avant de continuer.";
+	const course = parseCourse(JSON.stringify(raw)), status = itemCuesView(course).course.masked;
+	assert.ok(status && !status.applies); assert.equal(status.reason, "language");
+	assert.match(status.detail, /stem 2\.1\.1 has no English keep word/);
+	assert.match(status.detail, /English keep-word share 0\.350/);
+});
+
+test("an included lesson lang overrides nominal English even with English stems", async context => {
+	const raw = fixture(); (raw.lessons[1]! as typeof raw.lessons[1] & { lang: string }).lang = "fr";
+	const course = parseCourse(JSON.stringify(raw));
+	assert.equal(course.lessons[1]!.lang, "fr");
+	const status = itemCuesView(course).course.masked;
+	assert.ok(status && !status.applies); assert.equal(status.reason, "language");
+	assert.match(status.detail, /lesson lang is not English at 2\.1\.1/);
+});
+
+test("calibration English projection-2 fixtures still apply", async context => {
+	const dir = await mkdtemp(join(tmpdir(), "trace-r2-english-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	for (const [i, fixture] of ["examples.projection2.inspect.json", "tasks/procedural/inspect.json", "tasks/judgment/inspect.json", "tasks/awareness/inspect.json", "lantern-marsh/inspect.json"].entries()) {
+		const course = parseCourse(await readFile(resolve("test/fixtures", fixture), "utf8"));
+		await prepareItemCues(course, join(dir, String(i)), 17);
+		assert.equal(JSON.parse(await readFile(join(dir, String(i), "manifest.json"), "utf8")).masked.applies, true, fixture);
+	}
+});
+
+test("random bundle IDs reveal no small seed through the public manifest hash", async context => {
+	const result = await maskedFixture(context, "Which is the correct shape?", ["circle", "square", "triangle", "rectangle"]);
+	await prepareItemCues(result.course, join(result.dir, "again"), 17);
+	const first = JSON.parse(await readFile(join(result.bundle, "manifest.json"), "utf8"));
+	const again = JSON.parse(await readFile(join(result.dir, "again/manifest.json"), "utf8"));
+	assert.notEqual(first.bundleId, again.bundleId);
+	assert.match(first.bundleId, /^[a-f0-9]{32}$/);
+	assert.equal(result.operator.bundleId, first.bundleId); assert.equal(result.operator.seed, 17);
+	const base = { view: first.view, promptVersion: first.promptVersion, courseHash: first.courseHash };
+	const guesses = Array.from({ length: 1001 }, (_, seed) => createHash("sha256").update(JSON.stringify([base, seed])).digest("hex"));
+	const scan = async (path: string): Promise<void> => { for (const entry of await readdir(path, { withFileTypes: true })) {
+		const file = join(path, entry.name);
+		if (entry.isDirectory()) await scan(file);
+		else { const text = await readFile(file, "utf8"); assert.ok(!guesses.some(hash => text.includes(hash)), file); }
+	} };
+	await scan(result.bundle);
+});
+
+test("solver root prompt contains no review-folder pointer", async context => {
+	const result = await maskedFixture(context, "Which is the correct shape?", ["circle", "square", "triangle", "rectangle"]);
+	assert.doesNotMatch(await readFile(join(result.bundle, "prompt.md"), "utf8"), /review|operator|sibling|\.\.\//i);
+});
+
+test("item-cues skill keeps keyed course JSON outside the solver parent tree", async () => {
+	const skill = await readFile(resolve("skill/SKILL.md"), "utf8");
+	assert.match(skill, /Keep keyed `course\.json` in a private input folder outside the bundle's parent tree/);
+	assert.match(skill, /praxity trace prepare item-cues <private-input>\/course\.json/);
+	assert.match(skill, /separate workspace, or supply its files inline/);
 });
 
 test("masked singular/plural agreement keeps a shared base and trailing s", async context => {
@@ -290,10 +429,10 @@ test("French and missing course.locale never produce a masked score", async cont
 		for (const probe of [answer.choicesOnly, answer.coverTheOptions]) probe.bundleId = operator.bundleId;
 		const view = itemCuesView(course, readItemCues(JSON.stringify(answer), course, JSON.stringify(operator)));
 		for (const row of [view.course, ...view.banks]) {
-			assert.deepEqual(row.masked, { applies: false, reason: "language", detail: "Masked probe not applicable: course.locale does not confirm English. Guessing cues are unverified." });
+			assert.deepEqual(row.masked, { applies: false, reason: "language", detail: "Masked probe not applicable: course.locale is missing or not English. English keep-word share 0.457 (16/35; minimum 0.200). Guessing cues are unverified." });
 			assert.equal("p" in row.masked!, false); assert.equal("pLow" in row.masked!, false);
 		}
-		assert.match(renderItemCues(view), /course.locale does not confirm English/);
+		assert.match(renderItemCues(view), /course.locale is missing or not English/);
 		assert.equal(itemCuesView(course).course.masked?.applies, false);
 	}
 });
@@ -343,10 +482,10 @@ test("masked bundle keeps function words, digit counts, punctuation and consiste
 	const course = parseCourse(JSON.stringify(replaceOptions(fixture(), source)));
 	for (const name of ["a", "b"]) await prepareItemCues(course, join(dir, name), 17);
 	const manifest = JSON.parse(await readFile(join(dir, "a-review/operator.json"), "utf8"));
-	assert.equal(manifest.promptVersion, "item-cues/8-projection-2");
+	assert.equal(manifest.promptVersion, "item-cues/9-projection-2");
 	assert.equal(manifest.seed, 17);
 	const a = await readFile(join(dir, "a/masked/items.json"), "utf8");
-	assert.equal(a, await readFile(join(dir, "b/masked/items.json"), "utf8"));
+	assert.equal(withoutIdentity(a), withoutIdentity(await readFile(join(dir, "b/masked/items.json"), "utf8")));
 	const masked = JSON.parse(a).find((item: { ref: string }) => item.ref === "2.1.1").options as string[];
 	const ordered = manifest.optionOrder["2.1.1"].map((i: number) => source[i]) as string[];
 	const keep = new Set("the is at usually never a may isn't".split(" "));
@@ -404,7 +543,7 @@ test("CLI seeds record distinct repeatable orders and both option probes score t
 	const randomA = JSON.parse(await readFile(join(dir, "random-a-review/operator.json"), "utf8")), randomB = JSON.parse(await readFile(join(dir, "random-b-review/operator.json"), "utf8"));
 	assert.ok(Number.isSafeInteger(randomA.seed)); assert.ok(Number.isSafeInteger(randomB.seed)); assert.notEqual(randomA.seed, randomB.seed);
 	await prepareItemCues(course, join(dir, "replayed"), randomA.seed);
-	for (const file of ["manifest.json", "choices-only/items.json", "masked/items.json"]) assert.equal(await readFile(join(dir, "random-a", file), "utf8"), await readFile(join(dir, "replayed", file), "utf8"));
+	for (const file of ["manifest.json", "choices-only/items.json", "masked/items.json"]) assert.equal(withoutIdentity(await readFile(join(dir, "random-a", file), "utf8")), withoutIdentity(await readFile(join(dir, "replayed", file), "utf8")));
 	for (const seed of ["bad", "1.5", "9007199254740992"]) {
 		const result = run("prepare", "item-cues", input, "--out", join(dir, `bad-${seed}`), "--seed", seed);
 		assert.notEqual(result.status, 0); assert.match(result.stderr, /safe integer/);
@@ -509,7 +648,7 @@ test("independent probe permutations remove an authored first-key pattern and ma
 	await prepareItemCues(course, join(dir, "first"), 0);
 	for (const block of lesson.pages[0]!.blocks) block.assessment.options.forEach((option, i) => { option.correct = i === 2; });
 	await prepareItemCues(parseCourse(JSON.stringify(raw)), join(dir, "flipped"), 0);
-	assert.equal(await readFile(join(dir, "first/choices-only/items.json"), "utf8"), await readFile(join(dir, "flipped/choices-only/items.json"), "utf8"));
+	assert.equal(withoutIdentity(await readFile(join(dir, "first/choices-only/items.json"), "utf8")), withoutIdentity(await readFile(join(dir, "flipped/choices-only/items.json"), "utf8")));
 	const manifest = JSON.parse(await readFile(join(dir, "first/manifest.json"), "utf8"));
 	assert.deepEqual(Object.keys(manifest), ["view", "promptVersion", "courseHash", "bundleId", "masked"]);
 });
