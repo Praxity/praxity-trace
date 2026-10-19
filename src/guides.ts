@@ -10,9 +10,9 @@ export interface Reading {
 
 export const GUIDES = {
 	"item-cues": [
-		{ see: "Choices-only answers above the uniform-choice reference", could: "Inspect the named cues and source items. A solver may recognize wording without knowing what the stem asks." },
+		{ see: "No scripted cues, but choices-only above guessing", could: "Look for options true on their own, keys in textbook wording, or options of different kinds. Use the pooled course result, including both tails." },
 		{ see: "Keys concentrated at a position or length rank", could: "Compare the authored options across the bank, allowing for ties and runtime shuffling." },
-		{ see: "Cover-the-options answers remain unmatched", could: "Read each stem and response. The stem may be underspecified, or a correct paraphrase may fail the literal comparison.", mode: "table" },
+		{ see: "Cover-the-options answers need judgement", could: "Have a separate fresh judge compare each stem, answer and key by meaning. A paraphrase can match; non-text content can explain why the solver could not tell.", mode: "table" },
 	],
 	trace: [
 		{ see: "Objectives stated but never practised or checked", could: "For each objective without a check or activity, inspect its stated page and decide where learners show that learning." },

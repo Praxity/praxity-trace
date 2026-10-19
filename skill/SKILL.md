@@ -26,19 +26,28 @@ Before interpreting a view for the designer, read its entry in `report.json` und
 
 ## Item cues
 
-`report <input> --out <dir>` always includes scripted item-cues measurements. It reports key position and length-rank spreads, convergence, stem echo, distractor absolutes and qualifiers, duplicate or near-duplicate options, shared leads and the hedged or consultation key pattern. Counts describe lexical cues, never distractor plausibility.
+Keep these command shapes:
 
-To attack keyed choices without revealing their answers:
+- `praxity-trace report <input> --out <dir>` includes scripted measurements.
+- `praxity-trace prepare item-cues <input> --out <new-empty-bundle>` prepares blind probes.
+- `praxity-trace report <input> --item-cues <answer.json> --out <dir>` scores responses.
 
-1. Run `praxity-trace prepare item-cues <input> --out <new-empty-bundle>`. Use inspect projection 2 or a Studio HTML export with authored keys. Trace includes single-selection choices with exactly one known key, even when unscored; the report lists exclusions. Earlier schema 1 has no keys to inspect.
-2. Give `<bundle>/choices-only/prompt.md` and `items.json` to one fresh solver. Give only `<bundle>/cover-the-options/prompt.md` and its `items.json` to a separate fresh solver. Neither solver may be the item writer or see the other probe, source course, keys or feedback. The bundle deliberately omits `course.md`; `--comments` is rejected for this view.
-3. Each solver writes its folder's `answer.json` with `model` and `answers`. Choices-only rows are `{ "ref": "1.1.1", "choice": 2, "cue": "stem-independent wording cue, or guessed" }`, with a one-based option number. Cover-the-options rows are `{ "ref": "1.1.1", "answer": "short answer, or can't tell" }`. Each must answer every supplied item once.
-4. Combine the two untouched answer objects into `<bundle>/answer.json`: copy `view`, `promptVersion` and `courseHash` from `manifest.json`, then add `choicesOnly` and `coverTheOptions` with the matching solver objects. The root `prompt.md` shows the complete shape.
-5. Run `praxity-trace report <input> --item-cues <bundle>/answer.json --out <dir>`.
+Use inspect projection 2 or a Studio HTML export with authored keys. Only single-selection choices with exactly one known key and at least two readable text options are included, even when unscored. Read the exclusions. Earlier schema 1 has no known keys. Shuffled and shuffle-unknown items retain authored positions as evidence but are excluded from fixed-position counts.
 
-Read `report.json.itemCues.banks[]`. Banks use authored assessment groups, then lesson banks for ungrouped choices. `cueCounts` counts each cue once per item; `items[].flags` names the cue and its option positions. `spreads` separates option counts, so three-option and four-option items are not compared on the same ranks. Length is visible character count including spaces; ties share the lower rank. Positions are authored order, before runtime shuffling. The scripted lexical rules are English-only.
+1. Prepare the bundle. Give only `choices-only/prompt.md` and its `items.json` to one fresh solver, and only `cover-the-options/prompt.md` and its `items.json` to a separate fresh solver. Neither may be the writer or see the other probe, source course, keys or feedback. The bundle omits `course.md`; `--comments` is rejected. Keep post-solve report and judge evidence outside this bundle.
+2. Collect both answer objects. Choices-only rows contain `ref`, a one-based `choice` in the supplied shuffled order, a fixed `cue` code and a brief `note`. Codes are listed in the prompt; `other` requires an explanation. Cover-the-options rows contain `ref` and a short `answer`, or "can't tell". Both solvers answer every supplied item once. Natural paraphrases are welcome.
+3. The operator records the actual model names and combines the untouched arrays under `choicesOnly: {model, answers}` and `coverTheOptions: {model, answers}` in `answer.json`. Copy `view`, `promptVersion` and `courseHash` from the manifest. Use `item-cues/2`, with the manifest's projection suffix. Trace regenerates each item's key-independent permutation outside the bundle and maps the choices back when scoring.
+4. Run report with `--item-cues`. For cover-the-options, it lists the stem, response and key as "needs judgement". It does not score literal text or call unjudged answers wrong. A separate fresh judge agent, not the writer or either solver, may compare those report rows by meaning and add `coverJudgement: "matches" | "differs" | "cantTell"` to each `coverTheOptions.answers` row. Record that agent in `coverTheOptions.judgeModel`, then run the same report command. `cantTell` means the solver could not tell; it is separate from an answer that differs. The report notes when the omitted stem evidence includes media, code or examples.
 
-Each probe records `right`, `total`, `chanceExpected`, `p` and every response with its source ref; choices-only keeps the solver's named cue. The chance reference sums `1/options`. `p` is an exact one-sided binomial tail, using the Poisson-binomial extension when option counts differ. There is no fixed passing rate. Cover-the-options uses normalized literal key-text matching, so correct paraphrases remain unmatched. Its p is only a uniform-choice reference, since free-response guessing has no known probability. Answerability from the stem alone is not evidence of option cues. Inspect the responses before revising.
+Read `report.json.itemCues.course` first. It pools included items once; `banks[]` has the same fields as a breakdown by authored assessment group or lesson. Rubato consumes `itemCues.course.choicesOnly`: `right`, `total`, `chanceExpected`, `p` for the exact upper tail, and `pLow` for the exact lower tail. Both tails include the observed count and use each item's `1/options`, so mixed option counts use the exact Poisson-binomial distribution. The same fields appear on every bank. Scores unusually low or high can both indicate a cue. Small banks retain exact values in JSON but display "Too few items to compare with guessing" when even every answer right cannot reach upper p below 0.05. Avoid interpreting isolated small banks or repeated solver runs as independent evidence.
+
+`coverTheOptions` keeps every stem, solver response and key with a judgement or null. Before judgement, `right` is null and status is "not judged". With judgements, it records matches, differs, can't-tell, pending and judged counts; only matches count right. No chance probability or p value is assigned to free answers. Check correct paraphrases by meaning. Stem answerability has a different purpose from choices-only cue detection.
+
+`cueCounts` reports cues to the key. `writingCounts` separately reports high option overlap and shared openings, which may be intentional parallel options. Every pattern has an author action, with limits against overcorrection. `choicesOnly.cueCounts` totals solver cue codes and links them to the same guidance. Zero scripted counts do not establish a clean bank; without solver responses the report says "Probes not run".
+
+Convergence is a bank/course statistic against guessing, including exact fractional tie-credit tails. Only a unique key maximum is listed per item, and it is excluded from `cueCounts`. Consultation is also a bank share, never an item flag. English lexical rules run only for an `en` locale; other languages explicitly say "Not checked: English-only rule" in `applicability`, with null lexical counts. Unicode duplicate, overlap and shared-lead checks still run.
+
+`spreads` separates option counts and includes authored positions, known fixed-order positions, shuffled/unknown counts, length ranks and longest-key counts including ties. Length is visible character count including spaces; rank 1 is shortest and ties share the lower rank. Guessing expectations account for ties; the equal-share reference is items/options. At least 20 items are needed to label the reference script's 10?40% rank band. Use the pooled course spread for smaller banks. Spread key length ranks across the bank; do not move every key to another single rank.
 
 ## Objective levels
 
@@ -54,7 +63,7 @@ In `report.json`, `language.lessons[].channels.transcript` holds transcript sent
 
 Terms flags, Tasks evidence and Visuals opportunities accept `screen`, `narration` or `transcript`; their quotes must occur in the cited channel. Alignment support also accepts `tooltip` and preserves transcript instruction links. `availability.checks[].available` and `availability.checks[].instructionLinks[].available` can be `transcript`, labelled "In a transcript only" without orange. Concepts keep one occurrence and role per block across channels.
 
-Prepare fresh answers after this contract change: old prompt versions are rejected, and schema 1 freshness uses `trace-inspect/3`. Copy the current `promptVersion` and `courseHash` from the bundle manifest, including its `-projection-2` suffix when present.
+Prepare fresh answers after this contract change: old prompt versions are rejected, and schema 1 freshness uses `trace-inspect/4`. Copy the current `promptVersion` and `courseHash` from the bundle manifest, including its `-projection-2` suffix when present.
 
 ## Designer comments
 

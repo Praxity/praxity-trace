@@ -13,9 +13,20 @@ function typedHtml(text: TypedText): string {
 	if (text.format === "plain") return escapeText(text.value);
 	// In HTML, source line breaks are whitespace even when the field has no element wrapper.
 	const html = text.format === "markdown" ? markdownText(text.value).replace(/</g, "&lt;").replace(/>/g, "&gt;") : text.value.replace(/\r\n?|\n/g, " ");
+	return projectedHtml(html, text.role !== "feedback");
+}
+
+/** Screen prose excludes hidden and post-response elements; feedback remains a separate channel. */
+function projectedHtml(html: string, screen = true): string {
 	const fragment = parseFragment(html);
 	const prune = (node: DefaultTreeAdapterTypes.ParentNode) => {
-		node.childNodes = node.childNodes.filter(child => !("tagName" in child && ["script", "style", "template"].includes(child.tagName)));
+		node.childNodes = node.childNodes.filter(child => {
+			if (!("tagName" in child)) return true;
+			const attrs = Object.fromEntries(child.attrs.map(attr => [attr.name, attr.value]));
+			const hidden = Object.hasOwn(attrs, "hidden") || Object.hasOwn(attrs, "inert") || attrs["aria-hidden"] === "true" || /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\b/i.test(attrs.style ?? "");
+			const postResponse = /(?:^|\s)(?:feedback|praxity-(?:choice|assessment)-feedback|inline-tooltip-fallback|praxity-sr-only|sr-only|visually-hidden|screen-reader-only)(?:\s|$)/i.test(attrs.class ?? "") || attrs["data-role"] === "feedback";
+			return !["script", "style", "template"].includes(child.tagName) && !(screen && (hidden || postResponse));
+		});
 		for (const child of node.childNodes) if ("childNodes" in child) prune(child);
 	};
 	prune(fragment);
@@ -77,7 +88,7 @@ function clean(text: string, entities = true): string {
 export function visibleStrings(value: unknown, key = ""): string[] {
 	const typed = typedTexts(value);
 	if (typed) return typed.filter(text => screenRoles.has(text.role)).map(typedHtml);
-	if (typeof value === "string") return VISIBLE_TEXT_KEYS.has(key) ? [clean(value)] : [];
+	if (typeof value === "string") return VISIBLE_TEXT_KEYS.has(key) ? [projectedHtml(clean(value))] : [];
 	if (Array.isArray(value)) return value.flatMap((item) => visibleStrings(item, key));
 	if (typeof value === "object" && value !== null) {
 		return Object.entries(value).flatMap(([childKey, child]) =>
@@ -89,6 +100,14 @@ export function visibleStrings(value: unknown, key = ""): string[] {
 
 export function visibleText(value: unknown): string[] {
 	return visibleStrings(value).map((text) => stripTags(text));
+}
+
+/** Native assessment stems contain authored prose blocks, not their feedback or metadata. */
+export function assessmentStem(data: Record<string, unknown>): string {
+	return (Array.isArray(data.stem) ? data.stem : []).flatMap(item => {
+		if (typeof item !== "object" || item === null || !("data" in item) || typeof item.data !== "object" || item.data === null || !("content" in item.data)) return [];
+		return typeof item.data.content === "string" ? [item.data.content] : [];
+	}).join(" ");
 }
 
 /** An HTML tag: `<` then a letter, or `</`. A bare "<" in prose, such as "x < 3", is text. */

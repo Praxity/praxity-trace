@@ -50,7 +50,7 @@ export const SECTIONS: Section[] = [
 				report.alignment ? renderAlignment(report.alignment, (positions) => (report.availability ? renderAvailability(report.availability, positions) : "")) : "",
 	},
 	{ views: [{ id: "tasks", present: (report) => Boolean(report.tasks) }], render: (report) => report.tasks ? `<section aria-labelledby="tasks">${renderTasks(report.tasks)}</section>` : "" },
-	{ views: [{ id: "item-cues", present: (report) => Boolean(report.itemCues) }], render: (report) => report.itemCues ? renderItemCues(report.itemCues) : "" },
+	{ views: [{ id: "item-cues", present: (report) => Boolean(report.itemCues && (report.itemCues.course.count || report.itemCues.excluded.length)) }], render: (report) => report.itemCues ? renderItemCues(report.itemCues) : "" },
 	{
 		views: [
 			{ id: "concepts", present: (report) => Boolean(report.concepts) },

@@ -3,7 +3,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { basename, dirname, extname, join, posix, resolve, sep } from "node:path";
 import { parse, parseFragment, serialize, type DefaultTreeAdapterTypes } from "parse5";
 import { type Block, type Course, type Lesson, type Page, withPageNarration } from "./inspect.ts";
-import { oneLine, stripTags, transcripts, type Transcript } from "./text.ts";
+import { assessmentStem, oneLine, stripTags, transcripts, type Transcript } from "./text.ts";
 
 type Node = DefaultTreeAdapterTypes.Node;
 type Element = DefaultTreeAdapterTypes.Element;
@@ -94,13 +94,13 @@ function studioBlock(node: Element, authored: Map<string, RecordValue>, segments
 		delete data.yAxisLabel;
 	}
 	if (type === "assessment" && Array.isArray(data.stem)) {
-		data.question = data.stem.filter(record).map((item) => record(item.data) ? item.data.content : "").filter((item) => typeof item === "string").join(" ");
+		data.question = assessmentStem(data);
 		delete data.stem;
 		if (record(data.response)) {
 			const response = data.response;
 			if (Array.isArray(response.options)) data.options = response.options.filter(record).map((item) => ({ text: item.label, correct: item.isCorrect }));
 			if (Array.isArray(response.pairs)) data.pairs = response.pairs.filter(record).map((item) => ({ left: item.prompt, right: item.correctMatch }));
-			for (const key of ["statements", "scalePoints", "placeholder"]) if (response[key] !== undefined) data[key] = response[key];
+			for (const key of ["statements", "scalePoints", "placeholder", "selectionMode", "shuffle"]) if (response[key] !== undefined) data[key] = response[key];
 			delete data.response;
 		}
 		if (record(data.feedback)) {
