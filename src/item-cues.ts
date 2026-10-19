@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { parseFragment, type DefaultTreeAdapterTypes } from "parse5";
 import { readAnswer } from "./bundle.ts";
 import { courseHash, type Course, type TypedText } from "./inspect.ts";
 import { buildPlaces, indexCourse, type Places } from "./places.ts";
 import { assessmentStem, oneLine, previewText, visibleText } from "./text.ts";
 
-export const PROMPT_VERSION = "item-cues/5";
+export const PROMPT_VERSION = "item-cues/6";
 export const PROBE_INPUT_ERROR = "Prepare item-cues from `praxity inspect <course> --schema 1` output. HTML exports aren't supported for blind probes yet.";
 export const PROBE_JSON_ERROR = "Expected `praxity inspect --schema 1` JSON.";
 const PROBE_KEYS_ERROR = "This inspect output has no answer keys (projection 2). Re-run `praxity inspect <course> --schema 1` with current Studio.";
@@ -36,6 +37,32 @@ export interface CueItem {
 	stemDependsOnNonText: boolean;
 }
 
+/** Only markup observed in the producer's choice fields; visibility is not inferred from CSS. */
+function probeHtml(html: string): boolean {
+	let valid = true;
+	const fragment = parseFragment(html, { sourceCodeLocationInfo: true, onParseError: () => { valid = false; } });
+	const covered = new Uint8Array(html.length);
+	const mark = (location: { startOffset: number; endOffset: number }) => covered.fill(1, location.startOffset, location.endOffset);
+	const allowed = (node: DefaultTreeAdapterTypes.Node): boolean => {
+		if ("tagName" in node) {
+			if (node.namespaceURI !== "http://www.w3.org/1999/xhtml" || node.attrs.some(attr => attr.namespace || attr.prefix)) return false;
+			if (node.tagName === "p") { if (node.attrs.length) return false; }
+			else if (node.tagName === "span") {
+				if (node.attrs.length !== 2 || node.attrs.find(attr => attr.name === "class")?.value.trim() !== "inline-tooltip-trigger" || !node.attrs.some(attr => attr.name === "data-tooltip-content")) return false;
+			} else return false;
+			if (!node.sourceCodeLocation?.startTag) return false;
+			mark(node.sourceCodeLocation.startTag);
+			if (node.sourceCodeLocation.endTag) mark(node.sourceCodeLocation.endTag);
+		} else if (node.nodeName === "#text") {
+			if (!node.sourceCodeLocation) return false;
+			mark(node.sourceCodeLocation);
+		} else if (node.nodeName !== "#document-fragment") return false;
+		return !("childNodes" in node) || node.childNodes.every(allowed);
+	};
+	// Fragment parsing silently discards some tags, including html/body; every source character must be accounted for.
+	return allowed(fragment) && valid && covered.every(Boolean);
+}
+
 /** Reads only the existing course model and shared visible-text projection. */
 export function keyedChoices(course: Course): { items: CueItem[]; excluded: Array<{ ref: string; label: string; reason: string }> } {
 	const index = indexCourse(course), groups = new Map<string, Set<string>>();
@@ -49,7 +76,8 @@ export function keyedChoices(course: Course): { items: CueItem[]; excluded: Arra
 		if (typed ? block.type !== "assessment" : !["choice", "assessment"].includes(block.type)) continue;
 		if (typed && block.assessment && block.assessment.responseType !== "choice") continue;
 		const texts = (block.data.typedTexts ?? []) as TypedText[];
-		const stem = screen(typed ? { typedTexts: texts.filter(text => text.role === "prompt" || text.role === "body") } : { question: block.data.question ?? block.data.prompt ?? assessmentStem(block.data), description: block.data.description });
+		const stemTexts = texts.filter(text => text.role === "prompt" || text.role === "body");
+		const stem = screen(typed ? { typedTexts: stemTexts } : { question: block.data.question ?? block.data.prompt ?? assessmentStem(block.data), description: block.data.description });
 		const label = `${ref} · ${previewText(stem, 60)}`;
 		const skip = (reason: string) => excluded.push({ ref, label, reason });
 		if (typed && (!block.assessment || block.assessment.correctness !== "keyed")) { skip("Assessment correctness unavailable or open"); continue; }
@@ -62,6 +90,9 @@ export function keyedChoices(course: Course): { items: CueItem[]; excluded: Arra
 		if (keys.length !== 1) { skip(`Expected one key, found ${keys.length}`); continue; }
 		const labels = texts.filter(text => text.role === "option");
 		if (typed && (labels.length !== options.length || labels.some((label, i) => label.value !== options[i]!.label))) throw new Error(`Invalid keyed choice ${ref}: option text projection does not match the key`);
+		if ([...stemTexts, ...labels].some(text => text.format === "html" && !probeHtml(text.value))) {
+			skip("This question's text uses markup Trace can't safely check. Simplify it or re-export from current Studio."); continue;
+		}
 		const visible = options.map((option, i) => screen(typed ? { typedTexts: [labels[i]!] } : { text: option.text }));
 		// Fail closed on leftover delimiters, including unfamiliar syntax, until the producer supplies rendered text.
 		const bracketField = [stem, ...visible].findIndex(text => /[\[\]{}]/.test(text));

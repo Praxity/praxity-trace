@@ -48,3 +48,10 @@ This is an eligibility guard, not another inline parser. Studio should eventuall
 Blind item-cues bundles require `praxity inspect <course> --schema 1` JSON with projection 2. The CLI refuses directories and non-inspect stdin before preparation, and preparation validates the course schema and projection before creating output. HTML export visibility cannot yet be established reliably for blind solver inputs. Scripted `report` checks remain available for HTML exports and schema 0; they do not write solver inputs.
 
 The bracket guard remains unchanged in scope, including literal brackets. Excluded rows retain question excerpts and source pointers; the course summary counts exclusions, and the all-excluded view asks the author to review the reasons. Prompt version `item-cues/5` records the narrower preparation contract and revised alternative-answer guidance. The shared text projection and its freshness fingerprint are unchanged.
+
+
+## Blind HTML field allow-list
+
+Projection 2 can contain HTML choice stems even when options are Markdown. Item-cues eligibility accepts only the inventoried producer forms: `p` without attributes, and `span` with exactly `class="inline-tooltip-trigger"` and `data-tooltip-content`. The existing projection removes the tooltip attribute and its definition from solver prose. No style or hiding attribute, unknown class, or other element is accepted. Parsing errors and markup discarded by the fragment parser also exclude the item. Validation uses the installed HTML parser and accounts for every source character, including tags a fragment parser silently discards.
+
+This policy belongs to item-cues eligibility and is reused by preparation, answer validation and scored denominators. The shared visibility projection remains unchanged, with no interpretation fingerprint bump. The plain exclusion reason asks authors to simplify the markup or re-export from current Studio. The item-cues prompt advances to `item-cues/6` for the narrower accepted evidence. Studio-rendered visible text remains the long-term replacement.

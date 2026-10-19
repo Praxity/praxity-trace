@@ -427,7 +427,8 @@ test("bundle CLI strips canaries from typed inspect inputs and refuses unsupport
 		assert.equal(cli.status, 0, cli.stderr); await scan(out);
 		const rows = JSON.parse(await readFile(join(out, "choices-only/items.json"), "utf8"));
 		assert.ok(rows.some((row: { options: string[] }) => row.options.includes("Red")));
-		assert.ok(JSON.parse(await readFile(join(out, "cover-the-options/items.json"), "utf8")).some((row: { stem: string }) => row.stem === "Red"));
+		if (name === "typed") assert.equal(rows.length, 8, "Unlisted HTML markup is excluded as a whole item");
+		else assert.ok(JSON.parse(await readFile(join(out, "cover-the-options/items.json"), "utf8")).some((row: { stem: string }) => row.stem === "Red"));
 	}
 	const out = join(dir, "bundle-typed");
 	assert.doesNotMatch(await readFile(join(out, "cover-the-options/prompt.md"), "utf8"), /literal|paraphrases remain/);
@@ -663,4 +664,68 @@ test("exclusions name curly brackets and singular and plural cover summaries agr
 	const view = itemCuesView(parseCourse(JSON.stringify(edited)));
 	assert.match(view.excluded[0]!.reason, /question: curly bracket/);
 	assert.match(view.excluded[0]!.reason, /Remove the brackets or check this item by hand/);
+});
+
+
+test("HTML probe eligibility allows only inventoried paragraphs and tooltips across file, stdin and owning preparation", async context => {
+	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-html-inventory-")); context.after(() => rm(dir, { recursive: true, force: true }));
+	const shapes = [
+		'<p>Red square<span style="display:/* c */none">COMMENT_CANARY: Red square is the key</span></p>',
+		String.raw`<p>Red square<span style="display:n\6f ne">CSS_ESCAPE_CANARY: Red square is the key</span></p>`,
+		'<p>Red square<span class="unlisted-secret">CLASS_CANARY: Red square is the key</span></p>',
+	];
+	const raw = fixture(), template = raw.lessons[1]!.pages[0]!.blocks[0]!;
+	raw.lessons = [raw.lessons[1]!];
+	const blocks = shapes.flatMap((shape, i) => ["prompt", "option"].map(role => {
+		const block = structuredClone(template); block.ref = `html-${i}-${role}`;
+		block.texts.forEach((text, j) => { text.ref = `${block.ref}/text-${j}`; if (text.role === role && (role === "prompt" || j === 1)) { text.format = "html"; text.value = shape; } });
+		if (role === "option") block.assessment.options[0]!.label = shape;
+		return block;
+	}));
+	const markdown = structuredClone(template); markdown.ref = "visible-markdown";
+	markdown.texts.forEach((text, i) => { text.ref = `${markdown.ref}/text-${i}`; text.format = "markdown"; });
+	const tooltip = structuredClone(template); tooltip.ref = "visible-tooltip";
+	const term = '<p><span class="inline-tooltip-trigger" data-tooltip-content="TOOLTIP_CANARY: Red square is the key">Red square</span></p>';
+	tooltip.texts.forEach((text, i) => { text.ref = `${tooltip.ref}/text-${i}`; if (text.role === "prompt" || (text.role === "option" && i === 1)) { text.format = "html"; text.value = term; } });
+	tooltip.assessment.options[0]!.label = term;
+	raw.lessons[0]!.pages[0]!.blocks = [...blocks, markdown, tooltip];
+	const json = JSON.stringify(raw), course = parseCourse(json), input = join(dir, "inspect.json"); await writeFile(input, json);
+	for (const route of ["file", "stdin", "owner"]) {
+		const out = join(dir, route);
+		if (route === "owner") await prepareItemCues(course, out);
+		else {
+			const cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", route === "stdin" ? "-" : input, "--out", out], { input: route === "stdin" ? json : undefined, encoding: "utf8" });
+			assert.equal(cli.status, 0, cli.stderr);
+		}
+		let files = 0;
+		const scan = async (path: string): Promise<void> => { for (const entry of await readdir(path, { withFileTypes: true })) {
+			const file = join(path, entry.name); if (entry.isDirectory()) await scan(file); else { files++; assert.doesNotMatch(await readFile(file, "utf8"), /[A-Z_]+_CANARY|Red square is the key|data-tooltip-content/, file); }
+		} }; await scan(out); assert.equal(files, 6);
+		for (const probe of ["choices-only", "cover-the-options"]) {
+			const rows = JSON.parse(await readFile(join(out, probe, "items.json"), "utf8")); assert.deepEqual(rows.map((row: { ref: string }) => row.ref), ["1.1.7", "1.1.8"]);
+		}
+		assert.ok(JSON.parse(await readFile(join(out, "choices-only/items.json"), "utf8")).every((row: { options: string[] }) => row.options.includes("Red square")));
+		assert.equal(JSON.parse(await readFile(join(out, "cover-the-options/items.json"), "utf8"))[1].stem, "Red square");
+	}
+	const view = itemCuesView(course);
+	assert.equal(view.excludedCount, 6); assert.equal(view.course.count, 2);
+	assert.ok(view.excluded.every(item => item.reason === "This question's text uses markup Trace can't safely check. Simplify it or re-export from current Studio."));
+	assert.match(renderItemCues(view), /6 items left out/);
+});
+
+test("HTML allow-list refuses hiding, unfamiliar markup and malformed attributes even when visible text looks safe", () => {
+	for (const html of [
+		'<p style="color:red">Red</p>', '<p hidden>Red</p>', '<p aria-hidden="false">Red</p>',
+		'<template>Red</template>', '<script>Red</script>', '<noscript>Red</noscript>', '<widget>Red</widget>',
+		'<span class="inline-tooltip-trigger other" data-tooltip-content="hidden">Red</span>',
+		'<span class="inline-tooltip-trigger" data-tooltip-content="hidden" title="extra">Red</span>',
+		'<p class="inline-tooltip-trigger">Red</p>', '<p STYLE="display:none">Red</p>', '<p title="one" title="two">Red</p>',
+		'<html style="display:none">Red</html>', '<body hidden>Red</body>', '<head><p>Red</p></head>', '<!doctype html><p>Red</p>',
+	]) {
+		const raw = fixture(), block = raw.lessons[1]!.pages[0]!.blocks[0]!;
+		block.texts[0]!.format = "html"; block.texts[0]!.value = html;
+		const view = itemCuesView(parseCourse(JSON.stringify(raw)));
+		assert.equal(view.banks.length, 1, html); assert.equal(view.excludedCount, 1, html);
+		assert.match(view.excluded[0]!.reason, /markup Trace can't safely check/, html);
+	}
 });
