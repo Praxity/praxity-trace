@@ -10,6 +10,7 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { chromium, type Browser, type Locator, type Page } from "playwright";
 import type { Course } from "../src/inspect.ts";
 import type { Located } from "../src/places.ts";
+import { keyedChoices } from "../src/item-cues.ts";
 
 // The override runs this gate against an untouched worktree as well as the changed renderer.
 const sourceRoot = resolve(process.env.TRACE_A11Y_SOURCE_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), ".."));
@@ -52,7 +53,7 @@ async function reportFixture(directory: string, name: string, inputPath: string 
 	const { parseCourse } = await import(pathToFileURL(join(sourceRoot, "src/inspect.ts")).href);
 	const { locateBlocks } = await import(pathToFileURL(join(sourceRoot, "src/places.ts")).href);
 	const { blockTexts } = await import(pathToFileURL(join(sourceRoot, "src/text.ts")).href);
-	const input = join(fixtures, "examples.inspect.json");
+	const input = join(fixtures, "examples.projection2.inspect.json");
 	const course: Course = parseCourse(await readFile(input, "utf8"));
 	const blocks: readonly Located[] = locateBlocks(course);
 	const prose = blocks.map(item => ({ ...item, screen: blockTexts(item.block).screen as string })).filter(item => item.screen.trim().split(/\s+/).length >= 2);
@@ -88,6 +89,16 @@ async function reportFixture(directory: string, name: string, inputPath: string 
 		await writeFile(answer, JSON.stringify({ ...manifest, model: "synthetic-accessibility-fixture", ...payload }));
 		answers.push(`--${view}`, answer);
 	}
+	const cueItems = keyedChoices(course).items;
+	const cueBundle = join(directory, "answers", "item-cues");
+	cli(["prepare", "item-cues", input, "--out", cueBundle]);
+	const cueManifest = JSON.parse(await readFile(join(cueBundle, "manifest.json"), "utf8"));
+	const cueAnswer = join(cueBundle, "answer.json");
+	await writeFile(cueAnswer, JSON.stringify({ ...cueManifest,
+		choicesOnly: { model: "synthetic-accessibility-solver", answers: cueItems.map(item => ({ ref: item.ref, choice: 1, cue: "guessed", note: "Synthetic wording cue" })) },
+		coverTheOptions: { model: "synthetic-accessibility-solver", answers: cueItems.map(item => ({ ref: item.ref, answer: "can't tell" })) },
+	}));
+	answers.push("--item-cues", cueAnswer);
 	const output = join(directory, "all-model-views");
 	cli(["report", input, "--out", output, ...answers]);
 	const bundle = join(directory, "answers", "recommendations");
@@ -544,6 +555,15 @@ async function serverLabels(browser: Browser, html: string): Promise<void> {
 		assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true, "Server-rendered narrow report must fit without JavaScript");
 	} finally { await context.close(); }
 }
+
+test("all-model-views fixture prepares every view with keyed probe answers", async context => {
+	const directory = await mkdtemp(join(tmpdir(), "trace-accessibility-preparation-"));
+	context.after(() => rm(directory, { recursive: true, force: true }));
+	const html = await reportFixture(directory, "all-model-views", null);
+	const report = JSON.parse(await readFile(join(dirname(html), "report.json"), "utf8"));
+	assert.ok(report.itemCues.course.choicesOnly.total > 0, "Combined fixture must exercise keyed solver responses");
+	assert.ok(report.itemCues.excluded.every((item: { reason: string }) => item.reason.startsWith("Multiple selection")), "Combined fixture must retain every supported single-key choice");
+});
 
 // Each fixture has its own timeout, including contention with verify's CLI and package tests.
 for (const [name, inputPath] of reportFixtures) test(`generated report ${name} meets browser accessibility requirements`, { timeout: 360_000 }, async context => {

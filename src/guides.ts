@@ -9,6 +9,12 @@ export interface Reading {
 }
 
 export const GUIDES = {
+	"item-cues": [
+		{ see: "Choices-only far below guessing", could: "Something may make the key look wrong. Read the solver's notes and compare the keyed wording with the other options." },
+		{ see: "No scripted cues, but choices-only above guessing", could: "Look for options true on their own, keys in textbook wording, or options of different kinds. Use the pooled course result, including both tails." },
+		{ see: "Keys concentrated at a position or length rank", could: "Compare the authored options across the bank, allowing for ties and runtime shuffling." },
+		{ see: "Cover-the-options answers need judgement", could: "Have a separate fresh judge compare each stem, answer and key by meaning. A paraphrase can match; non-text content can explain why the solver could not tell.", mode: "table" },
+	],
 	trace: [
 		{ see: "Objectives stated but never practised or checked", could: "For each objective without a check or activity, inspect its stated page and decide where learners show that learning." },
 		{ see: "Long stretches of instruction with no activity or check", could: "Inspect where learners first use the instruction and whether that response needs preparation along the way." },

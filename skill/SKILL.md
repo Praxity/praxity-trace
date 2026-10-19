@@ -1,6 +1,6 @@
 ---
 name: praxity-trace
-description: Chart a Praxity Studio course or static HTML export as a report of composition, pace, objectives, concepts and language. Use when reviewing a course's design.
+description: Chart a Praxity Studio course or static HTML export as a report of composition, pace, objectives, concepts, language and item cues. Use when reviewing a course's design or testing whether keyed choices disclose their answers.
 ---
 
 # Praxity Trace
@@ -24,6 +24,33 @@ Structure contains Anatomy and Pace. Objective groups are part of the Course tra
 
 Before interpreting a view for the designer, read its entry in `report.json` under `guides`: the patterns worth noticing and what each could mean. Offer those readings as possibilities; a pattern that looks like a gap may be the course's intent.
 
+## Item cues
+
+Keep these command shapes:
+
+- `praxity-trace report <input> --out <dir>` includes scripted measurements.
+- `praxity-trace prepare item-cues <input> --out <new-empty-bundle>` prepares blind probes.
+- `praxity-trace report <input> --item-cues <answer.json> --out <dir>` scores responses.
+
+Prepare blind probes only from `praxity inspect <course> --schema 1` JSON with projection 2. HTML exports and schema 0 are refused for preparation; `report` can still run scripted checks on them without writing solver inputs. Only single-selection choices with exactly one known key and at least two readable text options are included, even when unscored. Read `excluded` and `excludedCount`. In HTML fields, Trace accepts attribute-free `p`, `strong`, `em`, `code`, `del` and `mark`; `a` with only `href`; tooltips with exactly `class="inline-tooltip-trigger"` and `data-tooltip-content`; and doodles with exactly `class="praxity-doodle"`, `data-doodle` and `data-doodle-mods`. Class tokens use HTML ASCII whitespace; other characters make a different class. Tooltip definitions stay out of solver inputs. Other markup, including styles, hiding attributes and unfamiliar classes, excludes the whole item. The reason names the tag or attribute to check by hand. Icon and variable placeholders stay excluded because their empty text omits what the learner sees. Trace leaves out any item whose question or options still contain square or curly brackets after it removes glossary definitions, even brackets meant as text. The exclusion names the field and bracket and shows the question excerpt. Remove the brackets or check the item by hand. Earlier schema 1 has no known keys. Shuffled and shuffle-unknown items retain authored positions as evidence but are excluded from fixed-position counts.
+
+1. Prepare the bundle. Give only `choices-only/prompt.md` and its `items.json` to one fresh solver, and only `cover-the-options/prompt.md` and its `items.json` to a separate fresh solver. Neither may be the writer or see the other probe, source course, keys or feedback. The bundle omits `course.md`; `--comments` is rejected. Keep post-solve report and judge evidence outside this bundle.
+2. Collect both answer objects. Choices-only rows contain `ref`, a one-based `choice` in the supplied shuffled order, a fixed `cue` code and a brief `note`. Codes are listed in the prompt; `other` requires an explanation. Cover-the-options rows contain `ref` and a short `answer`, or "can't tell". Both solvers answer every supplied item once. Natural paraphrases are welcome.
+3. The operator records the actual model names and combines the untouched arrays under `choicesOnly: {model, answers}` and `coverTheOptions: {model, answers}` in `answer.json`. Copy `view`, `promptVersion` and `courseHash` from the manifest. Trace regenerates each item's key-independent permutation outside the bundle and maps the choices back when scoring.
+4. Run report with `--item-cues`. For cover-the-options, it lists the stem, response and key as "needs judgement". It does not score literal text or call unjudged answers wrong. A separate fresh judge agent, not the writer or either solver, compares those report rows by meaning and adds `coverJudgement: "matches" | "differs" | "cantTell" | "alsoCorrect"` to each `coverTheOptions.answers` row. Record that agent in `coverTheOptions.judgeModel`, then run the same report command. `cantTell` means the solver could not tell; it is separate from an answer that differs. `alsoCorrect`, labelled "Another valid answer", means the stem solver gave a different answer that is also correct. The stem is answerable. This is not a cover failure or a wrong answer. Tighten the stem so only the key fits, or make the options settle which answer is best. The report notes when the omitted stem evidence includes media, code or examples.
+
+Read `report.json.itemCues.course` first. It pools included items once; `banks[]` has the same fields as a breakdown by authored assessment group or lesson. Rubato consumes `itemCues.course.choicesOnly`: `right`, `total`, `chanceExpected`, `p` for the exact upper tail, and `pLow` for the exact lower tail. Both tails include the observed count and use each item's `1/options`, so mixed option counts use the exact Poisson-binomial distribution. The same fields appear on every bank. Scores unusually low or high can both indicate a cue. Small banks retain exact values in JSON but display "Too few items to compare with guessing" separately for each tail: `tooFewItems` tests the all-right upper tail; `tooFewItemsLow` tests the all-wrong lower tail. Avoid interpreting isolated small banks or repeated solver runs as independent evidence.
+
+`coverTheOptions` keeps every stem, solver response and key with a judgement or null. Before judgement, `right` is null and status is "not judged". With judgements, it records matches, differs, also-correct, can't-tell, pending and judged counts. Both matches and also-correct answers count in `right`, the number of defensible stem answers; `outcomes.alsoCorrect` separately counts other valid free answers. It does not establish that several offered options are correct. No chance probability or p value is assigned to free answers. Check correct paraphrases by meaning. Stem answerability has a different purpose from choices-only cue detection.
+
+Each item record has a visible `label` containing its full block ref and a short stem excerpt, also present in both probe result arrays. HTML item rows and source lists show that label plus the source file and line, so questions on one page remain distinct.
+
+`cueCounts` reports cues to the key. `writingCounts` separately reports high option overlap and shared openings, which may be intentional parallel options. Every pattern has an author action, with limits against overcorrection. `choicesOnly.cueCounts` totals solver cue codes and links them to the same guidance. Zero scripted counts do not establish a clean bank; without solver responses the report says "Probes not run".
+
+Convergence is a bank/course statistic against guessing, including exact fractional tie-credit tails. Only a unique key maximum is listed per item, and it is excluded from `cueCounts`. Consultation is also a bank share, never an item flag. English lexical rules run only for an `en` locale; other languages explicitly say "Not checked: English-only rule" in `applicability`, with null lexical counts. Unicode duplicate, overlap and shared-lead checks still run.
+
+`spreads` separates option counts and includes authored positions, known fixed-order positions, shuffled/unknown counts, length ranks and longest-key counts including ties. Length is visible character count including spaces; rank 1 is shortest and ties share the lower rank. Guessing expectations account for ties; the equal-share reference is items/options. At least 20 items are needed to label the reference script's 10-40% rank band. Use the pooled course spread for smaller banks. Spread key length ranks across the bank; do not move every key to another single rank.
+
 ## Objective levels
 
 In `report.json`, `alignment.objectives[]` carries `bloomCandidates`, every listed level of the leading verb; `verbBloom`, the listed level when there is exactly one, otherwise null; and `modelBloom`, the reviewer's level from the verb and its object, or null. `bloomDiffers` is true only when that single listed level and a non-null reviewer level differ. `levelReason` records the reviewer's reason. Each objective's `ref` resolves to its source pointer in `alignment.places`.
@@ -38,7 +65,7 @@ In `report.json`, `language.lessons[].channels.transcript` holds transcript sent
 
 Terms flags, Tasks evidence and Visuals opportunities accept `screen`, `narration` or `transcript`; their quotes must occur in the cited channel. Alignment support also accepts `tooltip` and preserves transcript instruction links. `availability.checks[].available` and `availability.checks[].instructionLinks[].available` can be `transcript`, labelled "In a transcript only" without orange. Concepts keep one occurrence and role per block across channels.
 
-Prepare fresh answers after this contract change: old prompt versions are rejected, and schema 1 freshness uses `trace-inspect/3`. Copy the current `promptVersion` and `courseHash` from the bundle manifest, including its `-projection-2` suffix when present.
+Prepare fresh answers after this contract change: old prompt versions are rejected, and schema 1 freshness uses `trace-inspect/5`. Copy the current `promptVersion` and `courseHash` from the bundle manifest, including its `-projection-2` suffix when present.
 
 ## Designer comments
 
