@@ -34,6 +34,7 @@ export interface Page {
 }
 
 export interface Lesson {
+	lang?: string;
 	narration?: TypedNarration[];
 	unlinkedNarrationCount?: number;
 	unlinkedNarration?: TypedNarration[];
@@ -258,9 +259,9 @@ function parseTypedCourse(root: Record<string, unknown>): Course {
 		const unlinkedNarrationCount = integer(raw.unlinkedNarrationCount, `${at}.unlinkedNarrationCount`, 0);
 		if (expanded && unlinkedNarrationCount !== unlinkedNarration?.length) fail(`${at}.unlinkedNarrationCount`, "the number of unlinked entries");
 		for (const page of pages) for (const block of page.blocks) for (const member of block.assessmentGroup?.memberRefs ?? []) if (!assessmentRefs.has(member)) fail(`${at}.pages.assessmentGroup.memberRefs`, "an assessment block in this lesson");
-		return { file, title: string(raw.title, `${at}.title`), sha256: string(raw.sha256, `${at}.sha256`), pages, narration, unlinkedNarrationCount, unlinkedNarration };
+		return { file, ...(raw.lang == null ? {} : { lang: string(raw.lang, `${at}.lang`) }), title: string(raw.title, `${at}.title`), sha256: string(raw.sha256, `${at}.sha256`), pages, narration, unlinkedNarrationCount, unlinkedNarration };
 	});
-	return { schema: "praxity-inspect/1", ...(expanded ? { projectionVersion: 2 as const } : {}), revision, studioVersion: string(root.studioVersion, "$.studioVersion"), course: { title: string(metadata.title, "$.course.title"), locale: string(metadata.locale, "$.course.locale") }, lessons };
+	return { schema: "praxity-inspect/1", ...(expanded ? { projectionVersion: 2 as const } : {}), revision, studioVersion: string(root.studioVersion, "$.studioVersion"), course: { title: string(metadata.title, "$.course.title"), locale: metadata.locale == null ? "" : string(metadata.locale, "$.course.locale") }, lessons };
 }
 
 export const TYPED_LIMITS = "Partial text projection: unsupported blocks may contain additional text or media. Correct answers and scoring are unknown; assessments are not automatically classified as activities or knowledge checks. Media details and audio durations are unknown. Narration time is estimated from enabled resolved scripts; disabled and unlinked scripts are excluded. Feedback is separate from on-screen prose counts. Reading and course timing omit unprojected content and media playback.";
