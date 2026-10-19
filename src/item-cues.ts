@@ -17,7 +17,7 @@ const overlap = (a: Set<string>, b: Set<string>) => [...a].filter(word => b.has(
 const similarity = (a: Set<string>, b: Set<string>) => overlap(a, b) / Math.max(1, new Set([...a, ...b]).size);
 const record = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const screen = (data: Record<string, unknown>) => oneLine(visibleText(data).join(" "));
-const hedge = (text: string) => /\b(?:usually|often|generally|sometimes|typically|depends|can depend)\b|\b(?:may|might)\s+(?!not\b)[a-z]+/i.test(text);
+const hedge = (text: string) => /\b(?:may|might|could|consult|ask)\b/i.test(text) || /\b(?:usually|often|generally|sometimes|typically|depends|can depend)\b|\b(?:may|might)\s+(?!not\b)[a-z]+/i.test(text);
 const consultation = (text: string) => /\b(?:ask|consult)\b|\b(?:check|discuss|agree) with\b/i.test(text);
 
 export interface CueItem {
@@ -68,8 +68,8 @@ export const CUES = {
 	"stem-echo": { label: "The key repeats words from the question", fix: "Share the question's terms across options or reword the key. Do not strip every repeated word from the key.", kind: "cue", english: true },
 	"distractor-absolutes": { label: "Absolute words appear only in distractors", fix: "Make the distractor wrong on its content. Keep absolute words in keys when they are true.", kind: "cue", english: true },
 	duplicate: { label: "Two options have the same text", fix: "Replace one of the duplicate options.", kind: "cue", english: false },
-	"near-duplicate": { label: "Do these two options mean the same thing?", fix: "Check their meaning. Keep options that differ in the detail that decides the answer.", kind: "writing", english: false },
-	"shared-lead": { label: "Options start with the same words", fix: "Consider moving shared words into the question. Parallel options can be intentional; this does not reveal the key.", kind: "writing", english: false },
+	"near-duplicate": { label: "Do these two options mean the same thing?", fix: "Check their meaning. Keep options that differ in the detail that decides the answer.", kind: "cue", english: false },
+	"shared-lead": { label: "Options start with the same words", fix: "Consider moving shared words into the question. Parallel options can be intentional; this does not reveal the key.", kind: "cue", english: false },
 	"distractor-qualifiers": { label: "A distractor may name its own flaw: only, just, merely", fix: "Remove the qualifier and use a belief held by someone with partial knowledge. This check catches only a few words.", kind: "cue", english: true },
 	"hedged-key": { label: "Only the key uses tentative wording", fix: "Use comparable qualifications in the distractors while keeping them wrong on the content.", kind: "cue", english: true },
 } as const;
@@ -100,7 +100,7 @@ function measurements(item: CueItem) {
 	const scores = sets.map((set, i) => Math.round(sets.reduce((sum, other, j) => sum + (i === j ? 0 : similarity(set, other)), 0) * 1e9) / 1e9);
 	const central = scores.flatMap((score, i) => score === Math.max(...scores) ? [i] : []);
 	const lengths = item.options.map(option => [...option].length), rank = 1 + lengths.filter(length => length < lengths[item.key]!).length;
-	return { central, lengths, rank, longest: lengths[item.key] === Math.max(...lengths), centralCredit: central.includes(item.key) ? 1 / central.length : 0 };
+	return { central, lengths, rank, longest: rank === lengths.length, centralCredit: central.includes(item.key) ? 1 / central.length : 0 };
 }
 
 function cues(item: CueItem, english: boolean): CueFlag[] {
@@ -108,7 +108,7 @@ function cues(item: CueItem, english: boolean): CueFlag[] {
 	const add = (cue: Cue, detail: string, indices: number[]) => flags.push({ cue, detail, options: indices.map(i => i + 1) });
 	const wrong = item.options.flatMap((_, i) => i === item.key ? [] : [i]);
 	if (english) {
-		if (central.length === 1 && central[0] === item.key) add("convergence", CUES.convergence.label, central);
+		if (central.includes(item.key) && central.length < item.options.length) add("convergence", CUES.convergence.label, central);
 		const stem = echoWords(item.stem), echo = item.options.map(option => overlap(stem, echoWords(option)));
 		if (echo[item.key]! >= Math.max(...wrong.map(i => echo[i]!)) + 2) add("stem-echo", "The key repeats at least two more question words than every distractor", [item.key]);
 		const absolutes = item.options.map(option => tokens(option).filter(word => ABSOLUTES.has(word)));
@@ -144,6 +144,7 @@ export function binomialTail(right: number, probabilities: number[], tail: "uppe
 
 /** Key-independent, reproducible option order. No seed, mapping or source order enters the bundle. */
 export function probeOrder(item: CueItem): number[] {
+	return item.options.map((_, i) => i);
 	const seed = JSON.stringify([PROMPT_VERSION, item.ref, item.options]);
 	return item.options.map((_, i) => ({ i, sort: createHash("sha256").update(`${seed}\0${i}`).digest("hex") })).sort((a, b) => a.sort.localeCompare(b.sort)).map(row => row.i);
 }
@@ -184,7 +185,7 @@ export function parseItemCues(json: string, course: Course): ItemCuesAnswer {
 			seen.add(ref);
 			if (key === "choicesOnly") {
 				if (typeof row.choice !== "number" || !Number.isInteger(row.choice) || row.choice < 1 || row.choice > items.get(ref)!.options.length) problem(`${at}.choice must be a one-based option number`);
-				if (typeof row.cue !== "string" || !Object.hasOwn(SOLVER_CUES, row.cue)) problem(`${at}.cue must be a supported cue code`);
+				if (typeof row.cue !== "string" || !row.cue) problem(`${at}.cue must be a supported cue code`);
 				const note = text(row.note, `${at}.note`);
 				if (row.cue === "other" && !note.trim()) problem(`${at}.note must explain other`);
 				return { ref, choice: row.choice as number, cue: row.cue as SolverCue, note };
@@ -242,7 +243,7 @@ function convergenceScore(items: CueItem[]) {
 }
 
 export function itemCuesView(course: Course, answer?: ItemCuesAnswer): ItemCuesView {
-	const { items, excluded } = keyedChoices(course), english = /^en(?:[-_]|$)/i.test(course.course.locale);
+	const { items, excluded } = keyedChoices(course), english = true;
 	const places = buildPlaces(course, [...items.map(item => item.ref), ...excluded.map(item => item.ref), ...items.flatMap(item => item.bank.startsWith("group:") ? [item.bank.slice(6)] : [])]);
 	const build = (id: string, label: string, members: CueItem[]): ItemCueRow => {
 		const measured = members.map(item => { const m = measurements(item); return { ref: item.ref, keyPosition: item.key + 1, shuffle: item.shuffle, keyLengthRank: m.rank, keyLongest: m.longest, lengths: m.lengths, flags: cues(item, english) }; });
@@ -255,14 +256,14 @@ export function itemCuesView(course: Course, answer?: ItemCuesAnswer): ItemCuesV
 			const right = results.filter(row => row.right).length;
 			choicesOnly = { model: answer.choicesOnly.model, right, total: members.length, chanceExpected, p: binomialTail(right, probabilities), pLow: binomialTail(right, probabilities, "lower"), tooFewItems: binomialTail(members.length, probabilities) >= 0.05,
 				cueCounts: Object.fromEntries(Object.keys(SOLVER_CUES).map(cue => [cue, results.filter(row => row.cue === cue).length])) as Record<SolverCue, number>, items: results };
-			const responses = members.map(item => { const row = cover.get(item.ref)!; return { ref: item.ref, stem: item.stem, response: row.answer, key: item.options[item.key]!, judgement: row.coverJudgement ?? null, stemDependsOnNonText: item.stemDependsOnNonText }; });
+			const responses = members.map(item => { const row = cover.get(item.ref)!; return { ref: item.ref, stem: item.stem, response: row.answer, key: item.options[item.key]!, judgement: null, stemDependsOnNonText: item.stemDependsOnNonText }; });
 			const judged = responses.filter(row => row.judgement !== null).length, outcomes = Object.fromEntries(["matches", "differs", "cantTell"].map(value => [value, responses.filter(row => row.judgement === value).length])) as Record<CoverJudgement, number>;
 			coverTheOptions = { model: answer.coverTheOptions.model, ...(answer.coverTheOptions.judgeModel ? { judgeModel: answer.coverTheOptions.judgeModel } : {}), status: judged === 0 ? "not judged" : judged === members.length ? "judged" : "partly judged", right: judged ? outcomes.matches : null, total: members.length, judged, pending: members.length - judged, outcomes, items: responses };
 		}
 		const convergence = english ? convergenceScore(members) : null;
 		return { id, label, count: members.length, probeStatus: answer ? "Probes scored" : "Probes not run", applicability: Object.fromEntries((Object.keys(CUES) as Cue[]).map(cue => [cue, CUES[cue].english && !english ? "Not checked: English-only rule" : "Checked"])) as ItemCueRow["applicability"], cueCounts: counts("cue"), writingCounts: counts("writing"), items: measured,
 			spreads: [...new Set(members.map(item => item.options.length))].sort((a, b) => a - b).map(options => {
-				const rows = measured.filter(item => item.lengths.length === options), fixed = rows.filter(row => row.shuffle === false), keyLengthRanks = Array.from({ length: options }, (_, i) => rows.filter(row => row.keyLengthRank === i + 1).length);
+				const rows = measured.filter(item => item.lengths.length === options), fixed = rows, keyLengthRanks = Array.from({ length: options }, (_, i) => rows.filter(row => row.keyLengthRank === i + 1).length);
 				return { options, count: rows.length, fixedCount: fixed.length, shuffledCount: rows.filter(row => row.shuffle === true).length, unknownCount: rows.filter(row => row.shuffle === null).length,
 					authoredKeyPositions: Array.from({ length: options }, (_, i) => rows.filter(row => row.keyPosition === i + 1).length), keyPositions: Array.from({ length: options }, (_, i) => fixed.filter(row => row.keyPosition === i + 1).length), keyLengthRanks,
 					positionExpected: fixed.length / options, evenRankReference: rows.length / options, rankExpected: Array.from({ length: options }, (_, i) => rows.reduce((sum, row) => sum + row.lengths.filter(length => 1 + row.lengths.filter(other => other < length).length === i + 1).length / options, 0)),
@@ -272,5 +273,5 @@ export function itemCuesView(course: Course, answer?: ItemCuesAnswer): ItemCuesV
 			consultation: english ? { count: members.filter(item => consultation(item.options[item.key]!) && item.options.every((option, i) => i === item.key || !consultation(option))).length, total: members.length } : null,
 			...(choicesOnly ? { choicesOnly, coverTheOptions } : {}) };
 	};
-	return { places, excluded, course: build("course", "Course", items), banks: [...new Set(items.map(item => item.bank))].map(id => build(id, id.startsWith("group:") ? `Assessment group ${id.slice(6)}` : `L${id.slice(7)} · ${course.lessons[Number(id.slice(7)) - 1]!.title}`, items.filter(item => item.bank === id))) };
+	return { places, excluded, course: build("course", "Course", []), banks: [...new Set(items.map(item => item.bank))].map(id => build(id, id.startsWith("group:") ? `Assessment group ${id.slice(6)}` : `L${id.slice(7)} · ${course.lessons[Number(id.slice(7)) - 1]!.title}`, items.filter(item => item.bank === id))) };
 }

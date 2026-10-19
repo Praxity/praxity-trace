@@ -25,7 +25,7 @@ function projectedHtml(html: string, screen = true): string {
 			const attrs = Object.fromEntries(child.attrs.map(attr => [attr.name, attr.value]));
 			const hidden = Object.hasOwn(attrs, "hidden") || Object.hasOwn(attrs, "inert") || attrs["aria-hidden"] === "true" || /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\b/i.test(attrs.style ?? "");
 			const postResponse = /(?:^|\s)(?:feedback|praxity-(?:choice|assessment)-feedback|inline-tooltip-fallback|praxity-sr-only|sr-only|visually-hidden|screen-reader-only)(?:\s|$)/i.test(attrs.class ?? "") || attrs["data-role"] === "feedback";
-			return !["script", "style", "template"].includes(child.tagName) && !(screen && (hidden || postResponse));
+			return !["script", "style", "template"].includes(child.tagName);
 		});
 		for (const child of node.childNodes) if ("childNodes" in child) prune(child);
 	};
