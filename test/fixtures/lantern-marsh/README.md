@@ -65,12 +65,13 @@ metadata and any source migration stay outside this fixture.
 
 Run this PowerShell from the Trace repository root to regenerate. It creates a
 unique scratch directory and writes native inspect stdout as UTF-8 without a
-BOM. Set `$studio` to the same reviewed CLI build when reproducing this capture.
+BOM. Set `PRAXITY_CLI` to the same reviewed Studio CLI build (`praxity.mjs`) before reproducing this capture.
 
 ```powershell
 $fixture = (Resolve-Path 'test/fixtures/lantern-marsh').Path
-$studio = 'D:\GitHub\praxity-studio\dist\studio-cli\praxity.mjs'
-$scratchRoot = 'D:\tmp\trace-fixture'
+$studio = $env:PRAXITY_CLI
+if (-not $studio) { throw 'Set PRAXITY_CLI to the reviewed Studio CLI praxity.mjs' }
+$scratchRoot = Join-Path ([IO.Path]::GetTempPath()) 'trace-fixture'
 @'
 const { cpSync, mkdirSync, mkdtempSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
@@ -99,5 +100,5 @@ candidate evidence and has zero enabled spoken words on all four pages.
 
 ```powershell
 node --test test/larger-course.test.ts
-node src/cli.ts report test/fixtures/lantern-marsh/inspect.json --out D:\tmp\trace-fixture\report
+node src/cli.ts report test/fixtures/lantern-marsh/inspect.json --out (Join-Path ([IO.Path]::GetTempPath()) 'trace-fixture-report')
 ```
