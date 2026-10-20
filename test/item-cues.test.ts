@@ -764,6 +764,9 @@ test("excluded choices are counted per bank and course, including wholly exclude
 	assert.deepEqual(view.banks.map(bank => [bank.id, bank.count, bank.excludedCount]), [["group:1.1.9", 1, 1], ["lesson:1", 5, 1], ["lesson:2", 0, 1]]);
 	assert.deepEqual(view.excluded.map(item => item.banks), [["group:1.1.9"], ["lesson:1"], ["lesson:2"]]);
 	assert.equal(view.banks[2]!.masked.applies, false);
+	assert.equal(view.banks[2]!.masked.reason, "no-included-items");
+	assert.match(view.banks[2]!.masked.detail, /no-key-or-poll/);
+	assert.doesNotMatch(view.banks[2]!.masked.detail, /locale: en/);
 	assert.match(renderItemCues(view), /L2[^<]*clean<\/h3><p>1 item left out/);
 	const course = parseCourse(JSON.stringify(raw)), answer = payload();
 	Object.assign(answer, probeMetadata(course), { courseHash: courseHash(course) });
@@ -781,14 +784,75 @@ test("excluded choices are counted per bank and course, including wholly exclude
 	assert.equal(all.course.excludedCount, 4);
 });
 
-test("overlapping excluded choices count once for the course and once in each owning bank", () => {
+test("overlapping excluded choices have one counting owner and retain group provenance", () => {
 	const raw = fixture(), blocks: Array<Record<string, unknown>> = raw.lessons[1]!.pages[0]!.blocks;
 	const group = { parentRef: null, id: null, type: "assessmentGroup", coverage: "container", location: null, texts: [], assessmentGroup: { memberRefs: ["clean/0"], unresolvedMemberCount: 0, mode: "all", requireAll: false, passingScore: null, pointsOverride: null, aggregation: "mean-of-scored-member-percentages" } };
 	blocks.push({ ...group, ref: "group-a" }, { ...group, ref: "group-b" });
 	const view = itemCuesView(parseCourse(JSON.stringify(raw)));
 	assert.equal(view.course.excludedCount, 1);
-	assert.deepEqual(view.banks.filter(bank => bank.id.startsWith("group:")).map(bank => [bank.count, bank.excludedCount]), [[0, 1], [0, 1]]);
+	assert.deepEqual(view.banks.map(bank => [bank.id, bank.count, bank.excludedCount]), [["lesson:1", 8, 0], ["lesson:2", 0, 1]]);
+	assert.equal(view.banks.reduce((n, bank) => n + bank.excludedCount, 0), 1);
+	assert.equal(view.course.excludedByReason["overlapping-groups"], 1);
+	assert.equal(view.excluded[0]!.bank, "lesson:2");
 	assert.deepEqual(view.excluded[0]!.banks, ["group:2.1.2", "group:2.1.3"]);
+});
+
+test("stable exclusion codes count structural causes per bank and course", () => {
+	const raw = authored(), blocks = raw.lessons[0]!.pages[0]!.blocks;
+	blocks[0]!.assessment.correctness = "open";
+	blocks[0]!.assessment.options.forEach(option => { option.correct = false; });
+	blocks[1]!.assessment.selectionMode = "multiple";
+	blocks[2]!.texts[0]!.value = "Which {unknown} symbol?";
+	blocks[3]!.assessment.options[1]!.correct = true;
+	blocks[4]!.assessment.options.length = 1;
+	const view = itemCuesView(parseCourse(JSON.stringify(raw)));
+	assert.deepEqual(view.excluded.map(item => item.code), ["no-key-or-poll", "multiple-select", "ineligible-stem", "key-count", "insufficient-options"]);
+	assert.equal(view.excludedCount, 5);
+	assert.equal(view.course.maskedExcludedCount, 0);
+	assert.deepEqual(view.course.excludedByReason, {
+		"no-key-or-poll": 1, "multiple-select": 1, "ineligible-stem": 1, "key-count": 1,
+		"insufficient-options": 1, "overlapping-groups": 0, "masked-language": 0, "masked-space": 0,
+	});
+	assert.deepEqual(view.banks[0]!.excludedByReason, view.course.excludedByReason);
+	assert.ok(Object.values(view.banks[1]!.excludedByReason).every(n => n === 0));
+});
+
+test("masked-language counts cover each withheld bank without changing structural counts", () => {
+	for (const language of [{ value: "fr", source: "lesson" }, undefined]) {
+		const raw = authored();
+		Object.assign(raw.lessons[1]!, { language });
+		const view = itemCuesView(parseCourse(JSON.stringify(raw)));
+		assert.equal(view.excludedCount, 0);
+		assert.equal(view.course.count, 9);
+		assert.equal(view.course.maskedExcludedCount, 1);
+		assert.equal(view.course.excludedByReason["masked-language"], 1);
+		assert.deepEqual(view.banks.map(bank => [bank.count, bank.excludedCount, bank.maskedExcludedCount, bank.excludedByReason["masked-language"]]), [[8, 0, 0, 0], [1, 0, 1, 1]]);
+		assert.equal(view.banks.reduce((n, bank) => n + bank.maskedExcludedCount, 0), 1);
+		assert.ok(!view.course.masked.applies);
+	}
+	const raw = authored();
+	raw.lessons[0]!.pages[0]!.blocks[0]!.texts[0]!.value = "Toujours which symbol?";
+	const view = itemCuesView(parseCourse(JSON.stringify(raw)));
+	assert.equal(view.course.maskedExcludedCount, 8, "One conflict withholds the whole bank");
+	assert.equal(view.course.excludedByReason["masked-language"], 8);
+	raw.lessons[0]!.pages[0]!.blocks[1]!.assessment.correctness = "open";
+	const mixed = itemCuesView(parseCourse(JSON.stringify(raw)));
+	assert.equal(mixed.excludedCount, 1);
+	assert.equal(mixed.course.maskedExcludedCount, 7);
+	assert.equal(mixed.course.count, 8);
+	for (const row of [mixed.course, ...mixed.banks]) {
+		assert.equal(Object.values(row.excludedByReason).reduce((sum, n) => sum + n, 0), row.excludedCount + row.maskedExcludedCount);
+	}
+	assert.equal(mixed.banks.reduce((sum, row) => sum + row.excludedByReason["masked-language"], 0), 7);
+	assert.match(renderItemCues(mixed), /7 items withheld from the masked probe/);
+});
+
+test("legacy non-choice assessments do not count as excluded choice candidates", () => {
+	const raw = { ok: true, schema: "praxity-inspect/0", studioVersion: "synthetic", course: { title: "Legacy", locale: "en" }, lessons: [{ file: "lesson.prax", title: "Lesson", sha256: "synthetic", pages: [{ id: "page", number: 1, title: "Checks", blocks: [
+		{ id: "match", type: "assessment", line: 1, data: { assessmentType: "matching", response: { type: "matching", pairs: [] } } },
+		{ id: "order", type: "assessment", line: 2, data: { response: { type: "sequence", items: [] } } },
+	] }] }] };
+	assert.equal(itemCuesView(parseCourse(JSON.stringify(raw))).excludedCount, 0);
 });
 
 test("position spreads use known fixed order and longest counts include ties with guessing expectations", () => {
@@ -1054,8 +1118,8 @@ test("blind bundles fail closed on unconsumed markup in either stems or options,
 	const only = itemCuesView(parseCourse(JSON.stringify(excludedOnly)));
 	assert.equal(only.course.count, 0); assert.match(renderItemCues(only), /Excluded items \(8\)/);
 	assert.match(renderItemCues(only), /Trace left out all 8 items\. The reasons are below/);
-	assert.deepEqual(only.course.masked, HELD);
-	assert.match(renderItemCues(only), /lack confirmed authored English language provenance/);
+	assert.deepEqual(only.course.masked, { applies: false, reason: "no-included-items", detail: "No included single-key choices in this scope. Review excluded items: ineligible-stem." });
+	assert.doesNotMatch(renderItemCues(only), /locale: en/);
 	assert.doesNotMatch(renderItemCues(only), /If keys are unavailable, export/);
 });
 
@@ -1430,6 +1494,9 @@ test("mask-space blocks only its complete bank and never reports partial tails",
 	const raw = authored(); replaceOptions(raw, ["q\u0301", "x\u0301", "f\u0301", "j\u0301"]);
 	const result = await activated(context, raw);
 	assert.equal(result.rows.length, 8); assert.equal(result.view.course.count, 9);
+	assert.equal(result.view.course.maskedExcludedCount, 1);
+	assert.equal(result.view.course.excludedByReason["masked-space"], 1);
+	assert.equal(result.view.banks[1]!.excludedByReason["masked-space"], 1);
 	for (const row of [result.view.course, result.view.banks[1]!]) { noMaskedScore(row.masked); assert.ok(!row.masked.applies); assert.equal(row.masked.reason, "mask-space"); assert.match(row.masked.detail, /2\.1\.1/); }
 	assert.ok(result.view.banks[0]!.masked.applies && result.view.banks[0]!.masked.status === "scored");
 });

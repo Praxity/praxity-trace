@@ -18,9 +18,10 @@ const sources = (view: ItemCuesView, refs: string[]) => [...new Set(refs)].map(r
 
 function summary(row: ItemCueRow): string {
 	const exclusions = row.excludedCount ? `<p>${counted(row.excludedCount, "item")} left out; see Excluded items.</p>` : "";
+	const maskedExclusions = row.maskedExcludedCount ? `<p>${counted(row.maskedExcludedCount, "item")} withheld from the masked probe.</p>` : "";
 	const plain = row.choicesOnly;
 	const masked = row.masked;
-	return exclusions + (masked.applies && masked.status === "scored" ? `<p>Masked guessing-cue probe: ${masked.right} of ${masked.total} right. ${tails(masked)} Smallest attainable upper tail: ${probability(masked.pMin)}; lower tail: ${probability(masked.pLowMin)}.</p>` : "")
+	return exclusions + maskedExclusions + (masked.applies && masked.status === "scored" ? `<p>Masked guessing-cue probe: ${masked.right} of ${masked.total} right. ${tails(masked)} Smallest attainable upper tail: ${probability(masked.pMin)}; lower tail: ${probability(masked.pLowMin)}.</p>` : "")
 		+ (!plain ? `<p><strong>Probes not run.</strong>${row.id === "course" ? ` Run <code>${esc(PROBE_SETUP.inspect)}</code>, then <code>${esc(PROBE_SETUP.prepare)}</code>.` : ""}</p>` : "")
 		+ (plain ? `<p>Does the stem matter? Plain choices-only diagnostic: ${plain.right} of ${plain.total} right. ${tails(plain)} Subject knowledge can identify an option true on its own. Choices-only solver: ${generated(plain.model, esc(plain.model))}.</p>` : "");
 }
