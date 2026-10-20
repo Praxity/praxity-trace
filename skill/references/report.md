@@ -30,7 +30,71 @@ Only single-selection choices with exactly one known key and at least two readab
 - an icon or variable placeholder hides what the learner sees;
 - its question or options still contain square or curly brackets once glossary definitions are removed, even brackets meant as text.
 
-Tooltip definitions stay out of solver inputs. Shuffled and shuffle-unknown items keep authored positions as evidence but are left out of fixed-position counts.
+`itemCues.excludedCount` retains its existing meaning: choices excluded from all
+probes. It equals `itemCues.course.excludedCount`, `excluded.length`, and the sum
+of `banks[].excludedCount`. `count` still counts structurally included choices,
+even when unscored. Course `count` equals the sum of bank counts.
+
+Every course and bank row also has `excludedByReason`, with every stable code
+below present as a nonnegative integer, including zeros, and `maskedExcludedCount`.
+The latter counts structurally included items withheld from masked preparation;
+it does not change `count` or the plain/cover denominators. One language or
+mask-space failure withholds every included item in that bank, so each receives
+the bank's masked reason. Eligible banks remain runnable even when pooled course
+scoring is withheld. Course `maskedExcludedCount` equals the bank sum. For each row:
+
+- `sum(excludedByReason)` equals `excludedCount + maskedExcludedCount`.
+- The candidate inventory is `count + excludedCount` distinct choices.
+- The masked runnable inventory is `count - maskedExcludedCount`.
+
+Each structurally excluded record carries `code`, human-readable `reason`, one
+counting owner `bank`, and `banks` for group-membership provenance. An overlapping
+choice counts once under its lesson, retaining all group refs in `banks`; it never
+counts twice in the course or bank totals. Groups with no uniquely owned choices
+remain provenance rather than extra counting banks. Structural reasons are the
+first applicable cause. Structural and masked-only counts are disjoint.
+
+| Stable code | Meaning |
+|---|---|
+| `no-key-or-poll` | Correctness is open/unavailable or no option has a key. Studio cannot distinguish a missing `(x)` from an intentional poll, even with `{scored}`. |
+| `multiple-select` | Multiple selection is outside these single-key probes. |
+| `insufficient-options` | Fewer than two known options. |
+| `key-count` | More than one key on a single-selection item. |
+| `ineligible-stem` | Stem or option text has unsupported markup, unresolved brackets or no comparable text. |
+| `overlapping-groups` | The choice has ambiguous assessment-group ownership. |
+| `masked-language` | Masked-only exclusion: authored English provenance is missing, malformed, defaulted, foreign or conflicts with listed text markers. |
+| `masked-space` | Masked-only exclusion: a safe injective mask could not be built. |
+
+Wholly excluded banks remain with `count: 0`, no probe scores and
+`masked.reason: "no-included-items"`. Their detail names the structural codes to
+review in `excluded`, rather than prescribing an unrelated language change. Such
+empty banks do not themselves invalidate scores for other included banks;
+source-count reconciliation and exclusion review remain separate gate checks.
+
+Consumers must stop if the writer's declared scored-choice count differs from
+Trace's included `course.count` or the corresponding bank count. Trace includes
+unscored keyed checks too, so establish the same inventory scope before comparing;
+never shrink a declared count to hide a missing key. Treat `multiple-select` and
+explicitly declared polls as expected exclusions outside the single-key gate,
+recording their refs in the source inventory. A `no-key-or-poll` code alone is
+not a poll declaration. Expected exclusions do not waive a count mismatch; resolve
+the scope explicitly. Unexpected structural exclusions stop the gate.
+
+Read the existing top-level `itemCues.excludedCount` for the structural course
+total. Missing per-row `excludedCount`, `excludedByReason` or `maskedExcludedCount`
+means an older Trace cannot supply this accounting: stop and update it, rather
+than treating absent fields as zeros. Masked-language or masked-space exclusions
+leave the masked gate unavailable; stop and resolve the stated reason.
+
+Tooltip definitions stay out of solver inputs. Schema 1, projection 2 reads the
+optional boolean `assessment.shuffle`. `true` means shuffled and `false` means
+fixed order. Absence in older Studio output remains unknown. Present nonboolean
+values are rejected. Shuffled and shuffle-unknown items keep authored positions
+as evidence but are left out of fixed-position counts.
+Items counted by `spreads[].unknownCount` are not covered by the position check.
+If their sum is positive, warn that coverage is incomplete; a gate requiring
+verified shuffle or position coverage must stop, even if every reported fixed
+position count is zero.
 
 Each item has a visible `label` with its full block ref and a short stem excerpt, used in the runnable diagnostic result arrays. HTML rows add the source file and line.
 

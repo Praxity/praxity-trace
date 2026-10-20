@@ -6,7 +6,7 @@ export interface TypedText { ref: string; role: string; value: string; format: "
 export interface Asset { uri: string; availability: "present" | "missing" | "remote" | "blocked"; sha256: string | null }
 export interface FormattedText { value: string; format: TypedText["format"] }
 export interface TypedMedia { kind: string; source: Asset | null; alt: string | null; decorative: boolean; description: FormattedText | null; caption: FormattedText | null; transcript: FormattedText | null; captionTracks: Array<{ source: Asset | null; language: string | null; label: string | null; kind: string | null; default: boolean }> }
-export interface TypedAssessment { responseType: string; correctness: "keyed" | "open" | "unavailable"; scoring: { gradingMode: string; scored: boolean; points: number | null; required: boolean; attempts: number; feedbackMode: string | null }; [key: string]: unknown }
+export interface TypedAssessment { responseType: string; correctness: "keyed" | "open" | "unavailable"; shuffle?: boolean; scoring: { gradingMode: string; scored: boolean; points: number | null; required: boolean; attempts: number; feedbackMode: string | null }; [key: string]: unknown }
 export interface TypedAssessmentGroup { memberRefs: string[]; unresolvedMemberCount: number; mode: string; requireAll: boolean; passingScore: number | null; pointsOverride: number | null; aggregation: string }
 export interface TypedNarration extends TypedText { blockRef: string | null; pageRef: string | null; origin: "sidecar" | "derived"; disabled: boolean; audio?: Asset | null; duration?: { seconds: number; provenance: "sidecar-recorded"; measurement: "unknown"; isFullFileDuration: false } | null; timings?: unknown; audioProvenance?: unknown; unresolvedAnchor?: { kind: string; type: string | null; page: number | null; label: string | null } }
 
@@ -219,6 +219,7 @@ function parseTypedCourse(root: Record<string, unknown>): Course {
 				if (expanded && rawBlock.assessment !== undefined) {
 					const raw = object(rawBlock.assessment, `${where}.assessment`), score = object(raw.scoring, `${where}.assessment.scoring`);
 					if (!["keyed", "open", "unavailable"].includes(raw.correctness as string)) fail(`${where}.assessment.correctness`, "keyed, open or unavailable");
+					if (raw.shuffle !== undefined) boolean(raw.shuffle, `${where}.assessment.shuffle`);
 					assessment = { ...raw, responseType: string(raw.responseType, `${where}.assessment.responseType`), correctness: raw.correctness as TypedAssessment["correctness"], scoring: { gradingMode: string(score.gradingMode, `${where}.assessment.scoring.gradingMode`), scored: boolean(score.scored, `${where}.assessment.scoring.scored`), points: score.points === null ? null : finite(score.points, `${where}.assessment.scoring.points`), required: boolean(score.required, `${where}.assessment.scoring.required`), attempts: integer(score.attempts, `${where}.assessment.scoring.attempts`, 0), feedbackMode: optional(score.feedbackMode, `${where}.assessment.scoring.feedbackMode`) } };
 				}
 				let assessmentGroup: TypedAssessmentGroup | undefined;
