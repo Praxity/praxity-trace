@@ -725,6 +725,72 @@ test("French and unknown locales explicitly skip English rules while checking du
 	}
 });
 
+test("inspect JSON preserves shuffled, fixed and older unknown choice order", () => {
+	for (const [setting, expected] of [
+		[{ shuffle: true }, { shuffle: true, fixed: 0, shuffled: 1, unknown: 0, positions: [0, 0, 0, 0] }],
+		[{ shuffle: false }, { shuffle: false, fixed: 1, shuffled: 0, unknown: 0, positions: [0, 0, 1, 0] }],
+		[{}, { shuffle: null, fixed: 0, shuffled: 0, unknown: 1, positions: [0, 0, 0, 0] }],
+	] as const) {
+		const raw = replaceOptions(fixture(), balanced, 2);
+		Object.assign(raw.lessons[1]!.pages[0]!.blocks[0]!.assessment, setting);
+		const view = itemCuesView(parseCourse(JSON.stringify(raw))), row = view.banks[1]!, spread = row.spreads[0]!;
+		assert.equal(row.items[0]!.shuffle, expected.shuffle);
+		assert.deepEqual([spread.fixedCount, spread.shuffledCount, spread.unknownCount], [expected.fixed, expected.shuffled, expected.unknown]);
+		assert.deepEqual(spread.keyPositions, expected.positions);
+		assert.equal(view.course.spreads[0]!.fixedCount, expected.fixed);
+		assert.match(renderItemCues(view), new RegExp(`${expected.fixed} known fixed order; ${expected.shuffled} shuffled at runtime; ${expected.unknown} shuffle unknown`));
+	}
+});
+
+test("inspect rejects present shuffle values that are not booleans", () => {
+	for (const shuffle of [null, "false", 0, 1, {}]) {
+		const raw = fixture();
+		Object.assign(raw.lessons[0]!.pages[0]!.blocks[0]!.assessment, { shuffle });
+		assert.throws(() => parseCourse(JSON.stringify(raw)), /assessment.shuffle: expected a boolean/);
+	}
+});
+
+test("excluded choices are counted per bank and course, including wholly excluded groups and lessons", () => {
+	const raw = fixture(), blocks: Array<Record<string, unknown>> = raw.lessons[0]!.pages[0]!.blocks;
+	blocks.push({ ref: "group", parentRef: null, id: null, type: "assessmentGroup", coverage: "container", location: null, texts: [], assessmentGroup: { memberRefs: ["leaking/0", "leaking/1"], unresolvedMemberCount: 0, mode: "all", requireAll: false, passingScore: null, pointsOverride: null, aggregation: "mean-of-scored-member-percentages" } });
+	for (const block of [raw.lessons[0]!.pages[0]!.blocks[0]!, raw.lessons[0]!.pages[0]!.blocks[2]!, raw.lessons[1]!.pages[0]!.blocks[0]!]) {
+		block.assessment.correctness = "open";
+		block.assessment.options.forEach(option => { option.correct = false; });
+	}
+	const view = itemCuesView(parseCourse(JSON.stringify(raw)));
+	assert.equal(view.excludedCount, 3);
+	assert.equal(view.course.excludedCount, 3);
+	assert.equal(view.course.count, 6);
+	assert.deepEqual(view.banks.map(bank => [bank.id, bank.count, bank.excludedCount]), [["group:1.1.9", 1, 1], ["lesson:1", 5, 1], ["lesson:2", 0, 1]]);
+	assert.deepEqual(view.excluded.map(item => item.banks), [["group:1.1.9"], ["lesson:1"], ["lesson:2"]]);
+	assert.equal(view.banks[2]!.masked.applies, false);
+	assert.match(renderItemCues(view), /L2[^<]*clean<\/h3><p>1 item left out/);
+	const course = parseCourse(JSON.stringify(raw)), answer = payload();
+	Object.assign(answer, probeMetadata(course), { courseHash: courseHash(course) });
+	const included = new Set(keyedChoices(course).items.map(item => item.ref));
+	answer.choicesOnly.answers = answer.choicesOnly.answers.filter(item => included.has(item.ref));
+	answer.coverTheOptions.answers = answer.coverTheOptions.answers.filter(item => included.has(item.ref));
+	const scored = itemCuesView(course, parseItemCues(JSON.stringify(answer), course));
+	assert.equal(scored.banks[2]!.choicesOnly, undefined);
+	assert.equal(scored.banks[2]!.coverTheOptions, undefined);
+	assert.equal(scored.banks[2]!.probeStatus, "Probes not run");
+	blocks[1]!.assessment = { ...raw.lessons[0]!.pages[0]!.blocks[1]!.assessment, correctness: "open" };
+	const all = itemCuesView(parseCourse(JSON.stringify(raw)));
+	assert.equal(all.banks.find(bank => bank.id === "group:1.1.9")!.count, 0);
+	assert.equal(all.banks.find(bank => bank.id === "group:1.1.9")!.excludedCount, 2);
+	assert.equal(all.course.excludedCount, 4);
+});
+
+test("overlapping excluded choices count once for the course and once in each owning bank", () => {
+	const raw = fixture(), blocks: Array<Record<string, unknown>> = raw.lessons[1]!.pages[0]!.blocks;
+	const group = { parentRef: null, id: null, type: "assessmentGroup", coverage: "container", location: null, texts: [], assessmentGroup: { memberRefs: ["clean/0"], unresolvedMemberCount: 0, mode: "all", requireAll: false, passingScore: null, pointsOverride: null, aggregation: "mean-of-scored-member-percentages" } };
+	blocks.push({ ...group, ref: "group-a" }, { ...group, ref: "group-b" });
+	const view = itemCuesView(parseCourse(JSON.stringify(raw)));
+	assert.equal(view.course.excludedCount, 1);
+	assert.deepEqual(view.banks.filter(bank => bank.id.startsWith("group:")).map(bank => [bank.count, bank.excludedCount]), [[0, 1], [0, 1]]);
+	assert.deepEqual(view.excluded[0]!.banks, ["group:2.1.2", "group:2.1.3"]);
+});
+
 test("position spreads use known fixed order and longest counts include ties with guessing expectations", () => {
 	const raw = replaceOptions(fixture(), balanced, 2), course = parseCourse(JSON.stringify(raw));
 	const block = course.lessons[1]!.pages[0]!.blocks[0]!;
@@ -1127,7 +1193,8 @@ test("HTML allow-list refuses hiding, unfamiliar markup and malformed attributes
 		const raw = fixture(), block = raw.lessons[1]!.pages[0]!.blocks[0]!;
 		block.texts[0]!.format = "html"; block.texts[0]!.value = html;
 		const view = itemCuesView(parseCourse(JSON.stringify(raw)));
-		assert.equal(view.banks.length, 1, html); assert.equal(view.excludedCount, 1, html);
+		assert.deepEqual(view.banks.map(bank => [bank.count, bank.excludedCount]), [[8, 0], [0, 1]], html);
+		assert.equal(view.excludedCount, 1, html);
 		assert.match(view.excluded[0]!.reason, /Trace can't safely check/, html);
 	}
 });

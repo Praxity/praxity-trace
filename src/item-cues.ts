@@ -44,6 +44,8 @@ export interface CueItem {
 	stemDependsOnNonText: boolean;
 }
 
+export interface ExcludedCueItem { ref: string; label: string; reason: string; banks: string[] }
+
 /** Studio's visible inline forms, without CSS or attributes that could hide their text. */
 function probeHtml(html: string): string | null {
 	let rejected: string | null = null, malformed = false;
@@ -91,13 +93,13 @@ function probeHtml(html: string): string | null {
 }
 
 /** Reads only the existing course model and shared visible-text projection. */
-export function keyedChoices(course: Course): { items: CueItem[]; excluded: Array<{ ref: string; label: string; reason: string }> } {
+export function keyedChoices(course: Course): { items: CueItem[]; excluded: ExcludedCueItem[] } {
 	const index = indexCourse(course), groups = new Map<string, Set<string>>();
 	for (const item of index.blocks) for (const source of item.block.assessmentGroup?.memberRefs ?? []) {
 		const member = index.sourceBlock(source)?.ref;
 		if (member) groups.set(member, new Set([...(groups.get(member) ?? []), item.ref]));
 	}
-	const items: CueItem[] = [], excluded: Array<{ ref: string; label: string; reason: string }> = [];
+	const items: CueItem[] = [], excluded: ExcludedCueItem[] = [];
 	for (const { ref, block, lessonNumber, page } of index.blocks) {
 		const typed = course.schema === "praxity-inspect/1";
 		if (typed ? block.type !== "assessment" : !["choice", "assessment"].includes(block.type)) continue;
@@ -106,7 +108,9 @@ export function keyedChoices(course: Course): { items: CueItem[]; excluded: Arra
 		const stemTexts = texts.filter(text => text.role === "prompt" || text.role === "body");
 		const stem = screen(typed ? { typedTexts: stemTexts } : { question: block.data.question ?? block.data.prompt ?? assessmentStem(block.data), description: block.data.description });
 		const label = `${ref} · ${previewText(stem, 60)}`;
-		const skip = (reason: string) => excluded.push({ ref, label, reason });
+		const bankGroups = [...(groups.get(ref) ?? [])];
+		const banks = bankGroups.length ? bankGroups.map(group => `group:${group}`) : [`lesson:${lessonNumber}`];
+		const skip = (reason: string) => excluded.push({ ref, label, reason, banks });
 		if (typed && (!block.assessment || block.assessment.correctness !== "keyed")) { skip("Assessment correctness unavailable or open"); continue; }
 		const response = record(block.data.response) ? block.data.response : {};
 		if (block.assessment?.selectionMode === "multiple" || block.data.selectionMode === "multiple" || response.selectionMode === "multiple" || block.data.multiple === true) { skip("Multiple selection is outside the single-key probes"); continue; }
@@ -127,10 +131,9 @@ export function keyedChoices(course: Course): { items: CueItem[]; excluded: Arra
 			skip(`${bracketField === 0 ? "The question" : `Option ${bracketField}`} still contains '${bracket}'. ${BRACKET_REMEDY}`); continue;
 		}
 		if (visible.some(label => !normal(label))) { skip("An option has no comparable text"); continue; }
-		const bankGroups = [...(groups.get(ref) ?? [])];
 		if (bankGroups.length > 1) { skip("Choice belongs to overlapping assessment groups"); continue; }
 		const shuffle = typed ? block.assessment?.shuffle : block.data.shuffle ?? response.shuffle;
-		items.push({ ref, label, stem, bank: bankGroups[0] ? `group:${bankGroups[0]}` : `lesson:${lessonNumber}`, key: keys[0]!, options: visible,
+		items.push({ ref, label, stem, bank: banks[0]!, key: keys[0]!, options: visible,
 			shuffle: typeof shuffle === "boolean" ? shuffle : null,
 			stemDependsOnNonText: (index.page(lessonNumber, page)?.blocks ?? []).some(b => Boolean(b.media?.length) || ["image", "audio", "video", "code", "example"].includes(b.type) || b.coverage === "unsupported"),
 		});
@@ -446,7 +449,7 @@ export interface CoverScore {
 	items: Array<{ ref: string; label: string; stem: string; response: string; key: string; judgement: CoverJudgement | null; stemDependsOnNonText: boolean }>;
 }
 export interface ItemCueRow {
-	id: string; label: string; count: number; probeStatus: "Probes not run" | "Probes scored";
+	id: string; label: string; count: number; excludedCount: number; probeStatus: "Probes not run" | "Probes scored";
 	applicability: Record<Cue, "Checked" | "Not checked: English-only rule">;
 	cueCounts: Partial<Record<Cue, number | null>>; writingCounts: Partial<Record<Cue, number | null>>;
 	items: Array<{ ref: string; label: string; keyPosition: number; shuffle: boolean | null; keyLengthRank: number; keyLongest: boolean; lengths: number[]; flags: CueFlag[] }>;
@@ -455,7 +458,7 @@ export interface ItemCueRow {
 	consultation: { count: number; total: number } | null; chanceExpected: number;
 	choicesOnly?: ProbeScore; masked: MaskUnavailable | MaskReady | (ProbeScore & { status: "scored" }); coverTheOptions?: CoverScore;
 }
-export interface ItemCuesView { places: Places; excludedCount: number; excluded: Array<{ ref: string; label: string; reason: string }>; course: ItemCueRow; banks: ItemCueRow[] }
+export interface ItemCuesView { places: Places; excludedCount: number; excluded: ExcludedCueItem[]; course: ItemCueRow; banks: ItemCueRow[] }
 
 /** Exact fractional tie-credit distribution under random key placement; no rounded-credit approximation. */
 function convergenceScore(items: CueItem[]) {
@@ -479,15 +482,16 @@ function convergenceScore(items: CueItem[]) {
 export function itemCuesView(course: Course, answer?: ItemCuesAnswer): ItemCuesView {
 	const { items, excluded } = keyedChoices(course), english = englishLocale(course.course.locale);
 	const plan = maskedPlan(course, items, answer?.seed ?? 0);
-	const places = buildPlaces(course, [...items.map(item => item.ref), ...excluded.map(item => item.ref), ...items.flatMap(item => item.bank.startsWith("group:") ? [item.bank.slice(6)] : [])]);
+	const bankIds = [...new Set([...items.map(item => item.bank), ...excluded.flatMap(item => item.banks)])];
+	const places = buildPlaces(course, [...items.map(item => item.ref), ...excluded.map(item => item.ref), ...bankIds.filter(id => id.startsWith("group:")).map(id => id.slice(6))]);
 	const build = (id: string, label: string, members: CueItem[]): ItemCueRow => {
-		const eligibility = id === "course" ? plan.course : plan.banks[id]!;
+		const eligibility = id === "course" ? plan.course : plan.banks[id] ?? maskedLanguage(course, members);
 		let masked: ItemCueRow["masked"] = eligibility;
 		const measured = members.map(item => { const m = measurements(item); return { ref: item.ref, label: item.label, keyPosition: item.key + 1, shuffle: item.shuffle, keyLengthRank: m.rank, keyLongest: m.longest, lengths: m.lengths, flags: cues(item, english) }; });
 		const probabilities = members.map(item => 1 / item.options.length), chanceExpected = probabilities.reduce((sum, p) => sum + p, 0);
 		const counts = (kind: "cue" | "writing") => Object.fromEntries((Object.keys(CUES) as Cue[]).filter(cue => CUES[cue].kind === kind).map(cue => [cue, CUES[cue].english && !english ? null : measured.filter(item => item.flags.some(flag => flag.cue === cue)).length]));
 		let choicesOnly: ProbeScore | undefined, coverTheOptions: CoverScore | undefined;
-		if (answer) {
+		if (answer && members.length) {
 			const score = (probe: ChoiceAnswers, isMasked = false): ProbeScore => {
 				const choices = new Map(probe.answers.map(row => [row.ref, row]));
 				const results = members.map(item => { const row = choices.get(item.ref)!, chosen = answer.optionOrder[item.ref]![row.choice - 1]!; const form = isMasked ? plan.forms.get(item.ref)! : undefined; return { ref: item.ref, label: item.label, right: chosen === item.key, response: item.options[chosen]!, key: item.options[item.key]!, cue: row.cue, note: row.note, ...(form ? { stem: item.stem, masked: { stem: form.stem, response: form.options[chosen]!, key: form.options[item.key]! } } : {}) }; });
@@ -504,7 +508,7 @@ export function itemCuesView(course: Course, answer?: ItemCuesAnswer): ItemCuesV
 			coverTheOptions = { model: answer.coverTheOptions.model, ...(answer.coverTheOptions.judgeModel ? { judgeModel: answer.coverTheOptions.judgeModel } : {}), status: judged === 0 ? "not judged" : judged === members.length ? "judged" : "partly judged", right: judged ? outcomes.matches + outcomes.alsoCorrect : null, total: members.length, judged, pending: members.length - judged, outcomes, items: responses };
 		}
 		const convergence = english ? convergenceScore(members) : null;
-		return { id, label, count: members.length, probeStatus: answer ? "Probes scored" : "Probes not run", applicability: Object.fromEntries((Object.keys(CUES) as Cue[]).map(cue => [cue, CUES[cue].english && !english ? "Not checked: English-only rule" : "Checked"])) as ItemCueRow["applicability"], cueCounts: counts("cue"), writingCounts: counts("writing"), items: measured,
+		return { id, label, count: members.length, excludedCount: id === "course" ? excluded.length : excluded.filter(item => item.banks.includes(id)).length, probeStatus: answer && members.length ? "Probes scored" : "Probes not run", applicability: Object.fromEntries((Object.keys(CUES) as Cue[]).map(cue => [cue, CUES[cue].english && !english ? "Not checked: English-only rule" : "Checked"])) as ItemCueRow["applicability"], cueCounts: counts("cue"), writingCounts: counts("writing"), items: measured,
 			spreads: [...new Set(members.map(item => item.options.length))].sort((a, b) => a - b).map(options => {
 				const rows = measured.filter(item => item.lengths.length === options), fixed = rows.filter(row => row.shuffle === false), keyLengthRanks = Array.from({ length: options }, (_, i) => rows.filter(row => row.keyLengthRank === i + 1).length);
 				return { options, count: rows.length, fixedCount: fixed.length, shuffledCount: rows.filter(row => row.shuffle === true).length, unknownCount: rows.filter(row => row.shuffle === null).length,
@@ -516,5 +520,5 @@ export function itemCuesView(course: Course, answer?: ItemCuesAnswer): ItemCuesV
 			consultation: english ? { count: members.filter(item => consultation(item.options[item.key]!) && item.options.every((option, i) => i === item.key || !consultation(option))).length, total: members.length } : null,
 			masked, ...(choicesOnly ? { choicesOnly, coverTheOptions } : {}) };
 	};
-	return { places, excludedCount: excluded.length, excluded, course: build("course", "Course", items), banks: [...new Set(items.map(item => item.bank))].map(id => build(id, id.startsWith("group:") ? `Assessment group ${id.slice(6)}` : `L${id.slice(7)} · ${course.lessons[Number(id.slice(7)) - 1]!.title}`, items.filter(item => item.bank === id))) };
+	return { places, excludedCount: excluded.length, excluded, course: build("course", "Course", items), banks: bankIds.map(id => build(id, id.startsWith("group:") ? `Assessment group ${id.slice(6)}` : `L${id.slice(7)} · ${course.lessons[Number(id.slice(7)) - 1]!.title}`, items.filter(item => item.bank === id))) };
 }

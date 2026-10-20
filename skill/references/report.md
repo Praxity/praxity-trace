@@ -30,7 +30,20 @@ Only single-selection choices with exactly one known key and at least two readab
 - an icon or variable placeholder hides what the learner sees;
 - its question or options still contain square or curly brackets once glossary definitions are removed, even brackets meant as text.
 
-Tooltip definitions stay out of solver inputs. Shuffled and shuffle-unknown items keep authored positions as evidence but are left out of fixed-position counts.
+`itemCues.course.excludedCount` and `itemCues.banks[].excludedCount` count excluded
+choice candidates, including choices with no key. `itemCues.excludedCount` retains
+the same course total. `count` still counts only included choices. Banks whose
+choices are all excluded remain present with `count: 0` and no probe scores.
+Each `excluded[]` record carries `banks`, the owning bank IDs. A choice in
+overlapping groups counts once in each group and once in the course total, so
+bank exclusion counts need not sum to the course total. These counts describe
+exclusions; consumers decide whether they stop a gate.
+
+Tooltip definitions stay out of solver inputs. Schema 1, projection 2 reads the
+optional boolean `assessment.shuffle`. `true` means shuffled and `false` means
+fixed order. Absence in older Studio output remains unknown. Present nonboolean
+values are rejected. Shuffled and shuffle-unknown items keep authored positions
+as evidence but are left out of fixed-position counts.
 
 Each item has a visible `label` with its full block ref and a short stem excerpt, used in the runnable diagnostic result arrays. HTML rows add the source file and line.
 
