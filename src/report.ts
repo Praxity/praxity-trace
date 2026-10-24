@@ -8,7 +8,7 @@ import { FLOW_SCRIPT, FLOW_STYLE } from "./flow.ts";
 import { DISTINCTIONS_STYLE, type DistinctionsView } from "./distinctions.ts";
 import { SPACING_STYLE, type SpacingView } from "./spacing.ts";
 import { AVAILABILITY_STYLE, type AvailabilityView } from "./availability.ts";
-import { GUIDES } from "./guides.ts";
+import { GUIDES, itemCueGuides } from "./guides.ts";
 import { RECOMMENDATIONS_STYLE, type RecommendationsView, renderRecommendations } from "./recommendations.ts";
 import { TERMS_STYLE, type TermsView } from "./terms.ts";
 import { VISUALS_STYLE, type VisualsView } from "./visuals.ts";
@@ -86,7 +86,7 @@ export function buildReport(
 		language,
 		emphasis,
 		...models,
-		guides: models.tasks ? GUIDES : baseGuides,
+		guides: { ...(models.tasks ? GUIDES : baseGuides), "item-cues": itemCueGuides(models.itemCues) },
 	};
 }
 

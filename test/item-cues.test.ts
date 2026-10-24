@@ -154,7 +154,7 @@ test("answers reject stale hashes, versions, refs, duplicate/missing responses a
 test("bundle contains only whitelisted probe prose, no key metadata, feedback or other course context", async context => {
 	const directory = await mkdtemp(join(tmpdir(), "trace-item-cues-bundle-"));
 	context.after(async () => { await rm(directory, { recursive: true, force: true }); await rm(`${directory}-review`, { recursive: true, force: true }); });
-	await prepareItemCues(load(), directory, 0);
+	await prepareItemCues(load(), directory, 0, true);
 	assert.deepEqual((await readdir(directory)).sort(), ["choices-only", "cover-the-options", "manifest.json", "masked", "prompt.md"]);
 	const choices = JSON.parse(await readFile(join(directory, "choices-only/items.json"), "utf8"));
 	const stems = JSON.parse(await readFile(join(directory, "cover-the-options/items.json"), "utf8"));
@@ -170,7 +170,7 @@ test("bundle contains only whitelisted probe prose, no key metadata, feedback or
 	await assert.rejects(prepareItemCues(load(), directory), /empty output/);
 	const changed = fixture();
 	for (const lesson of changed.lessons) for (const block of lesson.pages[0]!.blocks) block.assessment.options.forEach((option, i) => { option.correct = i === 1; });
-	await prepareItemCues(parseCourse(JSON.stringify(changed)), join(directory, "flipped"), 0);
+	await prepareItemCues(parseCourse(JSON.stringify(changed)), join(directory, "flipped"), 0, true);
 	for (const file of ["choices-only/items.json", "masked/items.json", "cover-the-options/items.json"]) assert.equal(withoutIdentity(await readFile(join(directory, file), "utf8")), withoutIdentity(await readFile(join(directory, "flipped", file), "utf8")), "Key changes cannot affect probe text or option order");
 });
 
@@ -509,7 +509,7 @@ test("masked bundle keeps function words, digit counts, punctuation and consiste
 	const course = parseCourse(JSON.stringify(replaceOptions(fixture(), source)));
 	for (const name of ["a", "b"]) await prepareItemCues(course, join(dir, name), 17);
 	const manifest = JSON.parse(await readFile(join(dir, "a-review/operator.json"), "utf8"));
-	assert.equal(manifest.promptVersion, "item-cues/12-projection-2");
+	assert.equal(manifest.promptVersion, "item-cues/14-projection-2");
 	assert.equal(manifest.seed, 17);
 	const a = await readFile(join(dir, "a/masked/items.json"), "utf8");
 	assert.equal(withoutIdentity(a), withoutIdentity(await readFile(join(dir, "b/masked/items.json"), "utf8")));
@@ -545,7 +545,7 @@ test("CLI seeds record distinct repeatable orders and plain diagnostic scores th
 	const manifests = [];
 	for (const seed of [17, 29]) {
 		const bundle = join(dir, String(seed));
-		const prepared = run("prepare", "item-cues", input, "--out", bundle, "--seed", String(seed));
+		const prepared = run("prepare", "item-cues", input, "--out", bundle, "--seed", String(seed), "--diagnostics");
 		assert.equal(prepared.status, 0, prepared.stderr);
 		const paths = JSON.parse(prepared.stdout);
 		assert.equal(paths.operator, join(`${bundle}-review`, "operator.json"));
@@ -568,10 +568,10 @@ test("CLI seeds record distinct repeatable orders and plain diagnostic scores th
 		}
 	}
 	assert.notDeepEqual(manifests[0].optionOrder, manifests[1].optionOrder);
-	for (const name of ["random-a", "random-b"]) await prepareItemCues(course, join(dir, name));
+	for (const name of ["random-a", "random-b"]) await prepareItemCues(course, join(dir, name), undefined, true);
 	const randomA = JSON.parse(await readFile(join(dir, "random-a-review/operator.json"), "utf8")), randomB = JSON.parse(await readFile(join(dir, "random-b-review/operator.json"), "utf8"));
 	assert.ok(Number.isSafeInteger(randomA.seed)); assert.ok(Number.isSafeInteger(randomB.seed)); assert.notEqual(randomA.seed, randomB.seed);
-	await prepareItemCues(course, join(dir, "replayed"), randomA.seed);
+	await prepareItemCues(course, join(dir, "replayed"), randomA.seed, true);
 	for (const file of ["manifest.json", "choices-only/items.json", "masked/items.json"]) assert.equal(withoutIdentity(await readFile(join(dir, "random-a", file), "utf8")), withoutIdentity(await readFile(join(dir, "replayed", file), "utf8")));
 	for (const seed of ["bad", "1.5", "9007199254740992"]) {
 		const result = run("prepare", "item-cues", input, "--out", join(dir, `bad-${seed}`), "--seed", seed);
@@ -658,9 +658,9 @@ test("independent probe permutations remove an authored first-key pattern and ma
 	for (const row of answer.choicesOnly.answers) row.choice = probeOrder(items.find(item => item.ref === row.ref)!).indexOf(0) + 1;
 	assert.equal(itemCuesView(course, answer).course.choicesOnly!.right, 32);
 	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-order-")); context.after(() => rm(dir, { recursive: true, force: true }));
-	await prepareItemCues(course, join(dir, "first"), 0);
+	await prepareItemCues(course, join(dir, "first"), 0, true);
 	for (const block of lesson.pages[0]!.blocks) block.assessment.options.forEach((option, i) => { option.correct = i === 2; });
-	await prepareItemCues(parseCourse(JSON.stringify(raw)), join(dir, "flipped"), 0);
+	await prepareItemCues(parseCourse(JSON.stringify(raw)), join(dir, "flipped"), 0, true);
 	assert.equal(withoutIdentity(await readFile(join(dir, "first/choices-only/items.json"), "utf8")), withoutIdentity(await readFile(join(dir, "flipped/choices-only/items.json"), "utf8")));
 	const manifest = JSON.parse(await readFile(join(dir, "first/manifest.json"), "utf8"));
 	assert.deepEqual(Object.keys(manifest), ["view", "promptVersion", "courseHash", "bundleId", "masked", "maskedBanks"]);
@@ -943,7 +943,7 @@ test("bundle CLI strips canaries from typed inspect inputs and refuses unsupport
 	await writeFile(join(exported, "lesson.html"), `<html lang="en"><head><title>Synthetic</title></head><body><article class="deck-slide" data-deck-slide="p"><div data-block-id="choice" data-block-type="assessment" data-block-json='${attr}'><form>Red Blue</form></div></article></body></html>`);
 	const scan = async (path: string): Promise<void> => { for (const entry of await readdir(path, { withFileTypes: true })) { const file = join(path, entry.name); if (entry.isDirectory()) await scan(file); else assert.doesNotMatch(await readFile(file, "utf8"), /\w+_CANARY|data-correct|data-feedback|<span|"correct"/, file); } };
 	for (const [name, input] of [["legacy", join(dir, "legacy.json")], ["legacy-native", join(dir, "legacy-native.json")], ["typed", join(dir, "typed.json")], ["typed-markdown", join(dir, "typed-markdown.json")], ["export", exported]]) {
-		const out = join(dir, `bundle-${name}`), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", input!, "--out", out], { encoding: "utf8" });
+		const out = join(dir, `bundle-${name}`), cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", input!, "--out", out, "--diagnostics"], { encoding: "utf8" });
 		if (!["typed", "typed-markdown"].includes(name!)) {
 			assert.notEqual(cli.status, 0); assert.ok(cli.stderr.includes(name === "export" ? "`report` still runs on HTML exports." : "This inspect file has no answer keys."));
 			await assert.rejects(readdir(out), { code: "ENOENT" });
@@ -1065,7 +1065,7 @@ test("empty courses omit the view, and stems missing media or code carry a visib
 	const course = load(), page = course.lessons[1]!.pages[0]!;
 	page.blocks.push({ id: "code", type: "code", line: 10, data: { code: "example()" } });
 	const dir = await mkdtemp(join(tmpdir(), "trace-item-cues-media-")); context.after(() => rm(dir, { recursive: true, force: true }));
-	await prepareItemCues(course, join(dir, "bundle"));
+	await prepareItemCues(course, join(dir, "bundle"), undefined, true);
 	assert.doesNotMatch(await readFile(join(dir, "bundle/cover-the-options/items.json"), "utf8"), /Stem depends on non-text content/);
 	const answer = { ...probeMetadata(course), choicesOnly: { bundleId: "synthetic-bundle", probe: "choices-only", model: "solver", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, choice: 1, cue: "guessed" as const, note: "" })) }, coverTheOptions: { bundleId: "synthetic-bundle", probe: "cover-the-options", model: "stem", answers: keyedChoices(course).items.map(item => ({ ref: item.ref, answer: "can't tell" })) } };
 	assert.match(renderItemCues(itemCuesView(course, answer)), /Stem depends on non-text content/);
@@ -1093,7 +1093,7 @@ test("blind bundles fail closed on unconsumed markup in either stems or options,
 	})), template];
 	const input = join(dir, "inspect.json"), out = join(dir, "bundle");
 	await writeFile(input, JSON.stringify(raw));
-	const prepared = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", input, "--out", out], { encoding: "utf8" });
+	const prepared = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", input, "--out", out, "--diagnostics"], { encoding: "utf8" });
 	assert.equal(prepared.status, 0, prepared.stderr);
 	let files = 0;
 	const scan = async (path: string): Promise<void> => { for (const entry of await readdir(path, { withFileTypes: true })) {
@@ -1224,9 +1224,9 @@ test("HTML probe eligibility allows only inventoried paragraphs and tooltips acr
 	const json = JSON.stringify(raw), course = parseCourse(json), input = join(dir, "inspect.json"); await writeFile(input, json);
 	for (const route of ["file", "stdin", "owner"]) {
 		const out = join(dir, route);
-		if (route === "owner") await prepareItemCues(course, out);
+		if (route === "owner") await prepareItemCues(course, out, undefined, true);
 		else {
-			const cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", route === "stdin" ? "-" : input, "--out", out], { input: route === "stdin" ? json : undefined, encoding: "utf8" });
+			const cli = spawnSync(process.execPath, [resolve("src/cli.ts"), "prepare", "item-cues", route === "stdin" ? "-" : input, "--out", out, "--diagnostics"], { input: route === "stdin" ? json : undefined, encoding: "utf8" });
 			assert.equal(cli.status, 0, cli.stderr);
 		}
 		let files = 0;
@@ -1312,10 +1312,10 @@ function authored() {
 		lessons: raw.lessons.map(lesson => ({ ...lesson, language: { value: "EN-ca", source: "course" } })) };
 }
 
-async function activated(context: { after: (cleanup: () => Promise<void>) => void }, raw = authored(), seed = 17) {
+async function activated(context: { after: (cleanup: () => Promise<void>) => void }, raw = authored(), seed = 17, diagnostics = false) {
 	const dir = await mkdtemp(join(tmpdir(), "trace-activation-")); context.after(() => rm(dir, { recursive: true, force: true }));
 	const course = parseCourse(JSON.stringify(raw)), bundle = join(dir, "bundle");
-	await prepareItemCues(course, bundle, seed);
+	await prepareItemCues(course, bundle, seed, diagnostics);
 	const operator = JSON.parse(await readFile(join(`${bundle}-review`, "operator.json"), "utf8"));
 	const rows = JSON.parse(await readFile(join(bundle, "masked/items.json"), "utf8")) as Array<{ ref: string; stem: string; options: string[] }>;
 	const items = keyedChoices(course).items;
@@ -1327,6 +1327,61 @@ async function activated(context: { after: (cleanup: () => Promise<void>) => voi
 	const parsed = readItemCues(JSON.stringify(answer), course, JSON.stringify(operator));
 	return { dir, bundle, rows, course, operator, answer, parsed, view: itemCuesView(course, parsed) };
 }
+
+test("CLI defaults to masked only and optional diagnostics never change its results across seeds", async context => {
+	for (const seed of [0, 17, 29]) {
+		const result = await activated(context, authored(), seed);
+		const input = join(result.dir, "input.json"), bundle = join(result.dir, "default");
+		await writeFile(input, JSON.stringify(authored()));
+		const run = (...args: string[]) => {
+			const cli = spawnSync(process.execPath, [resolve("src/cli.ts"), ...args], { encoding: "utf8" });
+			assert.equal(cli.status, 0, cli.stderr);
+		};
+		run("prepare", "item-cues", input, "--out", bundle, "--seed", String(seed));
+		assert.deepEqual((await readdir(bundle)).sort(), ["manifest.json", "masked", "prompt.md"]);
+		assert.equal(withoutIdentity(await readFile(join(bundle, "masked/items.json"), "utf8")), withoutIdentity(await readFile(join(result.bundle, "masked/items.json"), "utf8")));
+		assert.match(await readFile(join(`${bundle}-review`, "prompt.md"), "utf8"), /"choicesOnly": "not run"/);
+		const answerPath = join(`${result.bundle}-review`, "answer.json"), report = join(result.dir, "report");
+		const { choicesOnly, coverTheOptions, ...maskedOnly } = result.answer;
+		const answers = [result.answer, maskedOnly, { ...maskedOnly, choicesOnly: "not run", coverTheOptions: "not run" }, { ...maskedOnly, choicesOnly: "not run", coverTheOptions }, { ...maskedOnly, choicesOnly, coverTheOptions: "not run" }];
+		for (const answer of answers) {
+			await writeFile(answerPath, JSON.stringify(answer));
+			run("report", input, "--out", report, "--item-cues", answerPath);
+			const reported = JSON.parse(await readFile(join(report, "report.json"), "utf8")), view = reported.itemCues;
+			const html = await readFile(join(report, "report.html"), "utf8");
+			assert.match(html, /<caption>Course: Masked guessing-cue probe responses<\/caption>/);
+			assert.doesNotMatch(html, /<strong>Probes not run\.<\/strong>/);
+			for (const [ran, caption, guide] of [
+				[Boolean(view.course.choicesOnly), "Does the stem matter? Plain choices-only diagnostic responses", "Plain choices-only above guessing"],
+				[Boolean(view.course.coverTheOptions), "stem answers and judgements", "Cover-the-options answers need judgement"],
+			] as const) {
+				assert.equal(html.includes(`<caption>Course: ${caption}</caption>`), ran);
+				assert.equal(html.includes(`<dt>${guide}</dt>`), ran);
+				assert.equal(reported.guides["item-cues"].some((reading: { see: string }) => reading.see === guide), ran);
+			}
+			for (const [i, row] of [view.course, ...view.banks].entries()) {
+				const expected = [result.view.course, ...result.view.banks][i]!;
+				assert.deepEqual(row.masked, expected.masked);
+				assert.equal(row.probeStatus, "Probes scored");
+				assert.equal(row.count, expected.count);
+				assert.equal(Boolean(row.choicesOnly), "choicesOnly" in answer && answer.choicesOnly !== "not run");
+				assert.equal(Boolean(row.coverTheOptions), "coverTheOptions" in answer && answer.coverTheOptions !== "not run");
+			}
+		}
+	}
+});
+
+test("unavailable masked answers without diagnostics keep probes unscored", () => {
+	const { choicesOnly, coverTheOptions, ...held } = payload();
+	for (const [plain, cover] of [[undefined, undefined], [choicesOnly, undefined], [undefined, coverTheOptions]] as const) {
+		const view = itemCuesView(load(), parseItemCues(JSON.stringify({ ...held, choicesOnly: plain, coverTheOptions: cover }), load()));
+		for (const row of [view.course, ...view.banks]) assert.equal(row.probeStatus, plain || cover ? "Probes scored" : "Probes not run");
+		const html = renderItemCues(view);
+		assert.equal(html.includes("<strong>Probes not run.</strong>"), !plain && !cover);
+		assert.equal(html.includes("<caption>Course: Does the stem matter? Plain choices-only diagnostic responses</caption>"), Boolean(plain));
+		assert.equal(html.includes("<caption>Course: stem answers and judgements</caption>"), Boolean(cover));
+	}
+});
 
 function noMaskedScore(value: unknown) {
 	assert.ok(value && typeof value === "object");
@@ -1623,7 +1678,7 @@ test("item-cue fixtures are UTF-8 and contain no lossy question marks inside wor
 });
 
 test("activated masked probes omit and reject subject-knowledge cue codes", async context => {
-	const result = await activated(context);
+	const result = await activated(context, authored(), 17, true);
 	assert.equal(result.rows.length, 9);
 	const masked = await readFile(join(result.bundle, "masked/prompt.md"), "utf8"), plain = await readFile(join(result.bundle, "choices-only/prompt.md"), "utf8");
 	for (const cue of ["only-true-on-its-own", "textbook-wording"]) {

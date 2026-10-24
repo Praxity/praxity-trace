@@ -1,3 +1,5 @@
+import type { ItemCuesView } from "./item-cues.ts";
+
 /** Patterns to inspect after each view, also supplied to report readers and reviewers. */
 export interface Reading {
 	/** A pattern visible in the view. */
@@ -11,9 +13,7 @@ export interface Reading {
 export const GUIDES = {
 	"item-cues": [
 		{ see: "Masked scoring unavailable", could: "Read each bank's masked reason and follow that row's detail. no-included-items means its choices were structurally excluded; review their codes and the writer's declared count. language-unconfirmed means missing, malformed or defaulted provenance. Scoring requires authored English lesson provenance and no listed-marker text conflict. A language or mask-space failure among included items also withholds the pooled score; that gate is unavailable. Compare pMin and pLowMin with the consumer threshold before using a scored tail. Stop and ask; never compute masked tails by hand or use a hand-masked fallback." },
-		{ see: "Plain choices-only above guessing", could: "Does the stem matter? Subject knowledge may identify the only generally true option. This remains a stem diagnostic and cannot supply the masked gate." },
 		{ see: "Keys concentrated at a position or length rank", could: "Compare the authored options across the bank, allowing for ties and runtime shuffling." },
-		{ see: "Cover-the-options answers need judgement", could: "Have a separate fresh judge compare each stem, answer and key by meaning. A paraphrase can match; non-text content can explain why the solver could not tell.", mode: "table" },
 	],
 	trace: [
 		{ see: "Objectives stated but never practised or checked", could: "For each objective without a check or activity, inspect its stated page and decide where learners show that learning." },
@@ -111,3 +111,11 @@ export const GUIDES = {
 export type ViewId = keyof typeof GUIDES;
 export const VIEW_IDS = Object.keys(GUIDES) as ViewId[];
 export const isViewId = (value: unknown): value is ViewId => typeof value === "string" && Object.hasOwn(GUIDES, value);
+
+export function itemCueGuides(view?: ItemCuesView): Reading[] {
+	const rows = view ? [view.course, ...view.banks] : [];
+	const readings: Reading[] = [...GUIDES["item-cues"]];
+	if (rows.some(row => row.choicesOnly)) readings.push({ see: "Plain choices-only above guessing", could: "Does the stem matter? Subject knowledge may identify the only generally true option. This remains a stem diagnostic and cannot supply the masked gate." });
+	if (rows.some(row => row.coverTheOptions)) readings.push({ see: "Cover-the-options answers need judgement", could: "Have a separate fresh judge compare each stem, answer and key by meaning. A paraphrase can match; non-text content can explain why the solver could not tell.", mode: "table" });
+	return readings;
+}
