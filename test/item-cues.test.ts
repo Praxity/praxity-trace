@@ -509,7 +509,7 @@ test("masked bundle keeps function words, digit counts, punctuation and consiste
 	const course = parseCourse(JSON.stringify(replaceOptions(fixture(), source)));
 	for (const name of ["a", "b"]) await prepareItemCues(course, join(dir, name), 17);
 	const manifest = JSON.parse(await readFile(join(dir, "a-review/operator.json"), "utf8"));
-	assert.equal(manifest.promptVersion, "item-cues/13-projection-2");
+	assert.equal(manifest.promptVersion, "item-cues/14-projection-2");
 	assert.equal(manifest.seed, 17);
 	const a = await readFile(join(dir, "a/masked/items.json"), "utf8");
 	assert.equal(withoutIdentity(a), withoutIdentity(await readFile(join(dir, "b/masked/items.json"), "utf8")));
@@ -1347,15 +1347,39 @@ test("CLI defaults to masked only and optional diagnostics never change its resu
 		for (const answer of answers) {
 			await writeFile(answerPath, JSON.stringify(answer));
 			run("report", input, "--out", report, "--item-cues", answerPath);
-			const view = JSON.parse(await readFile(join(report, "report.json"), "utf8")).itemCues;
+			const reported = JSON.parse(await readFile(join(report, "report.json"), "utf8")), view = reported.itemCues;
+			const html = await readFile(join(report, "report.html"), "utf8");
+			assert.match(html, /<caption>Course: Masked guessing-cue probe responses<\/caption>/);
+			assert.doesNotMatch(html, /<strong>Probes not run\.<\/strong>/);
+			for (const [ran, caption, guide] of [
+				[Boolean(view.course.choicesOnly), "Does the stem matter? Plain choices-only diagnostic responses", "Plain choices-only above guessing"],
+				[Boolean(view.course.coverTheOptions), "stem answers and judgements", "Cover-the-options answers need judgement"],
+			] as const) {
+				assert.equal(html.includes(`<caption>Course: ${caption}</caption>`), ran);
+				assert.equal(html.includes(`<dt>${guide}</dt>`), ran);
+				assert.equal(reported.guides["item-cues"].some((reading: { see: string }) => reading.see === guide), ran);
+			}
 			for (const [i, row] of [view.course, ...view.banks].entries()) {
 				const expected = [result.view.course, ...result.view.banks][i]!;
 				assert.deepEqual(row.masked, expected.masked);
+				assert.equal(row.probeStatus, "Probes scored");
 				assert.equal(row.count, expected.count);
 				assert.equal(Boolean(row.choicesOnly), "choicesOnly" in answer && answer.choicesOnly !== "not run");
 				assert.equal(Boolean(row.coverTheOptions), "coverTheOptions" in answer && answer.coverTheOptions !== "not run");
 			}
 		}
+	}
+});
+
+test("unavailable masked answers without diagnostics keep probes unscored", () => {
+	const { choicesOnly, coverTheOptions, ...held } = payload();
+	for (const [plain, cover] of [[undefined, undefined], [choicesOnly, undefined], [undefined, coverTheOptions]] as const) {
+		const view = itemCuesView(load(), parseItemCues(JSON.stringify({ ...held, choicesOnly: plain, coverTheOptions: cover }), load()));
+		for (const row of [view.course, ...view.banks]) assert.equal(row.probeStatus, plain || cover ? "Probes scored" : "Probes not run");
+		const html = renderItemCues(view);
+		assert.equal(html.includes("<strong>Probes not run.</strong>"), !plain && !cover);
+		assert.equal(html.includes("<caption>Course: Does the stem matter? Plain choices-only diagnostic responses</caption>"), Boolean(plain));
+		assert.equal(html.includes("<caption>Course: stem answers and judgements</caption>"), Boolean(cover));
 	}
 });
 

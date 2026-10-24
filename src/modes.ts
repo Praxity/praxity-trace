@@ -132,6 +132,7 @@ export function segmented(name: string, label: string, options: SegmentOption[],
 }
 
 export interface ViewOptions {
+	readings?: Reading[];
 	/** Unique within the report; names the view's switch. */
 	id: string;
 	/** Heading level: 2 for a view that is a whole section, 3 for one of several in a section. */
@@ -191,15 +192,14 @@ export function viewBlock(options: ViewOptions): string {
 		{ value: "chart", label: "Chart", icon: "chart-bar", checked: true },
 		{ value: "table", label: "Table", icon: "table" },
 	], "seg-mode")}<div class="lesson-filter" data-filter-view="${esc(id)}"></div></div></div>
-${lead}${guide(id)}${chart === undefined ? `<div class="mode-table only">${table}</div>` : `<p class="mode-narrow-note">Charts need a wider screen; this is the table.</p>
+${lead}${guide(id, options.readings)}${chart === undefined ? `<div class="mode-table only">${table}</div>` : `<p class="mode-narrow-note">Charts need a wider screen; this is the table.</p>
 <div class="mode-chart">${chart}</div>
 <div class="mode-table">${table}</div>`}${after}
 </div>`;
 }
 
 /** The view's readings, closed by default beside "How this is counted", before the data. */
-function guide(id: string): string {
-	const readings: Reading[] = isViewId(id) ? GUIDES[id] : [];
+function guide(id: string, readings: Reading[] = isViewId(id) ? GUIDES[id] : []): string {
 	return readings.length
 		? `<details class="method guide"><summary>What to look for</summary><dl class="readings">${readings.map((reading) => `<div${reading.mode ? ` data-guide-mode="${reading.mode}"` : ""}${reading.paceMode ? ` data-guide-pace="${reading.paceMode}"` : ""}><dt>${esc(reading.see)}</dt><dd>${esc(reading.could)}</dd></div>`).join("")}</dl></details>`
 		: "";
