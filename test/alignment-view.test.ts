@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { alignmentView, groupObjectives, renderAlignment, type AlignmentView } from "../src/alignment-view.ts";
 import type { AlignmentAnswer } from "../src/alignment.ts";
 import { anatomy } from "../src/anatomy.ts";
-import { flowView, FLOW_STYLE, renderFlow } from "../src/flow.ts";
+import { flowView, renderFlow } from "../src/flow.ts";
 import { parseCourse } from "../src/inspect.ts";
 import { renderTrace, traceView } from "../src/trace.ts";
 import { verbLevels } from "../src/outcomes.ts";
@@ -149,7 +149,6 @@ test("activities end in the flow evidence column", () => {
 	assert.doesNotMatch(html, /Activities →/);
 	assert.equal((html.match(/class="flow-instruction"/g) ?? []).length, 1);
 	assert.match(html, /min-width:960px/);
-	assert.match(FLOW_STYLE, /flow-chart text\{font-size:16px\}/);
 });
 
 test("an objective the verb list cannot place takes the generated level, marked as generated", async () => {

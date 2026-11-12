@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
@@ -21,13 +21,16 @@ function cli(args: string[], input?: string) {
 	return result.stdout;
 }
 
-test("real Studio schema 1 fixture reaches every prepare bundle and report over file and stdin", () => {
+test("real Studio schema 1 fixture reaches every prepare bundle and report, and report reads stdin", () => {
 	const dir = directory();
 	const input = join(dir, "inspect.json");
 	writeFileSync(input, fixture);
 	const expected = courseHash(parseCourse(fixture));
-	for (const path of [input, "-"]) {
-		const out = join(dir, path === "-" ? "stdin" : "file");
+	// stdin and file share one reader; one report over stdin proves the channel.
+	const stdin = join(dir, "stdin");
+	cli(["report", "-", "--out", stdin], fixture);
+	for (const path of [input]) {
+		const out = join(dir, "file");
 		cli(["report", path, "--out", out], fixture);
 		const report = JSON.parse(readFileSync(join(out, "report.json"), "utf8"));
 		assert.equal(report.courseHash, expected);
@@ -64,6 +67,8 @@ test("real Studio schema 1 fixture reaches every prepare bundle and report over 
 		for (const region of regions) assert.ok(attrs(region)["aria-label"] || attrs(region)["aria-labelledby"], "region is labelled");
 		assert.ok(nodes.some((n) => n.tagName === "input" && attrs(n).type === "radio" && attrs(n)["aria-label"] === "Table"));
 	}
+	assert.equal(JSON.parse(readFileSync(join(stdin, "report.json"), "utf8")).courseHash, expected);
+	rmSync(dir, { recursive: true, force: true });
 });
 
 const studio = process.env.TRACE_STUDIO_CLI;

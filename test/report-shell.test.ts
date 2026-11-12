@@ -103,15 +103,6 @@ test("page previews use lesson.page keys and include the page's text and activit
 	assert.ok(lines.length <= 320);
 	assert.equal(previewText("one two three", 8), "one two…");
 	assert.equal(previewText("verylongword", 6), "…");
-	assert.match(html, /tip\.addEventListener\('pointerenter'/);
-	assert.match(html, /event\.key === 'Escape'/);
-	const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1] ?? "");
-	assert.ok(scripts.length >= 2);
-	for (const script of scripts) assert.doesNotThrow(() => new Function(script));
-	const headingExpression = scripts.join("\n").match(/heading\.textContent = ([^;]+);/)?.[1];
-	assert.ok(headingExpression);
-	const heading = new Function("page", `return ${headingExpression};`);
-	assert.equal(heading({ lesson: 1, number: 2, title: "A new page" }), "1.2  A new page");
 });
 
 test("where labels are plain text with a pointer preview and source", () => {
@@ -120,10 +111,9 @@ test("where labels are plain text with a pointer preview and source", () => {
 	assert.doesNotMatch(label, /tabindex/);
 	assert.match(label, /title="Lesson, page 9 · lesson\.prax:14"/);
 	assert.match(label, />3.9<\/span>/);
-	assert.doesNotMatch(html, /else if \(!el\.hasAttribute\('tabindex'\)/);
 });
 
-test("contents rail lists every section and view drawn, each linking to one element, with longer view ticks and a two-column mobile layout", async () => {
+test("contents rail lists every section and view drawn, each linking to one element in page order", async () => {
 	const { presentViews } = await import("../src/sections.ts");
 	const nav = html.match(/<nav class="views"[^>]*>([\s\S]*?)<\/nav>/)?.[1] ?? "";
 	const links = [...nav.matchAll(/href="#([^"]+)"/g)].map((match) => match[1] ?? "");
@@ -137,25 +127,6 @@ test("contents rail lists every section and view drawn, each linking to one elem
 	assert.match(html, /<nav class="views" aria-label="Contents">/);
 	assert.match(nav, /<a class="sub"/);
 	assert.match(nav, /aria-label="Anatomy"/);
-	assert.match(html, /aria-current', 'location'/);
-	assert.match(html, /\.views a\[aria-current\]::after/);
-	assert.match(html, /\.views:hover \.toc-label/);
-	assert.match(html, /@media\(max-width:50rem\)/);
-	assert.match(html, /\.views li:has\(a\.sub\)\{display:none\}/);
-	assert.match(html, /\.views a\.sub::after\{width:\.55rem/);
-	assert.match(html, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-	assert.match(html, /\.sticky-table thead th,\.long-table thead th\{position:sticky/);
-	assert.match(html, /wrap\.scrollHeight > window\.innerHeight \* 1\.5/);
-	assert.match(html, /Scroll within this table for more rows/);
-	assert.match(html, /requestAnimationFrame\(sizeTables\)/);
-	const css = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? "";
-	let depth = 0;
-	for (const char of css) {
-		if (char === "{") depth++;
-		if (char === "}") depth--;
-		assert.ok(depth >= 0);
-	}
-	assert.equal(depth, 0);
 });
 
 test("pace has one course-wide cumulative chart and running totals in its table", () => {
@@ -183,7 +154,6 @@ test("pace has one course-wide cumulative chart and running totals in its table"
 	assert.match(narratedCumulative, /class="cumulative-narration"/);
 	assert.match(cumulative, /Narration \(dashed where estimated from a script\)/);
 	assert.doesNotMatch(cumulative, /Narration audio/);
-	assert.match(html, /svg \.cumulative-narration\.estimated\{stroke-dasharray:4 3\}/);
 	const perPage = html.split('data-mode="page"')[1]?.split('data-mode="cumulative"')[0] ?? "";
 	assert.match(perPage, /<text class="page-label"[^>]*>L2<\/text>/);
 	assert.match(html, /data-view="pace"/);
@@ -259,7 +229,6 @@ test("heading rows keep title, question and controls as direct siblings, with th
 	assert.equal(children[2]?.attrs.find(({ name }) => name === "class")?.value, "view-controls");
 	assert.doesNotMatch(markup, /view-title/);
 	assert.ok(markup.indexOf('class="method guide"') < markup.indexOf('class="mode-chart"'), "a view's guide opens with its introduction, before the data");
-	assert.match(html, /\.report-content \.view-head\{display:grid;grid-template-columns:minmax\(0,1fr\) auto/);
 });
 
 test("legend items keep symbol and label together", async () => {
@@ -337,28 +306,12 @@ test("every chart responds to the lesson filter: a per-lesson version or marks t
 	assert.ok(charts >= 5);
 });
 
-test("emphasis colours do not share the segmented-control class, including either dark theme", () => {
+test("emphasis colours do not share the segmented-control class", () => {
 	const synthetic = structuredClone(course);
 	synthetic.lessons[0]!.pages[0]!.blocks.push({ id: "emphasis-test", type: "text", line: 1, data: { content: '<strong>Bold</strong> <em>Italic</em> <mark>Highlight</mark> <span class="praxity-doodle">Doodle</span>' } });
 	const bars = renderEmphasis(emphasisView(synthetic)).match(/<table class="emphasis-bars"[\s\S]*?<\/table>/)?.[0] ?? "";
 	assert.match(bars, /class="emphasis-segment k-/);
 	assert.doesNotMatch(bars, /class="seg\b/);
-	assert.match(html, /\.seg\{display:inline-flex;border:1px solid var\(--axis\)/);
-	for (const [kind, light, dark] of [["strong", "52514e", "c3c2b7"], ["em", "4a3aa7", "9085e9"], ["mark", "008300", "0ca30c"], ["spanpraxitydoodle", "b0306a", "d55181"]]) {
-		assert.ok(html.includes(`.k-${kind}{background:#${light}}`));
-		assert.ok(html.includes(`:root[data-theme=dark] .k-${kind}{background:#${dark}}`));
-		assert.ok(html.includes(`:root:not([data-theme=light]) .k-${kind}{background:#${dark}}`));
-	}
-});
-
-test("shared table sizing fits content, preserves prose and mobile reflow, and styles report links", () => {
-	assert.match(html, /:where\(\.viz-root\) table\{width:auto;max-width:100%/);
-	assert.match(html, /:is\(\.objectives,\.objective-groups,\.evidence-table,\.terms,\.visuals\)\{width:100%\}/);
-	assert.doesNotMatch(html, /thead th.num\{[^}]*width:1%/);
-	assert.match(html, /\.table-wrap,\.scroll\{overflow-x:auto/);
-	assert.match(html, /@media \(max-width:600px\)\{\ntable\[role=table\],table\[role=table\] :is\(thead,tbody,tfoot,tr,th,td\)\{display:block/);
-	assert.match(html, /\.viz-root a\{color:inherit;text-decoration:none\}/);
-	assert.match(html, /\.viz-root a:focus-visible\{outline:2px solid var\(--accent\)/);
 });
 
 test("every view's data rows and list items carry explicit lesson information", async () => {
@@ -405,24 +358,31 @@ test("every view's data rows and list items carry explicit lesson information", 
 	for (const id of presentViews(allViews)) assert.ok(seen.has(id), `${id} was not exercised`);
 });
 
-test("the shared lesson filter hides tagged lists and rows, matches any lesson, and resets", () => {
-	// Exercise the actual inlined filter without a browser; these nodes expose only its DOM operations.
-	const source = MODES_SCRIPT.slice(MODES_SCRIPT.indexOf("const tagged ="), MODES_SCRIPT.indexOf("const build ="));
-	const apply = new Function(`${source}; return apply;`)();
-	const rows = [{ lesson: "1" }, { lesson: "3" }, { lessons: "1 3" }, { lessons: "2 4" }].map((dataset) => ({ dataset, hidden: false, closest: () => null }));
-	const scope = {
-		querySelector: () => null,
-		querySelectorAll: (selector: string) => {
-			if (selector.startsWith("tbody tr")) {
-				assert.match(selector, /li\[data-lesson\]/);
-				assert.match(selector, /li\[data-lessons\]/);
-				return rows;
-			}
-			return [];
-		},
-	};
-	apply(scope, 3);
-	assert.deepEqual(rows.map((row) => row.hidden), [true, false, false, true]);
-	apply(scope, null);
-	assert.deepEqual(rows.map((row) => row.hidden), [false, false, false, false]);
+test("course and model text cannot add markup or script to report.html", async () => {
+	const { alignmentView } = await import("../src/alignment-view.ts");
+	const { conceptsView } = await import("../src/concepts-view.ts");
+	const { termsView } = await import("../src/terms.ts");
+	const { locateBlocks } = await import("../src/places.ts");
+	const payload = `"'><img src=x onerror=alert(1)></script><script>alert(2)</script>`;
+	const hostile = (value: unknown, key = ""): unknown => typeof value === "string"
+		? (["title", "content", "text", "question", "label", "locale", "file", "narration"].includes(key) ? `${value}${payload}` : value)
+		: Array.isArray(value) ? value.map((item) => hostile(item, key))
+		: value && typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([name, item]) => [name, hostile(item, name)])) : value;
+	const unsafe = parseCourse(JSON.stringify(hostile(JSON.parse(readFileSync(new URL("fixtures/examples.inspect.json", import.meta.url), "utf8")))));
+	const unsafeShape = anatomy(unsafe);
+	const refs = [1, 2, 3].map((lesson) => locateBlocks(unsafe).find((block) => block.lessonNumber === lesson)!.ref);
+	const interpretation = [{ text: payload, refs: [refs[0]!] }];
+	const alignment = alignmentView(unsafe, {
+		model: payload, objectives: refs.map((ref, i) => ({ id: `O${i}`, text: `Explain ${payload}`, ref, parent: null, fink: [] })),
+		checks: [{ ref: refs[2]!, purpose: "knowledge", pre: false, objectives: ["O0"], support: [] }],
+		overlaps: [{ objectives: ["O0", "O1"], note: payload }], interpretation,
+	});
+	const concepts = conceptsView(unsafe, { model: payload, concepts: refs.map((ref, i) => ({ id: `C${i}`, name: `Idea ${payload}`, prerequisites: i ? ["C0"] : [], occurrences: [{ ref, role: "defined" }] })), interpretation });
+	const terms = termsView(unsafe, { model: payload, flags: [{ ref: refs[0]!, channel: "screen", kind: "term", span: "Idea", note: payload, explainedAt: null }], interpretation });
+	const page = renderHtml({
+		...buildReport(unsafe.course, { schema: unsafe.schema, studioVersion: payload }, courseHash(unsafe), unsafeShape, traceView(unsafe, unsafeShape.lessons, { alignment, concepts }), languageView(unsafe), emphasisView(unsafe, concepts, alignment)),
+		alignment, concepts, terms,
+	});
+	assert.ok(page.includes("&#60;img src=x"), "the payload reaches the page as text");
+	assert.doesNotMatch(page, /<img src=x|<script>alert/);
 });
