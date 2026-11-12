@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { appendFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { JsonInputError, parseJson, readInput } from "./input.ts";
+import { appendFile, mkdir, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import { parseAlignment, prepareAlignment } from "./alignment.ts";
@@ -22,7 +23,7 @@ import { buildReport, renderHtml } from "./report.ts";
 import { parseRecommendations, prepareRecommendations } from "./recommendations.ts";
 import { parseTasks, prepareTasks, tasksView } from "./tasks.ts";
 import { formatCommentsMarkdown, parseComments } from "./comments.ts";
-import { itemCuesReviewDirectory, itemCuesView, parseItemCues, prepareItemCues, PROBE_INPUT_ERROR, PROBE_JSON_ERROR, ProbeInputError, requireProbeInput } from "./item-cues.ts";
+import { itemCuesReviewDirectory, itemCuesView, parseItemCues, prepareItemCues, PROBE_INPUT_ERROR, ProbeInputError, requireProbeInput } from "./item-cues.ts";
 
 const HELP = `Usage:
   praxity-trace report <inspect.json|html-dir|-> --out <dir> [--alignment <answer.json>] [--tasks <answer.json>] [--concepts <answer.json>] [--terms <answer.json>] [--visuals <answer.json>] [--distinctions <answer.json>] [--item-cues <answer.json>] [--recommendations <answer.json>]
@@ -39,6 +40,7 @@ prepare item-cues writes only the masked probe by default; --diagnostics also wr
 --comments adds the designer's comments on that view (downloaded from report.html) to the reviewer's prompt.
 Recommendations come last: build the report with every other answer, prepare from its report.json, then build again with --recommendations.`;
 
+try {
 const { values, positionals } = parseArgs({
 	allowPositionals: true,
 	options: {
@@ -86,7 +88,7 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 	if (values.comments) {
 		// Designer comments on the section this view renders in steer the next answer.
 		const SECTION: Record<keyof typeof PREPARE, string> = { alignment: "alignment", tasks: "tasks", concepts: "concepts", terms: "language", visuals: "visuals", distinctions: "concepts", "item-cues": "item-cues" };
-		const file = parseComments(await readFile(values.comments, "utf8"));
+		const file = parseComments(await readInput(values.comments), values.comments);
 		const mine = { ...file, comments: file.comments.filter((comment) => (comment.view === SECTION[view] || (view === "alignment" && comment.view === "trace" && comment.target.objectives?.length))) };
 		if (mine.comments.length) {
 			const stale = file.courseHash !== courseHash(course) ? " They were written on an earlier revision of the course; apply them where they still fit." : "";
@@ -99,25 +101,25 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 	const course = await readCourse(rest[0] as string);
 	const models = {
 		...(values.alignment
-			? { alignment: alignmentView(course, parseAlignment(await readFile(values.alignment, "utf8"), course)) }
+			? { alignment: alignmentView(course, parseAlignment(await readInput(values.alignment), course, values.alignment)) }
 			: {}),
 		...(values.concepts
-			? { concepts: conceptsView(course, parseConcepts(await readFile(values.concepts, "utf8"), course)) }
+			? { concepts: conceptsView(course, parseConcepts(await readInput(values.concepts), course, values.concepts)) }
 			: {}),
-		...(values.terms ? { terms: termsView(course, parseTerms(await readFile(values.terms, "utf8"), course)) } : {}),
+		...(values.terms ? { terms: termsView(course, parseTerms(await readInput(values.terms), course, values.terms)) } : {}),
 		...(values.distinctions
-			? { distinctions: distinctionsView(course, parseDistinctions(await readFile(values.distinctions, "utf8"), course)) }
+			? { distinctions: distinctionsView(course, parseDistinctions(await readInput(values.distinctions), course, values.distinctions)) }
 			: {}),
 	};
 	const shape = anatomy(course);
-	const withVisuals = values.visuals ? { ...models, visuals: visualsView(course, parseVisuals(await readFile(values.visuals, "utf8"), course), shape.lessons) } : models;
+	const withVisuals = values.visuals ? { ...models, visuals: visualsView(course, parseVisuals(await readInput(values.visuals), course, values.visuals), shape.lessons) } : models;
 	const withSpacing = withVisuals.concepts ? { ...withVisuals, spacing: spacingView(withVisuals.concepts, shape.lessons) } : withVisuals;
 	const availability = withSpacing.alignment ? availabilityView(course, withSpacing.alignment, shape.lessons) : undefined;
 	const derived = {
 		...withSpacing,
-		itemCues: itemCuesView(course, values["item-cues"] ? parseItemCues(await readFile(values["item-cues"], "utf8"), course, await readFile(join(dirname(values["item-cues"]), "operator.json"), "utf8")) : undefined),
+		itemCues: itemCuesView(course, values["item-cues"] ? parseItemCues(await readInput(values["item-cues"]), course, await readInput(join(dirname(values["item-cues"]), "operator.json")), values["item-cues"], "operator.json") : undefined),
 		...(availability ? { availability } : {}),
-		...(values.tasks ? { tasks: tasksView(course, parseTasks(await readFile(values.tasks, "utf8"), course), withSpacing.alignment && availability ? { alignment: withSpacing.alignment, availability } : undefined) } : {}),
+		...(values.tasks ? { tasks: tasksView(course, parseTasks(await readInput(values.tasks), course, values.tasks), withSpacing.alignment && availability ? { alignment: withSpacing.alignment, availability } : undefined) } : {}),
 	};
 	const built = buildReport(
 		course.course,
@@ -142,7 +144,7 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 		emphasisView(course, models.concepts, models.alignment),
 		derived,
 	);
-	const report = values.recommendations ? { ...built, recommendations: parseRecommendations(await readFile(values.recommendations, "utf8"), course, built) } : built;
+	const report = values.recommendations ? { ...built, recommendations: parseRecommendations(await readInput(values.recommendations), course, built, values.recommendations) } : built;
 	await mkdir(out, { recursive: true });
 	await writeFile(join(out, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
 	await writeFile(join(out, "report.html"), renderHtml(report));
@@ -151,11 +153,9 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 	usage(2);
 }
 
-async function readInput(path: string): Promise<string> {
-	if (path !== "-") return readFile(path, "utf8");
-	const chunks: Buffer[] = [];
-	for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-	return Buffer.concat(chunks).toString("utf8");
+} catch (error) {
+	if (error instanceof JsonInputError) { console.error(error.message); process.exit(1); }
+	throw error;
 }
 
 async function readCourse(path: string, probes = false): Promise<Course> {
@@ -166,11 +166,10 @@ async function readCourse(path: string, probes = false): Promise<Course> {
 		}
 		const input = await readInput(path);
 		if (probes) {
-			let raw: unknown;
-			try { raw = JSON.parse(input); } catch (cause) { throw new ProbeInputError(PROBE_JSON_ERROR, { cause }); }
+			const raw = parseJson(input, path);
 			requireProbeInput(raw);
 		}
-		return parseCourse(input);
+		return parseCourse(input, path);
 	} catch (error) {
 		if (error instanceof ProbeInputError) { console.error(error.message); process.exit(1); }
 		throw error;

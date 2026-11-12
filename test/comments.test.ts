@@ -24,7 +24,7 @@ const changed = (mutate: (value: CommentsFile) => void) => {
 
 test("parseComments accepts a complete file and rejects malformed or extra fields", () => {
 	assert.deepEqual(parseComments(JSON.stringify(example)), example);
-	assert.throws(() => parseComments("{"), /Invalid comments JSON/);
+	assert.throws(() => parseComments("{"), /comments.json: invalid JSON at position/);
 	assert.throws(() => parseComments(changed((file) => { file.schema = "other" as CommentsFile["schema"]; })));
 	assert.throws(() => parseComments(changed((file) => { file.comments[0]!.target.page!.page = 0; })));
 	assert.throws(() => parseComments(changed((file) => { file.comments[0]!.target.objectives = ["O3", "O3"]; })));

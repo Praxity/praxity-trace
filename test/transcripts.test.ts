@@ -155,7 +155,7 @@ test("Alignment carries transcript instruction text and Concepts merge evidence 
 	assert.equal(availability.checks[0]!.instructionLinks[0]!.channel, "transcript");
 	assert.match(renderAvailability(availability), /In a transcript only/);
 	assert.doesNotMatch(renderAvailability(availability), /class="avail look"/);
-	const concepts = parseConcepts(JSON.stringify({ view: "concepts", promptVersion: "concepts/4-projection-2", courseHash: courseHash(course), model: "synthetic-test", concepts: [{ id: "C1", name: "Final state", prerequisites: [], occurrences: [{ ref: video.ref, role: "example" }] }], interpretation: [] }), course);
+	const concepts = parseConcepts(JSON.stringify({ view: "concepts", promptVersion: "concepts/5-projection-2", courseHash: courseHash(course), model: "synthetic-test", concepts: [{ id: "C1", name: "Final state", prerequisites: [], occurrences: [{ ref: video.ref, role: "example" }] }], interpretation: [] }), course);
 	assert.deepEqual(concepts.concepts[0]!.occurrences, [{ ref: video.ref, role: "example" }]);
 });
 
@@ -163,7 +163,7 @@ test("all shared-guide prompts advance, and stale versions or interpretation fin
 	const course = await fixture(), dir = await mkdtemp(join(tmpdir(), "trace-transcript-bundles-"));
 	try {
 		const versions = [
-			["alignment", "alignment/14", "alignment/13", prepareAlignment], ["concepts", "concepts/4", "concepts/3", prepareConcepts], ["terms", "terms/2", "terms/1", prepareTerms], ["tasks", "tasks/3", "tasks/2", prepareTasks], ["visuals", "visuals/2", "visuals/1", prepareVisuals], ["distinctions", "distinctions/2", "distinctions/1", prepareDistinctions],
+			["alignment", "alignment/15", "alignment/13", prepareAlignment], ["concepts", "concepts/5", "concepts/3", prepareConcepts], ["terms", "terms/3", "terms/1", prepareTerms], ["tasks", "tasks/4", "tasks/2", prepareTasks], ["visuals", "visuals/3", "visuals/1", prepareVisuals], ["distinctions", "distinctions/3", "distinctions/1", prepareDistinctions],
 		] as const;
 		for (const [view, version, old, prepare] of versions) {
 			const path = join(dir, view); await prepare(course, path);
@@ -175,13 +175,13 @@ test("all shared-guide prompts advance, and stale versions or interpretation fin
 		}
 		const report = join(dir, "report.json"); await writeFile(report, JSON.stringify({ courseHash: courseHash(course) }));
 		await prepareRecommendations(course, report, join(dir, "recommendations"));
-		assert.equal(JSON.parse(await readFile(join(dir, "recommendations", "manifest.json"), "utf8")).promptVersion, "recommendations/3-projection-2");
-		assert.throws(() => readAnswer(JSON.stringify({ view: "recommendations", promptVersion: "recommendations/2-projection-2", courseHash: courseHash(course) }), course, "recommendations", "recommendations/3"), /expected view/);
+		assert.equal(JSON.parse(await readFile(join(dir, "recommendations", "manifest.json"), "utf8")).promptVersion, "recommendations/4-projection-2");
+		assert.throws(() => readAnswer(JSON.stringify({ view: "recommendations", promptVersion: "recommendations/2-projection-2", courseHash: courseHash(course) }), course, "recommendations", "recommendations/4"), /expected view/);
 		assert.equal(courseHash(course), createHash("sha256").update(`trace-inspect/5\0${course.revision}`).digest("hex"));
 		for (const version of [2, 3, 4]) {
 			const oldHash = createHash("sha256").update(`trace-inspect/${version}\0${course.revision}`).digest("hex");
 			assert.notEqual(courseHash(course), oldHash);
-			assert.throws(() => readAnswer(JSON.stringify({ view: "terms", promptVersion: "terms/2-projection-2", courseHash: oldHash }), course, "terms", "terms/2"), /different course revision/);
+			assert.throws(() => readAnswer(JSON.stringify({ view: "terms", promptVersion: "terms/3-projection-2", courseHash: oldHash }), course, "terms", "terms/3"), /different course revision/);
 		}
 	} finally { await rm(dir, { recursive: true, force: true }); }
 });

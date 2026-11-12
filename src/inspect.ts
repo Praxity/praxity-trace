@@ -1,3 +1,4 @@
+import { parseJson } from "./input.ts";
 import { createHash } from "node:crypto";
 
 /** Output of Studio's `praxity inspect`. Block `data` is opaque grammar data. */
@@ -74,8 +75,8 @@ function object(value: unknown, path: string): Record<string, unknown> {
 }
 
 /** Validates the fields Trace reads; everything else passes through untouched. */
-export function parseCourse(json: string): Course {
-	const root = object(JSON.parse(json), "$");
+export function parseCourse(json: string, source = "course.json"): Course {
+	const root = object(parseJson(json, source), "$");
 	if (root.ok !== true) fail("$.ok", "true (inspect reported an error)");
 	if (root.schema === "praxity-inspect/1") return parseTypedCourse(root);
 	if (root.schema !== "praxity-inspect/0") fail("$.schema", '"praxity-inspect/0"');

@@ -1,3 +1,4 @@
+import { parseJson } from "./input.ts";
 import { inlineClient } from "./client.ts";
 import { pageKey } from "./places.ts";
 import { icon } from "./icons.ts";
@@ -85,9 +86,8 @@ export function commentsFile(value: unknown): CommentsFile {
 }
 
 /** Reject malformed or cross-version imports before an agent consumes them. */
-export function parseComments(json: string): CommentsFile {
-	let value: unknown;
-	try { value = JSON.parse(json); } catch { throw new Error("Invalid comments JSON"); }
+export function parseComments(json: string, source = "comments.json"): CommentsFile {
+	const value = parseJson(json, source);
 	return commentsFile(value);
 }
 

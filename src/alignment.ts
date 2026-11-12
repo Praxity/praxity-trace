@@ -4,7 +4,7 @@ import type { Course } from "./inspect.ts";
 import { BLOOM, type Bloom, FINK, type Fink, GAGNE, GAGNE_HELP, type Gagne, KNOWLEDGE, KNOWLEDGE_HELP, type Knowledge } from "./outcomes.ts";
 
 
-export const PROMPT_VERSION = "alignment/14";
+export const PROMPT_VERSION = "alignment/15";
 
 const PROMPT = `# Alignment review
 
@@ -109,8 +109,8 @@ function performanceOf(value: unknown, objective: string, at: string, problem: (
 	return { action: part("action"), conditions: part("conditions"), standard: part("standard") };
 }
 
-export function parseAlignment(json: string, course: Course): AlignmentAnswer {
-	const answer = readAnswer(json, course, "alignment", PROMPT_VERSION);
+export function parseAlignment(json: string, course: Course, source = "answer.json"): AlignmentAnswer {
+	const answer = readAnswer(json, course, "alignment", PROMPT_VERSION, source);
 	const { raw, problem, types: refs, ref, text, list, record } = answer;
 
 	const objectives = list(raw.objectives, "objectives").map((value, i) => {
