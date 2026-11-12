@@ -42,8 +42,10 @@ Say what to inspect and which evidence in the views supports it. Include an alte
 
 ## Material
 
+${COURSE_TEXT_GUIDE}
+
 - \`report.json\`: every view's measurements and generated readings. \`guides\` lists, per view id, patterns and what each could mean. Views that need a model answer appear only when that answer was supplied.
-- \`course.md\`: the course text. ${COURSE_TEXT_GUIDE}
+- \`course.md\`: the course text.
 
 ## Steps
 

@@ -1123,7 +1123,7 @@ test("probe preparation requires projection-2 schema-1 inspect JSON, including s
 	await writeFile(join(exported, "lesson.html"), `<html lang="en"><body><article class="deck-slide" data-deck-slide="p"><div data-block-type="assessment" data-block-json='${native}'>Red Blue</div></article></body></html>`);
 	const schema0 = { ok: true, schema: "praxity-inspect/0", studioVersion: "synthetic", course: { title: "Synthetic", locale: "en" }, lessons: [] };
 	const missingProjection = { ...fixture(), projectionVersion: undefined };
-	const expectedJson = "-: invalid JSON at position";
+	const expectedJson = setup;
 	const expectedKeys = "This inspect file has no answer keys. Update Studio, run the same inspect command again, and prepare from the new file.";
 	const inputs = [["<html>not inspect</html>", expectedJson], ["plain prose", expectedJson], ["{}", setup], [JSON.stringify(schema0), expectedKeys], [JSON.stringify(missingProjection), expectedKeys], [JSON.stringify({ ...fixture(), projectionVersion: 1 }), expectedKeys], [JSON.stringify({ ...fixture(), projectionVersion: 3 }), "This inspect file is newer than this Trace. Update Trace."]];
 	for (const [i, [input, expected]] of inputs.entries()) {
