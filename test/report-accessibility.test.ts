@@ -23,8 +23,8 @@ function cli(args: string[]): void {
 }
 
 const reportFixtures = [
-	["schema0", "examples.inspect.json"],
-	["projection2", "examples.projection2.inspect.json"],
+	// A fixture earns a browser run only with markup the others lack. Schema 0 and projection 2 alone drew
+	// nothing that html-export and all-model-views (projection 2 with every view) do not also draw.
 	["html-export", "html/studio"],
 	["lantern-marsh", "lantern-marsh/inspect.json"],
 	["objective-levels", "objective-levels/inspect.json"],
@@ -110,6 +110,8 @@ async function reportFixture(directory: string, name: string, inputPath: string 
 	cli(["report", input, "--out", output, ...answers, "--recommendations", recommendations]);
 	const built = JSON.parse(await readFile(join(output, "report.json"), "utf8"));
 	for (const view of [...Object.keys(payloads), "spacing", "availability", "recommendations"]) assert.ok(built[view], `Missing model fixture view ${view}`);
+	assert.ok(built.itemCues.course.choicesOnly.total > 0, "Combined fixture must exercise keyed solver responses");
+	assert.ok(built.itemCues.excluded.every((item: { reason: string }) => item.reason.startsWith("Multiple selection")), "Combined fixture must retain every supported single-key choice");
 	return join(output, "report.html");
 }
 
@@ -556,15 +558,6 @@ async function serverLabels(browser: Browser, html: string): Promise<void> {
 		assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true, "Server-rendered narrow report must fit without JavaScript");
 	} finally { await context.close(); }
 }
-
-test("all-model-views fixture prepares every view with keyed probe answers", async context => {
-	const directory = await mkdtemp(join(tmpdir(), "trace-accessibility-preparation-"));
-	context.after(() => rm(directory, { recursive: true, force: true }));
-	const html = await reportFixture(directory, "all-model-views", null);
-	const report = JSON.parse(await readFile(join(dirname(html), "report.json"), "utf8"));
-	assert.ok(report.itemCues.course.choicesOnly.total > 0, "Combined fixture must exercise keyed solver responses");
-	assert.ok(report.itemCues.excluded.every((item: { reason: string }) => item.reason.startsWith("Multiple selection")), "Combined fixture must retain every supported single-key choice");
-});
 
 // Each fixture has its own timeout, including contention with verify's CLI and package tests.
 for (const [name, inputPath] of reportFixtures) test(`generated report ${name} meets browser accessibility requirements`, { timeout: 360_000 }, async context => {

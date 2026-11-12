@@ -235,39 +235,27 @@ async function maskedFixture(context: { after: (cleanup: () => Promise<void>) =>
 	return { course, bundle, operator, aligned, dir };
 }
 
-test("masked stem/key overlap has literal shared words", async context => {
-	const result = await maskedFixture(context, "Which cell?", ["A cell", "A wall", "A pipe", "A wire"]);
-	assert.deepEqual(result.aligned, { stem: "Which xepe?", options: ["A xepe", "A rori", "A vevi", "A mife"] });
-});
-
-test("masked a/an agreement preserves literal vowel initials", async context => {
-	const result = await maskedFixture(context, "This is an", ["apple", "banana", "orange", "pear"]);
-	assert.deepEqual(result.aligned, { stem: "This is an", options: ["arulo", "qupuwi", "amigaf", "tezo"] });
-});
-
-test("masked silent-h article sounds preserve the hour honour heir umbrella case", async context => {
-	const result = await maskedFixture(context, "This rain cover is an", ["umbrella", "hour", "honour", "heir"]);
-	assert.deepEqual(result.aligned, { stem: "This bogu civuc is an", options: ["iqoyuzap", "orun", "awepor", "itut"] });
-});
-
-test("masked you-sound article exception preserves unicorn against vowel-sound distractors", async context => {
-	const result = await maskedFixture(context, "This magical animal is a", ["unicorn", "apple", "orange", "eagle"]);
-	assert.deepEqual(result.aligned, { stem: "This gefezaw oxugoj is a", options: ["jirezip", "arulo", "amigaf", "aqine"] });
-});
-
-test("masked initialisms and university preserve an MRI and a university", async context => {
-	const result = await maskedFixture(context, "Which is the correct phrase?", ["an MRI", "a university", "an honest heir", "a European user"]);
-	assert.deepEqual(result.aligned, { stem: "Which is the tifacey yaqovo?", options: ["an ALI", "a vucepapafi", "an atedap itut", "a Rugomane weka"] });
-});
-
-test("generated pseudo-words also retain the requested article sound class", async context => {
-	const result = await maskedFixture(context, "Which apple?", ["apple", "banana", "orange", "pear"], false, 25);
-	assert.deepEqual(result.aligned, { stem: "Which ijaza?", options: ["ijaza", "kaxiyi", "uniyez", "hapu"] });
-});
-
-test("masked singular us is ss endings do not become regular plurals", async context => {
-	const result = await maskedFixture(context, "Which is a singular noun?", ["virus", "radius", "analysis", "glass"]);
-	assert.deepEqual(result.aligned, { stem: "Which is a tagecele nihu?", options: ["jacak", "zocati", "ahubopam", "fokoz"] });
+// One row per masking rule, through keyedChoices so HTML stems take the probe projection. The seed-17
+// unicorn and singular-noun rows live in the bounded-masking table below.
+test("masked forms keep literal overlap, article sound, plurals, digits and NFC per item", () => {
+	const cases: Array<[string, string, string[], boolean, number, { stem: string; options: string[] }]> = [
+		["masked stem/key overlap has literal shared words", "Which cell?", ["A cell", "A wall", "A pipe", "A wire"], false, 17, { stem: "Which xepe?", options: ["A xepe", "A rori", "A vevi", "A mife"] }],
+		["masked a/an agreement preserves literal vowel initials", "This is an", ["apple", "banana", "orange", "pear"], false, 17, { stem: "This is an", options: ["arulo", "qupuwi", "amigaf", "tezo"] }],
+		["masked silent-h article sounds preserve the hour honour heir umbrella case", "This rain cover is an", ["umbrella", "hour", "honour", "heir"], false, 17, { stem: "This bogu civuc is an", options: ["iqoyuzap", "orun", "awepor", "itut"] }],
+		["masked initialisms and university preserve an MRI and a university", "Which is the correct phrase?", ["an MRI", "a university", "an honest heir", "a European user"], false, 17, { stem: "Which is the tifacey yaqovo?", options: ["an ALI", "a vucepapafi", "an atedap itut", "a Rugomane weka"] }],
+		["generated pseudo-words also retain the requested article sound class", "Which apple?", ["apple", "banana", "orange", "pear"], false, 25, { stem: "Which ijaza?", options: ["ijaza", "kaxiyi", "uniyez", "hapu"] }],
+		["masked singular/plural agreement keeps a shared base and trailing s", "These cells are", ["cells", "cell", "walls", "wall"], false, 17, { stem: "These xepes are", options: ["xepes", "xepe", "roris", "rori"] }],
+		["masked allow-listed HTML stem preserves literal overlap without markup", "<p>Which <strong>cell</strong>?</p>", ["A cell", "A wall", "A pipe", "A wire"], true, 17, { stem: "Which xepe ?", options: ["A xepe", "A rori", "A vevi", "A mife"] }],
+		["masked Run Bin Map Log collision case is injective at seed 17", "Which?", ["Run", "Bin", "Map", "Log"], false, 17, { stem: "Which?", options: ["Taw", "Men", "Zuj", "Tef"] }],
+		["masked digits use a literal consistent per-item scrambling", "Is 100 > 20?", ["100", "-20.5%", "20", "00"], false, 17, { stem: "Is 722 > 12?", options: ["722", "-12.4%", "12", "22"] }],
+		["masked accents normalize to NFC before assigning words", "Which café?", ["café", "cafe\u0301", "résumé", "wire"], false, 17, { stem: "Which koxi?", options: ["koxi", "koxi", "lejava", "mife"] }],
+	];
+	for (const [rule, stem, options, html, seed, expected] of cases) {
+		const raw = replaceOptions(fixture(), options), block = raw.lessons[1]!.pages[0]!.blocks[0]!;
+		block.texts[0]!.value = stem; block.texts[0]!.format = html ? "html" : "plain";
+		const item = keyedChoices(parseCourse(JSON.stringify(raw))).items.find(item => item.ref === "2.1.1")!;
+		assert.deepEqual(maskItem(item, seed), expected, rule);
+	}
 });
 
 // Literal review cases cover the bounded masking transform independently of eligibility.
@@ -380,36 +368,11 @@ test("item-cues skill keeps keyed course JSON outside the solver parent tree", a
 	assert.match(skill, /separate workspace, or supply its files inline/);
 });
 
-test("masked singular/plural agreement keeps a shared base and trailing s", async context => {
-	const result = await maskedFixture(context, "These cells are", ["cells", "cell", "walls", "wall"]);
-	assert.deepEqual(result.aligned, { stem: "These xepes are", options: ["xepes", "xepe", "roris", "rori"] });
-});
-
-test("masked allow-listed HTML stem preserves literal overlap without markup", async context => {
-	const result = await maskedFixture(context, "<p>Which <strong>cell</strong>?</p>", ["A cell", "A wall", "A pipe", "A wire"], true);
-	assert.deepEqual(result.aligned, { stem: "Which xepe ?", options: ["A xepe", "A rori", "A vevi", "A mife"] });
-});
-
-test("masked Run Bin Map Log collision case is injective at seed 17", async context => {
-	const result = await maskedFixture(context, "Which?", ["Run", "Bin", "Map", "Log"]);
-	assert.deepEqual(result.aligned, { stem: "Which?", options: ["Taw", "Men", "Zuj", "Tef"] });
-});
-
 test("masked exhausted replacement space fails closed", async context => {
 	const result = await maskedFixture(context, "Which?", ["BCDFGHJKLMNPQRSTVWXYZ", "B C D F G H J K L M N P Q R S T V W X Y Z", "X", "Y"]);
 	assert.equal(result.aligned, null);
 	assert.deepEqual(result.operator.masked, HELD);
 	assert.throws(() => maskItem(keyedChoices(result.course).items.find(item => item.ref === "2.1.1")!, 17), /no unused same-length form/);
-});
-
-test("masked digits use a literal consistent per-item scrambling", async context => {
-	const result = await maskedFixture(context, "Is 100 > 20?", ["100", "-20.5%", "20", "00"]);
-	assert.deepEqual(result.aligned, { stem: "Is 722 > 12?", options: ["722", "-12.4%", "12", "22"] });
-});
-
-test("masked accents normalize to NFC before assigning words", async context => {
-	const result = await maskedFixture(context, "Which café?", ["café", "cafe\u0301", "résumé", "wire"]);
-	assert.deepEqual(result.aligned, { stem: "Which koxi?", options: ["koxi", "koxi", "lejava", "mife"] });
 });
 
 test("French and missing course.locale never produce a masked score", async context => {

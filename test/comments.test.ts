@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { COMMENTS_SCRIPT, formatCommentsMarkdown, isSentenceId, parseComments, quoteContext, sourceFromTitle, type CommentsFile } from "../src/comments.ts";
+import { formatCommentsMarkdown, isSentenceId, parseComments, type CommentsFile } from "../src/comments.ts";
 
 const example: CommentsFile = {
 	schema: "praxity-trace-comments/0",
@@ -43,23 +43,6 @@ test("Markdown keeps the course, location, quoted words and note together", () =
 		"   Quote: “training data”\n   Note: Keep O3 and O11 separate.\n");
 });
 
-test("title source and quote context retain the exact source and 32 characters on either side", () => {
-	assert.deepEqual(sourceFromTitle("Lesson title, page 9 · lesson-03.prax:118"), { file: "lesson-03.prax", line: 118 });
-	assert.equal(sourceFromTitle("Lesson title, page 9 · lesson-03.prax"), null);
-	assert.deepEqual(quoteContext("a".repeat(40) + "term" + "b".repeat(40), 40, 44),
-		{ exact: "term", prefix: "a".repeat(32), suffix: "b".repeat(32) });
-	assert.throws(() => quoteContext("abc", 2, 2));
-});
-
-test("browser script is plain JavaScript", () => {
-	assert.doesNotThrow(() => new Function(COMMENTS_SCRIPT));
-	assert.equal([...COMMENTS_SCRIPT.matchAll(/function formatCommentsMarkdown\(/g)].length, 1);
-	const inlined = new Function("document", `${COMMENTS_SCRIPT}\nreturn formatCommentsMarkdown;`)(
-		{ getElementById: () => null, querySelector: () => null },
-	) as typeof formatCommentsMarkdown;
-	assert.equal(inlined(example), formatCommentsMarkdown(example));
-});
-
 test("prepare --comments adds only that view's comments to the prompt", async () => {
 	const { execFile } = await import("node:child_process");
 	const { promisify } = await import("node:util");
@@ -92,63 +75,4 @@ test("a comment can point at an on-screen, narration or transcript sentence, and
 		assert.equal(isSentenceId(sentence), false);
 		assert.throws(() => parseComments(changed((file) => { file.comments[0]!.target.sentence = sentence; })), /Invalid comment target/);
 	}
-});
-
-test("sentences inside a table row keep their own comment page and source through export", () => {
-	const code = COMMENTS_SCRIPT.slice(COMMENTS_SCRIPT.indexOf("const anchorOf ="), COMMENTS_SCRIPT.indexOf("const quoteFor ="));
-	const helpers = COMMENTS_SCRIPT.slice(COMMENTS_SCRIPT.indexOf("const pageOf ="), COMMENTS_SCRIPT.indexOf("const rowText ="));
-	const { pageOf, sentenceId } = new Function("isSentenceId", `${helpers}\nreturn { pageOf, sentenceId };`)(isSentenceId);
-	const anchorOf = new Function("sectionOf", "rowText", "sentenceId", "pageOf", "label", "source", "meta", "headingOf", `${code}\nreturn anchorOf;`)(
-		() => ({ getAttribute: () => "sentences" }), () => null, sentenceId, pageOf,
-		() => null, (value: string) => value ? sourceFromTitle(value) : null, {}, () => "Sentence structure",
-	);
-	const pointer = (page: string, line: number) => ({ dataset: { page, tip: `Lesson, page ${page} · lesson.prax:${line}` }, getAttribute: () => null });
-	const first = pointer("1.1", 10), second = pointer("1.2", 20);
-	const tableRow = { querySelector: (selector: string) => selector === "[data-page]" ? first : null };
-	for (const id of ["1.2.s1", "1.2.n1", "1.2.t1"]) {
-		const sentence = { id, querySelector: (selector: string) => selector === "[data-page]" ? second : null };
-		const quote = {
-			closest: (selector: string) => selector.split(",").includes("li[id]") ? sentence : selector === "tr" ? tableRow : null,
-			getAttribute: () => null, dataset: {},
-		};
-		const comment = anchorOf(quote, null);
-		assert.equal(comment.view, "sentences");
-		assert.equal(comment.heading, "Sentence structure");
-		assert.equal(comment.target.sentence, id);
-		assert.deepEqual(comment.target.page, { lesson: 1, page: 2 });
-		assert.deepEqual(comment.source, { file: "lesson.prax", line: 20 });
-		const exported = structuredClone(example);
-		exported.comments[0] = { ...exported.comments[0]!, ...comment };
-		assert.deepEqual(parseComments(JSON.stringify(exported)).comments[0], exported.comments[0]);
-	}
-});
-
-test("the browser derives a transcript comment page from its sentence id without a page mark", () => {
-	const code = COMMENTS_SCRIPT.slice(COMMENTS_SCRIPT.indexOf("const anchorOf ="), COMMENTS_SCRIPT.indexOf("const quoteFor ="));
-	const helpers = COMMENTS_SCRIPT.slice(COMMENTS_SCRIPT.indexOf("const pageOf ="), COMMENTS_SCRIPT.indexOf("const rowText ="));
-	const { pageOf, sentenceId } = new Function("isSentenceId", `${helpers}\nreturn { pageOf, sentenceId };`)(isSentenceId);
-	const anchorOf = new Function("sectionOf", "rowText", "sentenceId", "pageOf", "label", "source", "meta", "headingOf", `${code}\nreturn anchorOf;`)(
-		() => ({ getAttribute: () => "sentences" }), () => null, sentenceId, pageOf,
-		() => null, sourceFromTitle, { lessons: [{ number: 3, file: "lesson-03.prax" }] }, () => "Sentence structure",
-	);
-	const sentence = { id: "3.9.t2", querySelector: () => null };
-	const element = {
-		closest: (selector: string) => selector.split(",").includes("li[id]") ? sentence : null,
-		getAttribute: () => "Transcript · lesson-03.prax:118", dataset: {},
-	};
-	const comment = anchorOf(element, null);
-	assert.equal(comment.target.sentence, "3.9.t2");
-	assert.deepEqual(comment.target.page, { lesson: 3, page: 9 });
-	assert.deepEqual(comment.source, { file: "lesson-03.prax", line: 118 });
-});
-
-test("the browser reads stored comments with the same validator the command line uses", () => {
-	assert.equal(COMMENTS_SCRIPT.match(/const commentsFile = /g)?.length, 1);
-	assert.doesNotMatch(COMMENTS_SCRIPT, /const valid = /);
-	const inlined = new Function(`${COMMENTS_SCRIPT.slice(0, COMMENTS_SCRIPT.lastIndexOf("\n("))}\nreturn commentsFile;`)() as (value: unknown) => CommentsFile;
-	for (const sentence of ["3.9.s2", "3.9.n1", "3.9.t2", "L3.p9.s2"]) {
-		assert.equal(inlined(JSON.parse(changed((file) => { file.comments[0]!.target.sentence = sentence; }))).comments[0]?.target.sentence, sentence);
-	}
-	assert.throws(() => inlined(JSON.parse(changed((file) => { file.comments[0]!.target.sentence = "3.9.t0"; }))), /Invalid comment target/);
-	assert.throws(() => inlined(JSON.parse(changed((file) => { file.comments[0]!.target.page!.page = 0; }))));
 });

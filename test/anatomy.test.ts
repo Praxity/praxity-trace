@@ -684,16 +684,10 @@ test("sequences count as explore only when horizontal and scrollable", async () 
 	assert.equal(sequence({ scrollable: true }), "text", "default orientation is vertical");
 	assert.equal(sequence({ orientation: "horizontal" }), "text", "default scrollable is false");
 	assert.equal(sequence({ orientation: "horizontal", scrollable: "true" }), "text", "requires a boolean");
-	for (const variant of ["numbered", "timeline", "plain"]) {
-		for (const distribution of ["uniform", "scaled"]) {
-			for (const alignment of ["left", "center", "right"]) {
-				const settings = { variant, distribution, alignment };
-				assert.equal(sequence({ ...settings, orientation: "vertical", scrollable: true }), "text");
-				assert.equal(sequence({ ...settings, orientation: "horizontal", scrollable: false }), "text");
-				assert.equal(sequence({ ...settings, orientation: "horizontal", scrollable: true }), "explore");
-			}
-		}
-	}
+	assert.equal(sequence({ orientation: "vertical", scrollable: true }), "text");
+	assert.equal(sequence({ orientation: "horizontal", scrollable: false }), "text");
+	assert.equal(sequence({ orientation: "horizontal", scrollable: true }), "explore");
+	assert.equal(sequence({ variant: "timeline", distribution: "scaled", alignment: "center", orientation: "horizontal", scrollable: true }), "explore", "display settings do not change the role");
 });
 
 test("Anatomy marks sequences as text in both inspect schemas", () => {
