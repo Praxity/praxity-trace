@@ -3,7 +3,7 @@ import type { Course } from "./inspect.ts";
 import { buildPlaces, lessonTags, esc, locateBlocks, type Places, where, wheres } from "./places.ts";
 import { generated, generatedSummary, method, viewBlock } from "./modes.ts";
 
-export const PROMPT_VERSION = "terms/2";
+export const PROMPT_VERSION = "terms/3";
 
 export const KINDS = ["term", "reference", "premise"] as const;
 export type Kind = (typeof KINDS)[number];
@@ -66,8 +66,8 @@ export async function prepareTerms(course: Course, directory: string): Promise<v
 	await writeBundle(course, directory, "terms", PROMPT_VERSION, PROMPT);
 }
 
-export function parseTerms(json: string, course: Course): TermsAnswer {
-	const answer = readAnswer(json, course, "terms", PROMPT_VERSION);
+export function parseTerms(json: string, course: Course, source = "answer.json"): TermsAnswer {
+	const answer = readAnswer(json, course, "terms", PROMPT_VERSION, source);
 	const { raw, problem, ref, text, list, record } = answer;
 	const blocks = new Map(locateBlocks(course).map((item) => [item.ref, item.block]));
 	const flags = list(raw.flags, "flags").map((value, i) => {

@@ -8,7 +8,7 @@ import { buildPlaces, esc, indexCourse, locateBlocks, pageKey, type Places } fro
 import { feedbackText, type Feedback } from "./text.ts";
 
 export const TAXONOMY_VERSION = "conole-task-families/1";
-export const PROMPT_VERSION = "tasks/3";
+export const PROMPT_VERSION = "tasks/4";
 export const TASK_TYPES = ["assimilative", "information handling", "communicative", "productive", "experiential", "adaptive"] as const;
 export type TaskType = (typeof TASK_TYPES)[number];
 export type AssessmentPurpose = "none" | "diagnostic" | "practice" | "summative" | "unknown";
@@ -60,8 +60,8 @@ export async function prepareTasks(course: Course, directory: string): Promise<v
 	await writeBundle(course, directory, "tasks", PROMPT_VERSION, PROMPT, { taxonomyVersion: TAXONOMY_VERSION });
 }
 
-export function parseTasks(json: string, course: Course): TasksAnswer {
-	const answer = readAnswer(json, course, "tasks", PROMPT_VERSION);
+export function parseTasks(json: string, course: Course, source = "answer.json"): TasksAnswer {
+	const answer = readAnswer(json, course, "tasks", PROMPT_VERSION, source);
 	const { raw, problem, ref, text, list, record } = answer;
 	if (raw.taxonomyVersion !== TAXONOMY_VERSION) problem(`taxonomyVersion must be ${TAXONOMY_VERSION}`);
 	const blocks = new Map(locateBlocks(course).map((item) => [item.ref, item.block]));

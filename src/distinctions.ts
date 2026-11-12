@@ -8,7 +8,7 @@ import { buildPlaces, lessonTags, esc, pageKey, type Places, wheres } from "./pl
  * states the difference, shows contrasting examples, and asks learners to tell them apart.
  * Interleaved, discriminating examples help learners classify new cases (Kornell and Bjork, 2008).
  */
-export const PROMPT_VERSION = "distinctions/2";
+export const PROMPT_VERSION = "distinctions/3";
 
 export interface Distinction {
 	a: string;
@@ -70,8 +70,8 @@ export async function prepareDistinctions(course: Course, directory: string): Pr
 	await writeBundle(course, directory, "distinctions", PROMPT_VERSION, PROMPT);
 }
 
-export function parseDistinctions(json: string, course: Course): DistinctionsAnswer {
-	const answer = readAnswer(json, course, "distinctions", PROMPT_VERSION);
+export function parseDistinctions(json: string, course: Course, source = "answer.json"): DistinctionsAnswer {
+	const answer = readAnswer(json, course, "distinctions", PROMPT_VERSION, source);
 	const { raw, problem, types, ref, text, list, record } = answer;
 	const pairs = list(raw.pairs, "pairs").map((value, i) => {
 		const at = `pairs[${i}]`;

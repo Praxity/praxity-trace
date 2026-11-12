@@ -4,7 +4,7 @@ import type { Course } from "./inspect.ts";
 import { generated, generatedSummary, viewBlock } from "./modes.ts";
 import { buildPlaces, lessonTags, esc, locateBlocks, type Places, where, wheres } from "./places.ts";
 
-export const PROMPT_VERSION = "visuals/2";
+export const PROMPT_VERSION = "visuals/3";
 
 export const STRUCTURES = ["sequence", "cause", "comparison", "hierarchy", "mapping", "change"] as const;
 export type Structure = (typeof STRUCTURES)[number];
@@ -68,8 +68,8 @@ export async function prepareVisuals(course: Course, directory: string): Promise
 	await writeBundle(course, directory, "visuals", PROMPT_VERSION, PROMPT);
 }
 
-export function parseVisuals(json: string, course: Course): VisualsAnswer {
-	const answer = readAnswer(json, course, "visuals", PROMPT_VERSION);
+export function parseVisuals(json: string, course: Course, source = "answer.json"): VisualsAnswer {
+	const answer = readAnswer(json, course, "visuals", PROMPT_VERSION, source);
 	const { raw, problem, ref, text, list, record } = answer;
 	const blocks = new Map(locateBlocks(course).map((item) => [item.ref, item.block]));
 	const values = list(raw.opportunities, "opportunities");

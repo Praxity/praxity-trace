@@ -1,7 +1,7 @@
 import { COURSE_TEXT_GUIDE, type Interpretation, readAnswer, readInterpretation, writeBundle } from "./bundle.ts";
 import type { Course } from "./inspect.ts";
 
-export const PROMPT_VERSION = "concepts/4";
+export const PROMPT_VERSION = "concepts/5";
 
 export const ROLES = ["preview", "defined", "example", "mentioned", "activity", "checked", "recap"] as const;
 export type Role = (typeof ROLES)[number];
@@ -58,8 +58,8 @@ export async function prepareConcepts(course: Course, directory: string): Promis
 
 const ROLE_SET = new Set<string>(ROLES);
 
-export function parseConcepts(json: string, course: Course): ConceptsAnswer {
-	const answer = readAnswer(json, course, "concepts", PROMPT_VERSION);
+export function parseConcepts(json: string, course: Course, source = "answer.json"): ConceptsAnswer {
+	const answer = readAnswer(json, course, "concepts", PROMPT_VERSION, source);
 	const { raw, problem, ref, text, list, record } = answer;
 	const concepts = list(raw.concepts, "concepts").map((value, i) => {
 		const item = record(value, `concepts[${i}]`);

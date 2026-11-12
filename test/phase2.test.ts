@@ -166,7 +166,7 @@ test("CLI derives task links using current synthetic answers and leaves them out
 	const input = join(directory, "inspect.json"), alignment = join(directory, "alignment.json"), tasks = join(directory, "tasks.json");
 	writeFileSync(input, fixture("tasks/judgment/inspect.json"));
 	writeFileSync(tasks, json);
-	writeFileSync(alignment, JSON.stringify({ view: "alignment", promptVersion: "alignment/14-projection-2", courseHash: courseHash(course), ...review([knowledge("1.1.2"), knowledge("1.2.3", [{ ref: "1.2.2", channel: "screen" }], ["O1"])], [objective("O1", "1.2.2")]) }));
+	writeFileSync(alignment, JSON.stringify({ view: "alignment", promptVersion: "alignment/15-projection-2", courseHash: courseHash(course), ...review([knowledge("1.1.2"), knowledge("1.2.3", [{ ref: "1.2.2", channel: "screen" }], ["O1"])], [objective("O1", "1.2.2")]) }));
 	for (const withTasks of [false, true]) {
 		const output = join(directory, withTasks ? "with-tasks" : "without-tasks");
 		const run = spawnSync(process.execPath, ["src/cli.ts", "report", input, "--alignment", alignment, ...(withTasks ? ["--tasks", tasks] : []), "--out", output], { encoding: "utf8" });

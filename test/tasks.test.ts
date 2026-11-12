@@ -60,8 +60,8 @@ test("tasks bundle and table expose the coding rule, every quote and page status
 	const manifest = JSON.parse(await readFile(join(directory, "manifest.json"), "utf8"));
 	const prompt = await readFile(join(directory, "prompt.md"), "utf8");
 	assert.equal(manifest.taxonomyVersion, "conole-task-families/1");
-	assert.equal(manifest.promptVersion, "tasks/3-projection-2");
-	assert.match(prompt, /"promptVersion": "tasks\/3-projection-2"/);
+	assert.equal(manifest.promptVersion, "tasks/4-projection-2");
+	assert.match(prompt, /"promptVersion": "tasks\/4-projection-2"/);
 	assert.match(prompt, /adaptive = change a model or simulation/);
 	const view = tasksView(course, answer);
 	const html = renderTasks(view);

@@ -1,5 +1,6 @@
+import { parseJson, readInput } from "./input.ts";
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { COURSE_TEXT_GUIDE, readAnswer, writeBundle } from "./bundle.ts";
 import { isViewId, type ViewId } from "./guides.ts";
@@ -9,7 +10,7 @@ import { generated } from "./modes.ts";
 import { buildPlaces, esc, wheres } from "./places.ts";
 import type { Report } from "./report.ts";
 
-export const PROMPT_VERSION = "recommendations/3";
+export const PROMPT_VERSION = "recommendations/4";
 
 export interface Recommendation {
 	focus: string;
@@ -41,8 +42,10 @@ Say what to inspect and which evidence in the views supports it. Include an alte
 
 ## Material
 
+${COURSE_TEXT_GUIDE}
+
 - \`report.json\`: every view's measurements and generated readings. \`guides\` lists, per view id, patterns and what each could mean. Views that need a model answer appear only when that answer was supplied.
-- \`course.md\`: the course text. ${COURSE_TEXT_GUIDE}
+- \`course.md\`: the course text.
 
 ## Steps
 
@@ -81,7 +84,7 @@ Rules:
 `;
 
 export async function prepareRecommendations(course: Course, reportPath: string, directory: string): Promise<void> {
-	const report = JSON.parse(await readFile(reportPath, "utf8")) as Record<string, unknown>;
+	const report = parseJson(await readInput(reportPath), reportPath) as Record<string, unknown>;
 	if (report.courseHash !== courseHash(course)) throw new Error("report.json was built from a different course revision; build the report again");
 	const hash = reportHash(report);
 	await writeBundle(course, directory, "recommendations", PROMPT_VERSION, PROMPT, { reportHash: hash });
@@ -89,8 +92,8 @@ export async function prepareRecommendations(course: Course, reportPath: string,
 	await writeFile(join(directory, "report.json"), `${JSON.stringify(rest, null, 2)}\n`);
 }
 
-export function parseRecommendations(json: string, course: Course, report: Report): RecommendationsView {
-	const answer = readAnswer(json, course, "recommendations", PROMPT_VERSION);
+export function parseRecommendations(json: string, course: Course, report: Report, source = "answer.json"): RecommendationsView {
+	const answer = readAnswer(json, course, "recommendations", PROMPT_VERSION, source);
 	const { raw, problem, ref, text, list, record } = answer;
 	if (raw.reportHash !== reportHash(report)) problem("it was written from a different report; prepare a new bundle from this report");
 	const present = new Set(presentViews(report));
