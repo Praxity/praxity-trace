@@ -1,30 +1,34 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFile, lstat, mkdir, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
+import { copyFile, lstat, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const help = "Usage: node scripts/package.mjs --output <new-directory>";
+const help = "Usage: node scripts/package.mjs --output <new-directory> | --npm";
 
 let output;
+let npm;
 try {
-	const { values } = parseArgs({ options: { output: { type: "string" }, help: { type: "boolean", short: "h" } } });
+	const { values } = parseArgs({ options: { npm: { type: "boolean" }, output: { type: "string" }, help: { type: "boolean", short: "h" } } });
 	if (values.help) {
 		console.log(help);
 		process.exit(0);
 	}
-	if (!values.output?.trim()) throw new Error("--output is required.");
-	output = resolve(values.output);
+	npm = values.npm;
+	if (npm && values.output !== undefined) throw new Error("--npm cannot be combined with --output.");
+	if (!npm && !values.output?.trim()) throw new Error("--output is required.");
+	output = npm ? join(root, "lib") : resolve(values.output);
 } catch (error) {
 	console.error(`${error.message}\n${help}`);
 	process.exit(2);
 }
 
 try {
-	console.log(JSON.stringify(await build(output)));
+	if (npm) await compileRuntime(output);
+	else console.log(JSON.stringify(await build(output)));
 } catch (error) {
 	console.error(error.message);
 	process.exitCode = 1;
@@ -176,4 +180,16 @@ async function build(directory) {
 	};
 	await writeFile(join(directory, "inventory.json"), `${JSON.stringify(inventory, null, 2)}\n`);
 	return { ok: true, output: directory, inventory: join(directory, "inventory.json"), version: manifest.version, fileCount: files.length };
+}
+
+async function compileRuntime(directory) {
+	const { default: ts } = await import("typescript-api");
+	await rm(directory, { recursive: true, force: true });
+	await mkdir(directory, { recursive: true });
+	for (const file of await readdir(join(root, "src"))) {
+		if (!file.endsWith(".ts")) throw new Error(`Unrecognized runtime asset: src/${file}`);
+		const source = await readFile(join(root, "src", file), "utf8");
+		const result = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.ESNext, rewriteRelativeImportExtensions: true } });
+		await writeFile(join(directory, file.replace(/\.ts$/, ".js")), result.outputText);
+	}
 }

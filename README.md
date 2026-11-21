@@ -12,7 +12,14 @@ Status: experimental. Views and the report format may change between versions.
 
 ## Install
 
-Trace needs Node 24.18 or newer and pnpm.
+Trace requires Node `>=24.22.1 <25`. Install a supplied npm tarball with:
+
+```sh
+npm install ./praxity-trace-0.1.1.tgz
+npx praxity-trace --help
+```
+
+To work from source, install pnpm and run:
 
 ```sh
 git clone https://github.com/Praxity/praxity-trace.git
@@ -20,8 +27,8 @@ cd praxity-trace
 pnpm install
 ```
 
-Run it with `node src/cli.ts`, or link the `praxity-trace` command with
-`pnpm link --global`.
+Run source with `node src/cli.ts`. To link the compiled `praxity-trace` command,
+run `pnpm prepack` followed by `pnpm link --global`.
 
 ## Read a course
 

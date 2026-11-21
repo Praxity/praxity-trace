@@ -1,6 +1,6 @@
 # Node and TypeScript, not Python
 
-Trace runs on Node 24 with type-stripped TypeScript. Python has better NLP (spaCy dependency parsing, textstat) and was the main alternative. Node won because Rubato and Studio's CLI already ship a Node 24 runtime, so bundling Trace adds almost nothing, while bundling Python and its models adds hundreds of megabytes. Most planned views are counting and timing, and semantic work goes to bundles. If a view later needs a dependency parser, add an optional Python sidecar that reads the same bundle.
+Trace requires Node `>=24.22.1 <25` and runs source with type-stripped TypeScript. Python has better NLP (spaCy dependency parsing, textstat) and was the main alternative. Node won because Rubato and Studio's CLI already ship a Node 24 runtime, so bundling Trace adds almost nothing, while bundling Python and its models adds hundreds of megabytes. Most planned views are counting and timing, and semantic work goes to bundles. If a view later needs a dependency parser, add an optional Python sidecar that reads the same bundle.
 
 ## Implementation constraints
 
@@ -29,3 +29,19 @@ Fatal decoding refuses malformed bytes rather than silently replacing text.
 ### `src/input.ts`: `parseJson`
 
 Keep engine diagnostics, which may quote the entire input, out of errors.
+
+## npm distribution
+
+Node refuses to strip TypeScript under `node_modules`. The npm package therefore
+ships compiled `lib/` JavaScript. `prepack` calls `scripts/package.mjs --npm`,
+using the existing TypeScript compiler API dev dependency with ES2023 output and
+rewritten relative import extensions. This preserves the function source used
+by `inlineClient`. The existing portable build keeps raw TypeScript and its
+inventory unchanged. Both layouts read runtime data and package metadata from
+the same relative paths.
+
+The npm allowlist includes the tasks coding guide, which the tasks prompt names
+by package path, alongside the skill, data and legal notices. npm installs
+runtime dependencies; development tools are needed only when building the tarball.
+Trace consumes Studio inspect JSON supplied by the caller; it does not locate
+or launch Studio.

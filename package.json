@@ -6,17 +6,19 @@
 	"type": "module",
 	"description": "Design diagnostics for learning courses",
 	"bin": {
-		"praxity-trace": "src/cli.ts"
+		"praxity-trace": "lib/cli.js"
 	},
 	"scripts": {
 		"package": "node scripts/package.mjs",
 		"typecheck": "tsc --noEmit",
 		"test": "node --test test/*.test.ts",
 		"verify": "pnpm lint && pnpm typecheck && pnpm test",
-		"lint": "node scripts/check-comments.mjs"
+		"lint": "node scripts/check-comments.mjs",
+		"prepack": "node scripts/package.mjs --npm",
+		"test:npm": "node scripts/verify-npm-smoke.mjs"
 	},
 	"engines": {
-		"node": ">=24.18"
+		"node": ">=24.22.1 <25"
 	},
 	"packageManager": "pnpm@11.5.3",
 	"devDependencies": {
@@ -28,5 +30,20 @@
 	},
 	"dependencies": {
 		"parse5": "8.0.1"
+	},
+	"files": [
+		"lib/",
+		"data/bloom-verbs.json",
+		"data/tubelex-en.tsv.gz",
+		"skill/",
+		"docs/task-coding-guide.md",
+		"README.md",
+		"LICENSE",
+		"LICENSING.md",
+		"NOTICE.md"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Praxity/praxity-trace"
 	}
 }
