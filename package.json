@@ -37,6 +37,7 @@
 		"data/tubelex-en.tsv.gz",
 		"skill/",
 		"docs/task-coding-guide.md",
+		"test/fixtures/tasks/",
 		"README.md",
 		"LICENSE",
 		"LICENSING.md",

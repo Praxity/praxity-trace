@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -25,11 +25,25 @@ try {
 	const [packed] = JSON.parse(run(npm, ["pack", "--json", "--pack-destination", scratch], root, { ...process.env, ...environment }));
 	console.log(JSON.stringify({ filename: packed.filename, size: packed.size, unpackedSize: packed.unpackedSize, files: packed.files.map(file => file.path) }, null, 2));
 	assert.ok(packed.files.some(file => file.path === "lib/cli.js"));
-	assert.ok(!packed.files.some(file => /^(?:src|test|scripts|node_modules)\//.test(file.path)));
+	assert.ok(!packed.files.some(file => /^(?:src|scripts|node_modules)\/|^test\/(?!fixtures\/tasks\/)/.test(file.path)));
 	const project = join(scratch, "clean install");
 	await mkdir(project);
 	await writeFile(join(project, "package.json"), '{"private":true}\n');
 	run(npm, ["install", join(scratch, packed.filename), "--no-audit", "--no-fund"], project);
+	const packedPaths = new Set(packed.files.map(file => file.path));
+	for (const file of packed.files.filter(file => /^(?:skill|docs)\/.*\.md$/i.test(file.path))) {
+		const markdown = await readFile(join(project, "node_modules/praxity-trace", file.path), "utf8");
+		const links = [
+			...markdown.matchAll(/\]\(\s*(?:<([^>]+)>|([^\s)]+))(?:\s+["'][^\n]*?["'])?\s*\)/g),
+			...markdown.matchAll(/^\s*\[[^\]]+\]:\s*(?:<([^>]+)>|(\S+))/gm),
+		];
+		for (const link of links) {
+			const href = link[1] ?? link[2];
+			if (!href || /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i.test(href)) continue;
+			const target = posix.normalize(posix.join(posix.dirname(file.path), decodeURIComponent(href.split(/[?#]/)[0]))).replace(/\/$/, "");
+			assert.ok(packedPaths.has(target) || packed.files.some(candidate => candidate.path.startsWith(`${target}/`)), `${file.path}: unpackaged Markdown link ${href}`);
+		}
+	}
 	const npx = join(dirname(npm), "npx-cli.js");
 	assert.match(run(npx, ["--no-install", "praxity-trace", "--help"], project), /Usage:/);
 	const input = join(project, "synthetic course");

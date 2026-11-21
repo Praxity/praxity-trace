@@ -7,7 +7,7 @@ description: Chart a Praxity course or HTML export as a report of composition, p
 
 Trace describes a course and leaves judgment to the designer. Report what the views show, and label your own reading as interpretation.
 
-Commands below use Rubato's form, `praxity trace <command>`. A standalone install runs the same commands as `praxity-trace <command>`, or `npx praxity-trace <command>` for an npm install. Node `>=24.22.1 <25` is required. Quote paths that contain spaces.
+Commands below use Rubato's form, `praxity trace <command>`. A standalone install runs the same commands as `praxity-trace <command>`, `node "<package>/src/cli.ts" <command>` for the portable build, or `npx praxity-trace <command>` for an npm install. Node `>=24.22.1 <25` is required. Quote paths that contain spaces.
 
 ## Report on a course
 

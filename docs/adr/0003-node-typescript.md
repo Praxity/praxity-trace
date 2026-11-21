@@ -37,11 +37,13 @@ ships compiled `lib/` JavaScript. `prepack` calls `scripts/package.mjs --npm`,
 using the existing TypeScript compiler API dev dependency with ES2023 output and
 rewritten relative import extensions. This preserves the function source used
 by `inlineClient`. The existing portable build keeps raw TypeScript and its
-inventory unchanged. Both layouts read runtime data and package metadata from
-the same relative paths.
+inventory unchanged. Runtime data and package metadata remain one directory
+above each layout's modules (`src/` or `lib/`).
 
 The npm allowlist includes the tasks coding guide, which the tasks prompt names
-by package path, alongside the skill, data and legal notices. npm installs
+by package path, and its linked synthetic task examples, alongside the skill,
+data and legal notices. The smoke proof checks relative Markdown links in
+shipped skill and docs files against the npm pack file list. npm installs
 runtime dependencies; development tools are needed only when building the tarball.
 Trace consumes Studio inspect JSON supplied by the caller; it does not locate
 or launch Studio.

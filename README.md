@@ -12,10 +12,11 @@ Status: experimental. Views and the report format may change between versions.
 
 ## Install
 
-Trace requires Node `>=24.22.1 <25`. Install a supplied npm tarball with:
+Trace requires Node `>=24.22.1 <25`. Replace `<version>` with the supplied
+tarball's version and install it with:
 
 ```sh
-npm install ./praxity-trace-0.1.1.tgz
+npm install "./praxity-trace-<version>.tgz"
 npx praxity-trace --help
 ```
 
