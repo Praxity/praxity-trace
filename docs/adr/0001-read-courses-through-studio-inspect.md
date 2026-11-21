@@ -12,3 +12,9 @@ Praxity Trace is source-available under the unmodified
 Versions up to and including v0.1.1 were released under PolyForm Perimeter
 1.0.1 with the Praxity Community Permission 1.0. Copies of those versions keep
 those terms.
+
+## 2026-11-21
+
+The licensing point recorded above is superseded by the move to the
+[MIT licence](../../LICENSE), including for earlier versions. The decision to
+read courses through Studio's inspect command remains in effect.

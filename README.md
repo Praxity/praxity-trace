@@ -68,4 +68,13 @@ documents every command and bundle for agents.
   language.
 - Trace gives no scores, grades or pass marks.
 
-Praxity Trace by Ariel Harlap. Source-available under the PolyForm Perimeter License 1.0.1: free at home and at work, including paid client work. See [LICENSING.md](LICENSING.md).
+## Licence
+
+Praxity Trace by Ariel Harlap. Praxity-authored code is licensed under the
+[MIT licence](LICENSE). Third-party components and data keep their own licences;
+see [NOTICE.md](NOTICE.md).
+
+Earlier versions of this repository published under PolyForm Perimeter 1.0.1
+or earlier Praxity terms are also available under the MIT licence from 2026-11-21.
+
+See [LICENSING.md](LICENSING.md) for details.

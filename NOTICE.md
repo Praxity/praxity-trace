@@ -8,9 +8,7 @@ Canonical attribution: **Praxity Trace by Ariel Harlap**
 
 Project: <https://github.com/Praxity/praxity-trace>
 
-Praxity Trace is source-available under the unmodified
-[PolyForm Perimeter License 1.0.1](https://polyformproject.org/licenses/perimeter/1.0.1).
-The `LICENSE` file is authoritative. This page explains it in everyday language.
+Praxity-authored code in Praxity Trace is licensed under the [MIT licence](LICENSE).
 
 ## Contributors
 
@@ -18,13 +16,6 @@ The `LICENSE` file is authoritative. This page explains it in everyday language.
 
 External code contributions are not accepted during development. Git metadata
 alone is not used to infer copyright ownership or contributor credit.
-
-## Licence text
-
-The licence includes the unmodified
-[PolyForm Perimeter License 1.0.1](https://polyformproject.org/licenses/perimeter/1.0.1),
-copyright PolyForm Project Inc. The PolyForm Project separately permits reuse
-of its licence texts.
 
 ## Third-party data
 
