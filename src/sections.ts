@@ -14,11 +14,6 @@ import { renderVisuals } from "./visuals.ts";
 import { renderTasks } from "./tasks.ts";
 import { renderItemCues } from "./item-cues-view.ts";
 
-/**
- * The report's sections in reading order: which views each draws, when each view has data, and
- * how the section renders. The report, the views a recommendation may cite, and the checks that
- * every view has a guide all read this list, so a new view is added here once.
- */
 export interface Section {
 	views: Array<{ id: ViewId; present: (report: Report) => boolean }>;
 	render: (report: Report) => string;
@@ -26,14 +21,11 @@ export interface Section {
 
 const always = () => true;
 
-/** A section that gathers several views under one heading. The body is drawn after the heading, so the contents rail lists them in page order. */
 const section = (id: string, title: string, question: string, body: () => string) => {
 	const head = sectionHead(id, title, question);
 	return `<section aria-labelledby="${id}">\n${head}\n${body()}\n</section>`;
 };
 
-// Broad to specific: what the course is, what it promises and whether it delivers, how ideas are
-// taught, how it is written, how it is presented.
 export const SECTIONS: Section[] = [
 	{ views: [{ id: "trace", present: always }], render: (report) => renderTrace(report.trace) },
 	{
@@ -86,6 +78,5 @@ export const SECTIONS: Section[] = [
 	},
 ];
 
-/** Views the report draws, in order; a recommendation may only cite these. */
 export const presentViews = (report: Report): ViewId[] =>
 	SECTIONS.flatMap((section) => section.views.filter((view) => view.present(report)).map((view) => view.id));

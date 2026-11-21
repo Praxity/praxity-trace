@@ -11,7 +11,6 @@ const fixture = async (name: string) => {
 	const course = parseCourse(await readFile(new URL("inspect.json", root), "utf8"));
 	const frozen = await readFile(new URL("answer.json", root), "utf8");
 	assert.throws(() => parseTasks(frozen, course), /expected view/);
-	// The preserved historical coding supplies synthetic test cases; every quote is revalidated.
 	const json = JSON.stringify({ ...JSON.parse(frozen), promptVersion: `${PROMPT_VERSION}-projection-2`, courseHash: courseHash(course), model: "synthetic-test" });
 	return { course, json, answer: parseTasks(json, course) };
 };

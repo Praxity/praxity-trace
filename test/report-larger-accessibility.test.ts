@@ -96,7 +96,6 @@ test("larger report keeps visual tables decorative and disclosures reachable", {
 		await context.test("a sentence comment in a table row keeps its own page and source, and stored comments are validated on load", async () => {
 			await page.setViewportSize({ width: 1440, height: 900 });
 			await page.locator('input[name="mode-all"][value="table"]').check();
-			// A row that lists sentences from several pages: the comment must take the sentence's page, not the row's first.
 			const target = await page.evaluate(() => {
 				for (const row of document.querySelectorAll("tr")) {
 					const first = row.querySelector<HTMLElement>("[data-page]")?.dataset.page;
@@ -135,7 +134,6 @@ test("larger report keeps visual tables decorative and disclosures reachable", {
 			assert.ok(comment?.quote?.exact.trim(), "The selected words are the quote");
 			await page.reload();
 			assert.equal(await page.locator("#comments-open").getAttribute("aria-label"), "Comments, 1", "A saved comment reloads from storage");
-			// Same course revision, one invalid field: the page must refuse it rather than load it.
 			await page.evaluate(([key, value]) => {
 				const file = JSON.parse(value!);
 				file.comments[0].target.sentence = "3.9.t0";

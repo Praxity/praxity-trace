@@ -121,11 +121,9 @@ function studioBlock(node: Element, authored: Map<string, RecordValue>, segments
 			}
 			return true;
 		});
-		// locateBlocks reads columns through data.items[].children.
 		data.items = [{ children: direct.map((child) => studioBlock(child, authored, segments)) }];
 	}
 	const script = segments.get(id);
-	// Studio also generates spoken headings. Its embedded block data identifies authored narration.
 	if (script?.length && (!saved || typeof (saved.data as RecordValue | undefined)?.narration === "string")) {
 		data.narration = saved && typeof (saved.data as RecordValue).narration === "string"
 			? (saved.data as RecordValue).narration : script.join("\n\n");
@@ -145,7 +143,6 @@ function authoredBlocks(config: RecordValue | undefined): Map<string, RecordValu
 	return authored;
 }
 
-/** Blocks directly inside root; nested blocks belong to their container. */
 function topBlocks(root: Element, authored: Map<string, RecordValue>, segments: Map<string, string[]>): Block[] {
 	return elements(root, (node) => attr(node, "data-block-type") !== undefined).filter((node) => {
 		let parent = node.parentNode;
@@ -198,7 +195,6 @@ async function ordinaryBlock(node: Element, directory: string, file: string): Pr
 	return { id: attr(node, "id") ?? `block-${node.sourceCodeLocation?.startOffset ?? 0}`, type, line: line(node), data };
 }
 
-/** Read cue prose only. Cue timestamps describe captions, never full media playback length. */
 async function readCaptionTracks(node: Element, directory: string, file: string): Promise<Transcript[]> {
 	const tracks: Transcript[] = [];
 	for (const track of elements(node, child => child.tagName === "track" && /^(captions|subtitles)$/i.test(attr(child, "kind") ?? ""))) {
@@ -215,20 +211,17 @@ async function readCaptionTracks(node: Element, directory: string, file: string)
 			const timing = rows.findIndex(row => row.includes("-->"));
 			return timing < 0 ? [] : rows.slice(timing + 1);
 		});
-		// Cues and their line wraps can divide one sentence; only authored punctuation ends it.
 		const prose = oneLine(stripTags(cues.join(" ").replace(/<\d{2}:\d{2}(?::\d{2})?\.\d{3}>/g, "")));
 		if (prose) tracks.push({ text: prose, origin: "caption-track", kind: node.tagName });
 	}
 	return tracks;
 }
 
-/** Caption evidence includes its owning block position; absent prose preserves the HTML byte hash. */
 const captionFingerprint = (blocks: Iterable<Block>) => [...blocks].flatMap((block, index) => {
 	const captions = transcripts(block).filter(item => item.origin === "caption-track");
 	return captions.length ? [JSON.stringify({ block: index, captions })] : [];
 }).join("\n");
 
-/** Studio markup nests media under its authored block; retain that block as the source pointer. */
 async function supplyCaptionTracks(doc: Node, pages: Page[], directory: string, file: string): Promise<string> {
 	const blocks = new Map<string, Block>();
 	const collect = (items: Block[]) => {
@@ -328,12 +321,10 @@ async function pagedCourse(files: Array<[string, { doc: Node; config?: RecordVal
 		schema: "praxity-html/0",
 		studioVersion: "",
 		course: { title: typeof config?.courseTitle === "string" ? config.courseTitle : "HTML course", locale: (html && attr(html, "lang")) || (typeof config?.sourceLocale === "string" ? config.sourceLocale : "und") },
-		// A lesson's pages span several files: its first page's file names the lesson, and block lines point into each page's own file.
 		lessons: [...lessons.values()].map((lesson) => ({ file: lesson.files[0] as string, title: lesson.title, sha256: lesson.hash.digest("hex"), pages: lesson.pages })),
 	};
 }
 
-/** Read static HTML into the same Course model used by inspect JSON. */
 export async function readHtmlCourse(directory: string): Promise<Course> {
 	const files = await filesIn(directory);
 	const parsed = new Map<string, { doc: Node; config?: RecordValue; bytes: Buffer }>();
@@ -350,7 +341,6 @@ export async function readHtmlCourse(directory: string): Promise<Course> {
 		if (error.code === "ENOENT") return undefined;
 		throw error;
 	});
-	// Studio's page layout writes one file per page; its config names the page's lesson and position.
 	const paged = [...parsed].filter(([, item]) => typeof item.config?.pageId === "string" && typeof item.config.lessonId === "string" && !first(item.doc, (node) => node.tagName === "article" && hasClass(node, "deck-slide")));
 	if (paged.length && !manifest) return pagedCourse(paged, directory);
 	const lessons: Lesson[] = [];

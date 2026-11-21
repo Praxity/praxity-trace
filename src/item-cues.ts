@@ -48,7 +48,6 @@ export const EXCLUSION_CODES = ["no-key-or-poll", "multiple-select", "insufficie
 export type ExclusionCode = typeof EXCLUSION_CODES[number];
 export interface ExcludedCueItem { ref: string; label: string; reason: string; code: ExclusionCode; bank: string; banks: string[] }
 
-/** Studio's visible inline forms, without CSS or attributes that could hide their text. */
 function probeHtml(html: string): string | null {
 	let rejected: string | null = null, malformed = false;
 	const reject = (detail: string) => { rejected ??= detail; return false; };
@@ -62,7 +61,6 @@ function probeHtml(html: string): string | null {
 			if (["p", "strong", "em", "code", "del", "mark"].includes(node.tagName)) attributes = [];
 			else if (node.tagName === "a") attributes = ["href"];
 			else if (node.tagName === "span") {
-				// HTML class tokens split on ASCII whitespace. Unicode spaces remain part of an unknown class.
 				const classAttribute = node.attrs.find(attr => attr.name === "class");
 				if (!classAttribute) return reject(node.attrs[0] ? `the '${node.attrs[0].name}' attribute on <span>` : "<span> without a supported class");
 				const classes = classAttribute.value.split(/[\t\n\f\r ]+/).filter(Boolean);
@@ -86,7 +84,6 @@ function probeHtml(html: string): string | null {
 	};
 	allowed(fragment);
 	if (!rejected && malformed) rejected = "malformed HTML";
-	// Fragment parsing silently discards some tags, including html/body; every source character must be accounted for.
 	if (!rejected && !covered.every(Boolean)) {
 		const tag = html.slice(covered.indexOf(0)).match(/^<\/?([a-z][\w:-]*)/i)?.[1];
 		rejected = tag ? `<${tag}> outside the parsed text` : "unconsumed HTML";
@@ -94,7 +91,6 @@ function probeHtml(html: string): string | null {
 	return rejected;
 }
 
-/** Reads only the existing course model and shared visible-text projection. */
 export function keyedChoices(course: Course): { items: CueItem[]; excluded: ExcludedCueItem[] } {
 	const index = indexCourse(course), groups = new Map<string, Set<string>>();
 	for (const item of index.blocks) for (const source of item.block.assessmentGroup?.memberRefs ?? []) {
@@ -129,7 +125,6 @@ export function keyedChoices(course: Course): { items: CueItem[]; excluded: Excl
 		const markup = [...stemTexts, ...labels].filter(text => text.format === "html").map(text => probeHtml(text.value)).find(detail => detail !== null);
 		if (markup) { skip("ineligible-stem", `The question uses ${markup}, which Trace can't safely check yet. Check this item by hand.`); continue; }
 		const visible = options.map((option, i) => screen(typed ? { typedTexts: [labels[i]!] } : { text: option.text }));
-		// Fail closed on leftover delimiters, including unfamiliar syntax, until the producer supplies rendered text.
 		const bracketField = [stem, ...visible].findIndex(text => /[\[\]{}]/.test(text));
 		if (bracketField !== -1) {
 			const bracket = [stem, ...visible][bracketField]!.match(/[\[\]{}]/)![0];
@@ -218,7 +213,6 @@ function cues(item: CueItem, english: boolean): CueFlag[] {
 	return flags;
 }
 
-/** Exact upper or lower Poisson-binomial tail; equal probabilities give the binomial tail. */
 export function binomialTail(right: number, probabilities: number[], tail: "upper" | "lower" = "upper"): number {
 	if (!Number.isInteger(right) || right < 0 || right > probabilities.length || probabilities.some(p => !Number.isFinite(p) || p < 0 || p > 1)) throw new Error("Invalid binomial inputs");
 	const mass = Array<number>(probabilities.length + 1).fill(0); mass[0] = 1;
@@ -226,7 +220,6 @@ export function binomialTail(right: number, probabilities: number[], tail: "uppe
 	return Math.min(1, (tail === "upper" ? mass.slice(right) : mass.slice(0, right + 1)).reduce((sum, p) => sum + p, 0));
 }
 
-/** Key-independent order; operator permutations use zero-based source indices. */
 export function probeOrder(item: CueItem, seed = 0): number[] {
 	const input = JSON.stringify([PROMPT_VERSION, seed, item.ref, item.options]);
 	return item.options.map((_, i) => ({ i, sort: createHash("sha256").update(`${input}\0${i}`).digest("hex") })).sort((a, b) => a.sort.localeCompare(b.sort)).map(row => row.i);
@@ -241,9 +234,7 @@ type MaskEligibility = MaskUnavailable | MaskReady;
 export class MaskSpaceError extends Error {}
 const englishLocale = (locale: string) => /^en(?:[-_][a-z0-9]+)*$/i.test(locale.trim());
 
-// Independently owned evidence, not MASK_KEEP: cross-language homographs never confirm English.
 const ENGLISH_EVIDENCE = new Set("the and if then than that this these those at by from into of to with about after before during which what who how when where why are were be been being have does did can could might would should it its they their them his she her you your we our one each some such more most not nor without less least only just merely usually often generally sometimes typically depends ask consult check discuss agree there because until while both either neither any other others same different very don't doesn't didn't isn't aren't wasn't weren't can't couldn't won't wouldn't shouldn't mustn't always never none every completely absolutely entirely all must necessarily may".split(" "));
-// shortcut: listed markers only; unlisted foreign words can pass an incorrect English declaration.
 const FOREIGN_ONLY = new Set("toujours jamais seulement parfois quelle faut vrai reçu einem einen welche welcher müssen immer nicht nur kann não você nunca sempre pelo pela são siempre devez doit lorsque avec".split(" "));
 const FOREIGN_HOMOGRAPHS = new Set("la le les des du dos das aux faux qui que para qual une quel sie".split(" "));
 export function englishEvidence(text: string): { words: number; evidence: number; conflicts: string[] } {
@@ -254,7 +245,6 @@ export function englishEvidence(text: string): { words: number; evidence: number
 }
 
 const HOLD_DETAIL = "Masked scoring is on hold: included lessons lack confirmed authored English language provenance in this inspect input. Add locale: en to course.yaml or lang: en per lesson. Use a Studio build with inspect language provenance and re-run praxity inspect. Stop and ask; do not compute masked tails by hand.";
-/** Declared language comes only from Studio. Text evidence can veto, never authorize it. */
 function maskedLanguage(course: Course, items: CueItem[]): MaskEligibility {
 	const index = indexCourse(course), unknown: string[] = [], foreign: string[] = [], legacyForeign: string[] = [];
 	for (const item of items) {
@@ -270,7 +260,6 @@ function maskedLanguage(course: Course, items: CueItem[]): MaskEligibility {
 	return { applies: true, status: "not run" };
 }
 
-/** Entire banks are runnable or unavailable; a blocked item never reduces a scored denominator. */
 function maskedPlan(course: Course, items: CueItem[], seed: number) {
 	const banks: Record<string, MaskEligibility> = {}, forms = new Map<string, ReturnType<typeof maskItem>>();
 	for (const bank of new Set(items.map(item => item.bank))) {
@@ -286,7 +275,6 @@ function maskedPlan(course: Course, items: CueItem[], seed: number) {
 	return { banks, forms, course: language.applies ? blocked ?? language : language, runnable: items.filter(item => banks[item.bank]!.applies) };
 }
 
-// ponytail: common article-sound exceptions, four spoken acronyms and spelled initialisms only; use pronunciation data if broader coverage is needed.
 const ARTICLE_SOUNDS = [
 	{ pattern: /^(?:hour|honest|honou?r|heir)/, vowel: true },
 ];
@@ -296,7 +284,6 @@ const PLURAL_BASES = new Set(["menu"]);
 const AN_INITIALS = "aefhilmnorsx";
 const vowelSound = (word: string, initialism: boolean) => SPOKEN_ACRONYMS.has(word) || YOU_SOUND_WORDS.has(word) ? false : initialism ? AN_INITIALS.includes(word[0]!) : ARTICLE_SOUNDS.find(rule => rule.pattern.test(word))?.vowel ?? /^[aeiou]/.test(word.normalize("NFD"));
 
-/** One injective dictionary for the stem and every option, including regular -s families. This text transform does not authorize solver preparation or scoring. */
 export function maskItem(item: CueItem, seed: number): { stem: string; options: string[] } {
 	const texts = [item.stem, ...item.options].map(text => text.normalize("NFC"));
 	const rawWords = texts.flatMap(text => text.match(WORDS) ?? []);
@@ -327,7 +314,6 @@ export function maskItem(item: CueItem, seed: number): { stem: string; options: 
 		if (replacement === undefined) throw new MaskSpaceError(`Masked probe not applicable: no unused same-length form for an item at ${item.ref}. Guessing cues are unverified.`);
 		for (const suffix of suffixes) { dictionary.set(base + suffix, replacement + suffix); used.add(replacement + suffix); }
 	}
-	// A digit substitution is a per-item derangement, preserving equality and digit counts.
 	const digits = Array.from({ length: 10 }, (_, i) => String(i)).sort((a, b) => createHash("sha256").update(`${seed}\0${item.ref}\0digit\0${a}`).digest("hex").localeCompare(createHash("sha256").update(`${seed}\0${item.ref}\0digit\0${b}`).digest("hex")));
 	const digitMap = new Map(digits.map((digit, i) => [digit, digits[(i + 1) % digits.length]!]));
 	const masked = texts.map(text => text.replace(WORDS, word => {
@@ -350,7 +336,6 @@ export interface ItemCuesAnswer {
 	coverTheOptions?: { bundleId: string; probe: string; model: string; judgeModel?: string; answers: Array<{ ref: string; answer: string; coverJudgement?: CoverJudgement }> };
 }
 
-/** Operator evidence lives beside the bundle; never give the review folder to solvers. */
 export const itemCuesReviewDirectory = (directory: string) => `${resolve(directory)}-review`;
 export async function prepareItemCues(course: Course, directory: string, seed = randomInt(2 ** 48 - 1), diagnostics = false): Promise<void> {
 	requireProbeInput(course);
@@ -468,7 +453,6 @@ export interface ItemCueRow {
 }
 export interface ItemCuesView { places: Places; excludedCount: number; excluded: ExcludedCueItem[]; course: ItemCueRow; banks: ItemCueRow[] }
 
-/** Exact fractional tie-credit distribution under random key placement; no rounded-credit approximation. */
 function convergenceScore(items: CueItem[]) {
 	const rows = items.map(item => ({ item, ...measurements(item) }));
 	const gcd = (a: bigint, b: bigint): bigint => b === 0n ? a : gcd(b, a % b);

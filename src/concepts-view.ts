@@ -8,9 +8,7 @@ export interface ConceptLane {
 	id: string;
 	name: string;
 	occurrences: Array<{ ref: string; role: Role; position: number }>;
-	/** Ref of the first `defined` occurrence, or null when the course never defines it. */
 	firstDefined: string | null;
-	/** Uses, examples or checks on pages before the first definition; previews and the defining page do not count. */
 	usedBeforeDefined: string[];
 	checks: number;
 	lessonCount: number;
@@ -52,11 +50,9 @@ export function conceptsView(course: Course, answer: ConceptsAnswer): ConceptsVi
 	const blocks = new Map(locateBlocks(course).map((item) => [item.ref, item.block]));
 	const concepts = answer.concepts
 		.map((concept) => {
-			// Only a question with a right answer is a knowledge check; an open prompt the model marked checked is an activity.
 			const occurrences = concept.occurrences
 				.map((occurrence) => ({
 					...occurrence,
-					// Demote a check only when the input shows it has no right answer; unknown correctness keeps the reviewer's reading.
 					role: occurrence.role === "checked" && isKnowledgeCheck(blocks.get(occurrence.ref) as Block) === false ? ("activity" as const) : occurrence.role,
 					position: places[occurrence.ref]?.position ?? 0,
 				}))
@@ -81,7 +77,6 @@ export function conceptsView(course: Course, answer: ConceptsAnswer): ConceptsVi
 				lessonCount: new Set(occurrences.map((occurrence) => places[occurrence.ref]?.lesson)).size,
 			};
 		})
-		// Teaching order: by first definition, so early uses sit left of each lane's first dot.
 		.sort((a, b) => sortKey(a) - sortKey(b));
 	const byId = new Map(concepts.map((concept) => [concept.id, concept]));
 	const prerequisites = new Map(answer.concepts.map((concept) => [concept.id, concept.prerequisites]));
@@ -138,7 +133,6 @@ const LABEL = 230;
 const PLOT = 700;
 const ROW = 18;
 
-/** Symbols follow GLOSSARY.md: one meaning per symbol across the report. */
 function mark(role: Role, x: number, y: number, title: string, page: string | null = null): string {
 	const tip = `<title>${title}</title>`;
 	const at = page ? ` data-page="${page}"` : "";
@@ -168,7 +162,6 @@ function lanes(view: ConceptsView): string {
 				`<line class="page" x1="${x(lesson.start) - 2}" x2="${x(lesson.start) - 2}" y1="${top - 6}" y2="${height}"/><text class="page-label" x="${x(lesson.start)}" y="12">L${index + 1}<title>${esc(lesson.title)}</title></text>`,
 		)
 		.join("");
-	// Mentions draw first so the stronger roles sit on top where marks coincide.
 	const order: Role[] = ["preview", "mentioned", "recap", "example", "activity", "defined", "checked"];
 	const rows = view.concepts
 		.map((concept, index) => {
@@ -203,7 +196,6 @@ function conceptTable(view: ConceptsView): string {
 	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Concept summary"><table class="blocks"><caption class="sr">Concept summary</caption><thead><tr><th scope="col">Concept</th><th scope="col">First defined</th><th scope="col" class="num">Examples</th><th scope="col" class="num">Mentions</th><th scope="col" class="num">Knowledge checks</th><th scope="col" class="num">Activities</th><th scope="col" class="num">Recaps</th><th scope="col" class="num">Lessons</th><th scope="col">Before its definition</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-/** Collapse flagged cycle links before measuring the longest prerequisite chain. */
 export function prerequisiteLayers(view: ConceptsView): ConceptLane[][] {
 	const group = new Map(view.concepts.map((concept) => [concept.id, concept.id]));
 	for (const link of view.dependencies.filter((link) => link.cycle)) {
@@ -249,7 +241,6 @@ function prerequisiteColumns(view: ConceptsView): string {
 	const cyclic = new Set(view.dependencies.filter((link) => link.cycle).flatMap((link) => [link.prerequisite, link.dependent]));
 	const positions = new Map(columns.flatMap((column, depth) => column.map((concept, row) => {
 		const cycle = cyclic.has(concept.id) ? " · cycle" : "";
-		// ponytail: estimate 12px chart text by character count; measure text if font variation needs exact placement.
 		const limit = cycle ? 20 : 28;
 		const label = (concept.name.length > limit ? `${concept.name.slice(0, limit - 1)}…` : concept.name) + cycle;
 		return [concept.id, { x: LEFT + depth * COLUMN, y: TOP + row * ROW, depth, label, end: Math.min(NODE, 12 + label.length * 12 * 0.6 + 4) }] as const;
@@ -270,7 +261,6 @@ function prerequisiteColumns(view: ConceptsView): string {
 			seen.add(id);
 			for (const next of outgoing.get(id) ?? []) if (drawn.has(next)) pending.push(next.dependent);
 		}
-		// Reduce against the remaining graph so alternate routes through cycles cannot all disappear.
 		if (!seen.has(link.dependent)) drawn.add(link);
 	}
 	const links = view.dependencies.filter((link) => drawn.has(link)).map((link) => {
@@ -296,7 +286,6 @@ function prerequisiteColumns(view: ConceptsView): string {
 				const ideal = a.y + (b.y - a.y) * (depth - a.depth) / (b.depth - a.depth);
 				const row = Math.max(0, Math.min(columns[depth]!.length - 1, Math.round((ideal - TOP) / ROW - 0.5)));
 				const y = TOP + (row + 0.5) * ROW, x = LEFT + depth * COLUMN;
-				// Cross the whole label area at a row gap; change height only between columns.
 				through({ x: x - 12, y });
 				curve += ` L${x + NODE + 8} ${y}`;
 				previous = { x: x + NODE + 8, y };
@@ -340,7 +329,6 @@ function dependencyOrder(view: ConceptsView): string {
 	return viewBlock({ id: "prerequisites", level: 3, title: "Prerequisite order", question: "Does each concept come after the ideas it builds on?", lead: `<p class="rule">${total - backward} of ${total} prerequisite links come in order${backward ? `; ${backward} ${backward === 1 ? "does" : "do"} not, shown in orange` : ""}.</p>${method(`<p>Definitions on the same page count as in order. Orange links point to a prerequisite defined later or not found. Each column is one step beyond the deepest prerequisite, based on the generated concept links. Concepts in a cycle share a column, ignoring steps within that cycle. Within columns, concepts are arranged to reduce crossing links, with course definition order breaking ties. The chart omits links implied by longer chains except orange links; the table retains every link. Hollow circles mean ${absence(view.partial, "never defined", "a definition was")}.</p>`)}`, chart: prerequisiteColumns(view) || undefined, table: `<div class="table-wrap" tabindex="0" role="region" aria-label="What each concept builds on"><table class="blocks dependencies"><caption class="sr">What each concept builds on</caption><thead><tr><th scope="col">Concept</th><th scope="col">Defined</th><th scope="col">Builds on</th></tr></thead><tbody>${rows}</tbody></table></div>` });
 }
 
-/** Callbacks keep headings in reading order: spacing, Concepts interpretation, then distinctions. */
 export function renderConcepts(view: ConceptsView, extra: () => string = () => "", distinctions: () => string = () => ""): string {
 	const before = view.concepts.filter((concept) => concept.usedBeforeDefined.length > 0).length;
 	const unchecked = view.concepts.filter((concept) => concept.firstDefined && concept.checks === 0).length;

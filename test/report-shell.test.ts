@@ -78,7 +78,6 @@ test("every Table-mode cell carries its column label and one shared rule stacks 
 			if (!attr(cell, "colspan")) assert.ok(attr(cell, "data-label"), `${attr(table, "class")} body cell needs a column label`);
 		}
 	}
-	// One owner for the narrow layout: renderers no longer hide header rows or write their own labels.
 	assert.equal(html.split(`content:attr(data-label) ": " / ""`).length - 1, 1);
 	assert.doesNotMatch(html, /thead\{position:absolute/);
 });
@@ -138,7 +137,6 @@ test("pace has one course-wide cumulative chart and running totals in its table"
 	assert.match(html, /data-mode="page"/);
 	assert.match(html, /name="pace-view" value="cumulative"/);
 	const cumulative = html.split('data-mode="cumulative"')[1]?.split('<div class="mode-table">')[0] ?? "";
-	// One course-wide chart, plus an expanded copy per lesson for the lesson filter.
 	const wholeCourse = cumulative.split('data-lesson="all">')[1]?.split('<div class="lesson-variant"')[0] ?? "";
 	assert.equal((wholeCourse.match(/<svg /g) ?? []).length, 1);
 	assert.match(cumulative, /class="lesson-variant" data-lesson="2" hidden/);
@@ -172,7 +170,6 @@ test("pace has one course-wide cumulative chart and running totals in its table"
 
 test("anatomy summary stays in both modes and explore blocks are not activities", () => {
 	const anatomyStart = html.indexOf('<div class="view" id="view-anatomy"');
-	// The summary sits before both panels, so it shows in Chart and Table mode alike.
 	const summary = html.indexOf('aria-label="Blocks, words and time by lesson"', anatomyStart);
 	const chartAt = html.indexOf('<div class="mode-chart">', anatomyStart);
 	assert.ok(summary > anatomyStart && summary < chartAt);
@@ -265,7 +262,6 @@ test("recommendations are tied to the report they were written from and link to 
 		recommendations: [item(views), item(["anatomy"]), item(["trace"])],
 	});
 	assert.throws(() => parseRecommendations(answer("stale"), course, report), /different report/);
-	// Alignment views are not in a report built without an alignment answer.
 	assert.throws(() => parseRecommendations(answer(reportHash(report), ["evidence"]), course, report), /not a view in this report/);
 	assert.throws(() => parseRecommendations(answer(reportHash(report), ["objectives"]), course, report), /not a view in this report/);
 	for (const id of ["review", "longest"]) assert.throws(() => parseRecommendations(answer(reportHash(report), [id]), course, report), /not a view in this report/);
@@ -347,10 +343,8 @@ test("every view's data rows and list items carry explicit lesson information", 
 			rows++;
 			seen.add(view);
 			const lessons = attrs["data-lesson"] ?? attrs["data-lessons"];
-			// Empty kind rows retain the matrix categories, even when no lesson has that kind.
 			if (!(view === "terms" && lessons === "")) assert.match(lessons ?? "", /^[1-9]\d*(?: [1-9]\d*)*$/, `${view}: ${tag} lacks lessons`);
 		}
-		// Method lists explain course-wide counting rules and template exclusions, not lesson data.
 		if ("childNodes" in node) for (const child of node.childNodes) walk(child, view, method, body);
 	}
 	walk(parse(renderHtml(allViews)));

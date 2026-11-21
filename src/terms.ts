@@ -12,10 +12,8 @@ export interface Flag {
 	ref: string;
 	channel: "screen" | "narration" | "transcript";
 	kind: Kind;
-	/** Exact text from the block, as shown in course.md. */
 	span: string;
 	note: string;
-	/** Where the course does explain it, when it does so elsewhere. */
 	explainedAt: string | null;
 }
 
@@ -118,7 +116,6 @@ const KIND_HELP: Record<Kind, string> = {
 	reference: "A word such as this, it or however whose referent or contrast is unclear, far away, or only in the other channel.",
 	premise: "A statement that relies on a fact, step or claim the course has not given.",
 };
-/** The kind's name, defined on hover and keyboard focus. */
 const kindName = (kind: Kind) => `<abbr class="defined" tabindex="0" title="${esc(KIND_HELP[kind])}">${KIND_LABEL[kind]}</abbr>`;
 
 const dot = (count: number) =>

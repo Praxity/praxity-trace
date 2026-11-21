@@ -26,7 +26,6 @@ test("real Studio schema 1 fixture reaches every prepare bundle and report, and 
 	const input = join(dir, "inspect.json");
 	writeFileSync(input, fixture);
 	const expected = courseHash(parseCourse(fixture));
-	// stdin and file share one reader; one report over stdin proves the channel.
 	const stdin = join(dir, "stdin");
 	cli(["report", "-", "--out", stdin], fixture);
 	for (const path of [input]) {
@@ -48,7 +47,6 @@ test("real Studio schema 1 fixture reaches every prepare bundle and report, and 
 		writeFileSync(answerPath, JSON.stringify({ view: "concepts", promptVersion: PROMPT_VERSION, courseHash: expected, model: "test", concepts: [], interpretation: [] }));
 		cli(["report", path, "--out", out, "--concepts", answerPath], fixture);
 		const html = readFileSync(join(out, "report.html"), "utf8");
-		// Static evidence only: the controller checks keyboard use and reflow in a browser.
 		const previews = JSON.parse(html.match(/<script type="application\/json" id="page-previews">([^<]*)<\/script>/)![1]!);
 		assert.ok(Object.values(previews).some((p) => (p as { unknownResponses: number }).unknownResponses > 0));
 		assert.ok(Object.values(previews).every((p) => (p as { partial: boolean }).partial));

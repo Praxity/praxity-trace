@@ -54,6 +54,8 @@ renders from it.
 
 ## Code
 
+- No code comments. Record non-obvious decisions in `docs/adr/` and known shortcuts as backlog items. `node scripts/check-comments.mjs` enforces this with a ratchet (`--update` after deleting comments).
+
 - Node runs `.ts` directly by type stripping, so write only erasable
   TypeScript: no enums, namespaces or parameter properties. End relative
   imports in `.ts`.

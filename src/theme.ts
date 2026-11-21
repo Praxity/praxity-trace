@@ -1,10 +1,5 @@
 import { inlineClient } from "./client.ts";
 import { segmented } from "./modes.ts";
-/**
- * Light / System / Dark. Views write their dark colours as `@media (prefers-color-scheme:dark){…}`;
- * this rewrites each such block so it applies when the reader picks Dark, or picks System on a dark
- * system, and never when they pick Light.
- */
 export function themeable(css: string): string {
 	const marker = "@media (prefers-color-scheme:dark){";
 	let out = "";
@@ -27,7 +22,6 @@ export function themeable(css: string): string {
 	return out + css.slice(from);
 }
 
-/** Runs in <head> so the saved theme applies before the first paint. */
 export const THEME_HEAD_SCRIPT = `try{const t=localStorage.getItem('trace-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch{}`;
 
 export const THEME_SWITCH = segmented("theme", "Theme", [
@@ -49,7 +43,6 @@ export function themeClient() {
 }
 export const THEME_SCRIPT = inlineClient(themeClient);
 
-/** color-scheme follows the choice so form controls and scrollbars match. */
 export const THEME_STYLE = `
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 `;

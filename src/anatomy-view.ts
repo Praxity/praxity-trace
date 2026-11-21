@@ -2,7 +2,6 @@ import { type LessonAnatomy, READING_WPM, type Rhythm, type Stretch } from "./an
 import { absence, generated, legend, lessonVariants, method, segmented, viewBlock } from "./modes.ts";
 import { esc, lessonHeading, pageKey } from "./places.ts";
 
-/** The report fields the Anatomy and Pace sections draw from. */
 type Shape = { anatomy: LessonAnatomy[]; rhythm: Rhythm; speakingWpm: number };
 
 const LANES = ["text", "media", "explore", "activity", "check", "unknown"] as const;
@@ -38,7 +37,6 @@ function rhythmNote({ withoutAction, textOnly, generatedBy }: Rhythm, partial: b
 				? `<ul>${runs.map((run) => `<li>${page(run.lesson, run.from)}–${page(run.lesson, run.to)} <span class="file">${run.pages} pages, ${Math.max(1, Math.round(run.seconds / 60))} min</span></li>`).join("")}</ul>`
 				: `<p class="rule">${none}</p>`
 		}</div>`;
-	// Activities written as prose instructions come from the alignment review, so say when they count.
 	const action = partial ? `Longest stretches where ${absence(true, "", "an activity or knowledge check was")}${generatedBy ? `, counting activities ${generated(generatedBy, "generated")} from prose instructions` : ""}` : generatedBy ? `Longest stretches without an activity or knowledge check, counting activities ${generated(generatedBy, "generated")} from prose instructions` : "Longest stretches without an activity or knowledge check";
 	return `<div class="rhythm">${group(action, withoutAction, "No lesson goes four or more pages without one.")}${group("Longest runs of text-only pages", textOnly, "No lesson has four or more in a row.")}</div>`;
 }
@@ -49,11 +47,9 @@ function barCell(value: number, max: number): string {
 }
 
 const minutes = (seconds: number) => Math.round(seconds / 6) / 10;
-/** "17 s", "1 min 22 s", "3 min". */
 export function duration(seconds: number): string {
 	const total = Math.round(seconds);
 	if (total < 60) return `${total} s`;
-	// Past ten minutes, seconds are noise.
 	if (total >= 600) return `${Math.round(total / 60)} min`;
 	const rest = total % 60;
 	return `${Math.floor(total / 60)} min${rest ? ` ${rest} s` : ""}`;
@@ -70,7 +66,6 @@ function compositionTable(lessons: LessonAnatomy[]): string {
 			(lesson) => lesson.marks.filter((mark) => lane(mark) === role).length,
 		]),
 	];
-	// Each column has its own scale, shared by every lesson in that column.
 	const maxima = columns.map(([, get]) => Math.max(...lessons.map(get)));
 	const rows = lessons
 		.map(
@@ -85,18 +80,12 @@ function compositionTable(lessons: LessonAnatomy[]): string {
 		.join("")}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
-/** Column width for course-wide charts: every page fits the content width. */
 const courseCell = (pages: number, max = 14) => Math.max(4, Math.min(max, 1000 / Math.max(1, pages)));
 const GRID_LABEL = 120;
 const GRID_TOP = 20;
 
-/**
- * Block types by page across the whole course, as a pixel grid like the course trace: one column per
- * page, one row per role, darker for more blocks of that role on the page.
- */
 function blockGrid(lessons: LessonAnatomy[], firstLesson = 1): string {
 	const pages = lessons.flatMap((lesson, index) => lesson.pace.map((page, pageIndex) => ({ lesson: index + firstLesson, number: page.number, title: page.title, start: pageIndex === 0, marks: lesson.marks.filter((mark) => mark.page === page.number) })));
-	// Square cells: the row pitch follows the column width, so a long course gets shorter rows, not taller pixels.
 	const cell = courseCell(pages.length);
 	const pitch = Math.max(cell + 2, 15);
 	const width = GRID_LABEL + pages.length * cell + 4;
@@ -144,7 +133,6 @@ function cumulativePace(lessons: LessonAnatomy[]): LessonAnatomy[] {
 	}));
 }
 
-/** A running total reads as lines: the whole course on one fixed-width chart, lessons marked. */
 function cumulativeChart(pages: Array<{ page: LessonAnatomy["pace"][number]; lesson: number; start: boolean }>, maxSeconds: number): string {
 	const W = 1100;
 	const H = 220;
@@ -178,7 +166,6 @@ function cumulativeChart(pages: Array<{ page: LessonAnatomy["pace"][number]; les
 function paceChart(lessons: LessonAnatomy[], maxSeconds: number, cumulative = false, firstLesson = 1): string {
 	const pages = lessons.flatMap((lesson, index) => lesson.pace.map((page, pageIndex) => ({ page, lesson: index + firstLesson, start: pageIndex === 0 })));
 	if (cumulative) return cumulativeChart(pages, maxSeconds);
-	// Per page: the whole course on one fixed-width chart, like the cumulative view.
 	const W = 1100;
 	const H = 150;
 	const axis = paceAxis(maxSeconds);
@@ -202,7 +189,6 @@ function paceChart(lessons: LessonAnatomy[], maxSeconds: number, cumulative = fa
 	return `<svg width="${W}" height="${H + 24}" viewBox="0 0 ${W} ${H + 24}" style="max-width:100%;height:auto" role="img" aria-label="Reading and narration time per page in ${axis.unit} across ${pages.length} pages; the table view has the numbers."><text class="axis-label" x="8" y="${16 + H / 2}" transform="rotate(-90 8 ${16 + H / 2})" text-anchor="middle">${axis.unit}</text>${grid}${lessonMarks}${bands}</svg>`;
 }
 
-/** A lesson's own running total, from zero at its first page. */
 function lessonRunningTotal(lesson: LessonAnatomy, number: number): string {
 	const running = cumulativePace([lesson]);
 	const max = Math.max(30, ...(running[0]?.pace ?? []).flatMap((page) => [page.readingSeconds, page.narrationSeconds]));

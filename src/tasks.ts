@@ -112,7 +112,6 @@ export interface TasksView {
 	countingUnit: "page presence";
 	taxonomyVersion: string;
 	annotations: Array<TaskAnnotation & {
-		/** Exact primary/evidence-ref join, derived from two generated answers. */
 		alignment?: {
 			refs: string[];
 			objectives: Array<Pick<AlignmentView["objectives"][number], "id" | "text" | "ref">>;

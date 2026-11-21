@@ -50,7 +50,6 @@ test("schema 0 authored media prose uses the same transcript interface and keeps
 	assert.deepEqual(previewLines([block], "Page"), [{ kind: "heading", text: "A recording" }]);
 });
 
-// Sentence boundaries preserve the current fingerprint; hidden-screen and glossary projection intentionally advanced it to /5.
 test("sentence boundaries keep the schema 1 fingerprint and reviewer evidence", async () => {
 	const course = await fixture();
 	assert.equal(courseHash(course), createHash("sha256").update(`trace-inspect/5\0${course.revision}`).digest("hex"));

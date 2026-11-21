@@ -5,7 +5,6 @@ import type { Course } from "./inspect.ts";
 import { esc, pageKey, short, where, type Place } from "./places.ts";
 import { legend, lessonVariants, method, viewBlock } from "./modes.ts";
 
-/** One page per column; course and concept rows use filled cells. */
 export type Phase = "set" | "hold" | "land";
 
 export type Symbol = "fill" | "concept" | "stated" | "taught" | "activity" | "check";
@@ -21,9 +20,7 @@ export interface TraceColumn {
 export interface TraceRow {
 	label: string;
 	group: "Course" | "Concepts" | "Objectives";
-	/** 1 for a sub-objective drawn under its parent. */
 	depth: 0 | 1;
-	/** Full objective group details shared by the row tooltip and Table mode. */
 	members?: Array<{ id: string; text: string; ref: string; place?: Place; parent?: { id: string; text: string } }>;
 	shared?: string[];
 	marks: Array<{ column: number; symbol: Symbol; size?: number; note: string }>;
@@ -40,8 +37,6 @@ const LAND = /\b(review\w*|reflect\w*|recap|wrap-?up|takeaways?)\b|\b(summar|con
 const SET = /\b(welcome|introduc|overview|orientation|getting started|navigation|how to use|acknowledg|learning outcomes|objectives)/i;
 const OUTCOMES = /by the end of|you will be able to|learning outcomes/i;
 
-// ponytail: introduction and review come from page titles and objective phrases;
-// add model classification only if designers find these title rules unreliable.
 function phaseOf(page: Course["lessons"][number]["pages"][number], first: boolean): Phase {
 	if (first) return "set";
 	if (LAND.test(page.title)) return "land";
@@ -115,8 +110,6 @@ export function traceView(
 			const place = view.places[ref];
 			return place ? at(place.lesson, place.page) : undefined;
 		};
-		// A group's parent is the group holding a member's parent from outside the group. Children are
-		// drawn right under their parent, so the indent reads as "builds toward the row above".
 		const groups = view.objectiveGroups;
 		const holder = new Map(groups.flatMap((group, index) => group.members.map((objective) => [objective.id, index] as const)));
 		const parentOf = (group: (typeof groups)[number]) => {
@@ -168,7 +161,6 @@ function symbol(mark: TraceRow["marks"][number], x: number, y: number, cell: num
 	const side = Math.max(5, Math.min(cell - 1, 8));
 	switch (mark.symbol) {
 		case "fill":
-			// Adjacent pages join into one run: a pixel strip with no gaps.
 			return `<rect class="t-fill"${at} x="${x - cell / 2}" y="${y - 6}" width="${cell + 0.3}" height="12">${tip}</rect>`;
 		case "check":
 			return `<rect class="t-check"${at} x="${x - side / 2}" y="${y - side / 2}" width="${side}" height="${side}">${tip}</rect>`;
@@ -179,19 +171,16 @@ function symbol(mark: TraceRow["marks"][number], x: number, y: number, cell: num
 		case "stated":
 			return `<path class="t-stated"${at} d="M${x} ${y - side / 2} L${x + side / 2} ${y} L${x} ${y + side / 2} L${x - side / 2} ${y} Z">${tip}</path>`;
 		case "concept":
-			// Area grows with the number of concepts first defined on the page.
 			return `<circle class="t-concept"${at} cx="${x}" cy="${y}" r="${Math.min(8, 1.6 + 2 * Math.sqrt(mark.size ?? 1)).toFixed(1)}">${tip}</circle>`;
 	}
 }
 
-/** One lesson's pages only, drawn wider: the lesson filter's expanded view. */
 function lessonTrace(view: TraceView, lesson: number): TraceView {
 	const keep = view.columns.map((column, index) => (column.lesson === lesson ? index : -1)).filter((index) => index >= 0);
 	const remap = new Map(keep.map((old, index) => [old, index]));
 	return {
 		columns: keep.map((index) => view.columns[index] as TraceColumn),
 		lessons: [{ title: view.lessons[lesson - 1]?.title ?? "", start: 0, end: keep.length }],
-		// Objective rows with nothing in this lesson are left out; course and concept rows stay as the frame.
 		rows: view.rows
 			.map((row) => ({ ...row, marks: row.marks.filter((mark) => remap.has(mark.column)).map((mark) => ({ ...mark, column: remap.get(mark.column) as number })) }))
 			.filter((row) => row.group !== "Objectives" || row.marks.length > 0),
@@ -219,7 +208,6 @@ function traceSvg(view: TraceView, maxCell = 12): string {
 		body += `<g><text class="lane" x="${row.depth ? 14 : 4}" y="${cy + 4}">${esc(label)}<title>${esc(title)}</title></text>${row.group === "Course" ? `<rect class="t-track" x="${LABEL}" y="${cy - 6}" width="${view.columns.length * cell}" height="12"/>` : `<line class="t-baseline" x1="${LABEL}" x2="${LABEL + view.columns.length * cell}" y1="${cy + 0.5}" y2="${cy + 0.5}"/>`}${row.marks
 			.map((mark) => {
 				const column = view.columns[mark.column];
-				// The page preview names the page; the title says only what the mark is.
 				const note = mark.note && mark.note !== column?.title ? `\n${esc(mark.note)}` : "";
 				const what = mark.symbol === "concept" ? (mark.size === 1 ? "New concept" : `${mark.size} new concepts`) : row.label;
 				const title = `${esc(what)}${note}`;
@@ -250,7 +238,6 @@ export function renderTrace(view: TraceView): string {
 		const ids = (items: string[] | undefined) => [...new Set(items ?? [])].join(", ");
 		return `<tr data-lesson="${column.lesson}"><th scope="row">${pageKey(column.lesson, column.page)}</th>${cell(column.title)}${cell(has("Introduction") ? "Yes" : "")}${cell(has("Review and summary") ? "Yes" : "")}${cell(has("Practice") ? "Yes" : "")}${cell(concepts)}${cell(ids(links?.stated))}${cell(ids(links?.instructed))}${cell(ids(links?.activities))}${cell(ids(links?.checks))}</tr>`;
 	}).join("")}</tbody></table></div>`;
-	// Course and concept rows are labelled in place; the legend covers the objective symbols only.
 	const keys: Array<[Symbol, string]> = [["stated", "Objective stated"], ["taught", "Instruction"], ["activity", "Activity"], ["check", "Knowledge check"]];
 	const items = keys.filter(([symbol]) => view.rows.some((row) => row.marks.some((mark) => mark.symbol === symbol))).map(([symbol, label]): [string, string] => [`t-${symbol}`, label]);
 	const lessonNumbers = [...new Set(view.columns.map((column) => column.lesson))];

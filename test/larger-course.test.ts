@@ -69,7 +69,6 @@ test("branch destinations retain authored locations and the keyed reply", () => 
 test("sidecar narration counts spoken words and retains disabled evidence", () => {
 	const page = course.lessons[0]!.pages[0]!;
 	const scripts = narrations([page.data, page.blocks]);
-	// Authored page script: 16 words. Body paragraphs: 24, 50 and 15.
 	assert.equal(scripts.reduce((total, item) => total + wordCount(narrationText(item)), 0), 105);
 	assert.equal(measured.lessons[0]!.pace[0]!.words, 92);
 	assert.equal(measured.lessons[0]!.pace[0]!.narrationSeconds, 42);

@@ -661,7 +661,6 @@ test("the text profile counts shared words between adjacent sentences and causal
 			{ id: "p2", number: 2, title: "Two", blocks: [{ id: "b2", type: "text", line: 2, data: { content: "<p>Maps show cities. Rivers flow.</p>" } }] },
 		] }],
 	}));
-	// Pairs stay within a page: two on-screen pages give two adjacent pairs, one sharing "margin".
 	assert.deepEqual(languageView(course).lessons[0]?.channels.screen.cohesion, { adjacentPairs: 2, overlapping: 1, causal: 1, contrastive: 0 });
 	const french = parseCourse(JSON.stringify({ ok: true, schema: "praxity-inspect/0", studioVersion: "0.2.0", course: { title: "F", locale: "fr" }, lessons: [{ file: "a.prax", title: "A", sha256: "x", pages: [{ id: "p1", number: 1, title: "Un", blocks: [{ id: "b1", type: "text", line: 1, data: { content: "<p>Un. Deux.</p>" } }] }] }] }));
 	assert.equal(languageView(french).lessons[0]?.channels.screen.cohesion, null);

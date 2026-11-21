@@ -51,3 +51,65 @@ The bracket guard remains unchanged in scope, including literal brackets. Exclud
 Projection 2 can contain HTML choice stems even when options are Markdown. Item-cues eligibility accepts the markup Studio emits in choice stems: attribute-free `p`, `strong`, `em`, `code`, `del` and `mark`; `a` with only `href`; tooltips with exactly `class="inline-tooltip-trigger"` and `data-tooltip-content`; and doodles with exactly `class="praxity-doodle"`, `data-doodle` and `data-doodle-mods`. Class tokens split on HTML ASCII whitespace only. Non-ASCII whitespace remains part of a different, unknown class. Empty icon and variable spans remain excluded. The existing projection removes the tooltip attribute and its definition from solver prose. No style or hiding attribute, unknown class, or other element is accepted. Parsing errors and markup discarded by the fragment parser also exclude the item. Validation uses the installed HTML parser and accounts for every source character, including tags a fragment parser silently discards.
 
 Preparation, answer validation and scored denominators all use this check. The shared visibility projection remains unchanged, with no interpretation fingerprint bump. The exclusion reason names the rejected tag or attribute and asks authors to check the item by hand. The item-cues prompt advances to `item-cues/6` for the narrower accepted evidence. Studio-rendered visible text remains the long-term replacement.
+
+## Implementation constraints
+
+Source: [implementation before comment removal](https://github.com/Praxity/praxity-trace/tree/43b707be616875eec49542460baecd77d95d0db8). The rules below govern the named files and symbols.
+
+### `src/inspect.ts`: `withPageNarration`
+
+Views read narration from blocks. Studio can also narrate a whole page; that narration plays with the page, so Trace attributes it to the page's first block.
+
+### `src/inspect.ts`: `parseTypedCourse`
+
+A narration-only page still needs a positional ref for quotes and reviewer answers. This internal carrier has no Studio block identity; each script retains its page provenance.
+
+### `src/item-cues.ts`: `probeHtml`
+
+HTML class tokens split on ASCII whitespace, as defined by [HTML section 2.3.7, Space-separated tokens](https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#space-separated-tokens). Unicode spaces remain part of an unknown class. The existing `test/item-cues.test.ts` test "HTML probe eligibility allows only inventoried paragraphs and tooltips across file, stdin and owning preparation" exercises ASCII whitespace alongside non-breaking space, zero-width space and BOM cases.
+
+A parsed fragment alone does not establish that every source tag was accepted. [HTML section 13.2.6.4.7, The "in body" insertion mode](https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody), handles `html` start tags without inserting a new element and ignores a `body` start tag when the stack lacks a body element, as can occur in fragment parsing. `probeHtml` requires source-location coverage for every source character so discarded tags cannot bypass its allow-list. The existing `test/item-cues.test.ts` test "HTML allow-list refuses hiding, unfamiliar markup and malformed attributes even when visible text looks safe" includes `html`, `body`, `head` and doctype inputs.
+
+### `src/item-cues.ts`: `keyedChoices`
+
+Fail closed on leftover delimiters, including unfamiliar syntax, until the producer supplies rendered text.
+
+### `src/item-cues.ts`: `ENGLISH_EVIDENCE`
+
+Keep English language evidence separate from `MASK_KEEP`, because words preserved by masking can be cross-language homographs and do not confirm English.
+
+### `src/item-cues.ts`: `maskedLanguage`
+
+Declared language comes only from Studio. Text evidence can veto, never authorize it.
+
+### `src/item-cues.ts`: `maskedPlan`
+
+Entire banks are runnable or unavailable; a blocked item never reduces a scored denominator.
+
+### `src/item-cues.ts`: `maskItem`
+
+A digit substitution is a per-item derangement, preserving equality and digit counts.
+
+### `src/text.ts`: `typedHtml`, `stripTags` and `decodeText`
+
+Normalise text according to Studio's declared format. Plain angle brackets stay literal. Parse HTML instead of stripping it with a regex, but retain the earlier spacing at every tag boundary so quotes from saved `course.md` remain valid. Keep encoded angle brackets intact until `stripTags` has removed tags; otherwise a literal comparison such as "reading < -0.3" could be mistaken for markup.
+
+### `src/text.ts`: `RAW_TOOLTIP`, `VOICE_CUE` and `spoken`
+
+Tooltip definitions may contain one nested brace level, including a code example. Voice cues must stand alone: brackets attached to a word, as in `readings[gauge]`, are code. Remove a cue's horizontal space without consuming a paragraph boundary. A cue-only line must not create an extra blank paragraph when removed.
+
+### `src/text.ts`: `typedHtml`
+
+In HTML, source line breaks are whitespace even when the field has no element wrapper.
+
+### `src/text.ts`: `clean`
+
+Removes Studio source syntax a learner never sees as text; HTML tags stay for callers that need block boundaries. `&lt;` and `&gt;` stay encoded until the tags are stripped (stripTags), so text such as "reading &lt; -0.3" is not read as the start of a tag.
+
+### `src/text.ts`: `spoken`
+
+A cue-only line is not an authored blank line; removing it must not create a paragraph.
+
+### `src/text.ts`: `blockTexts`
+
+Code is left out of prose measures, but a reviewer needs it: a question can ask what the code does.

@@ -3,23 +3,14 @@ import type { Course } from "./inspect.ts";
 import { generated, generatedSummary, viewBlock } from "./modes.ts";
 import { buildPlaces, lessonTags, esc, pageKey, type Places, wheres } from "./places.ts";
 
-/**
- * Concept distinction coverage: pairs of ideas a learner could confuse, and whether the course
- * states the difference, shows contrasting examples, and asks learners to tell them apart.
- * Interleaved, discriminating examples help learners classify new cases (Kornell and Bjork, 2008).
- */
 export const PROMPT_VERSION = "distinctions/3";
 
 export interface Distinction {
 	a: string;
 	b: string;
-	/** Why a learner could confuse them, in one sentence. */
 	why: string;
-	/** Blocks that state the difference or the criterion for telling them apart. */
 	stated: string[];
-	/** Blocks that set an example of one against an example of the other. */
 	contrasted: string[];
-	/** Checks that need the learner to tell them apart. */
 	checked: string[];
 }
 
@@ -110,7 +101,6 @@ export function distinctionsView(course: Course, answer: DistinctionsAnswer): Di
 	};
 }
 
-/** A dot where the course does this for the pair, focusable to show where; a blank cell where it does not. */
 function cell(refs: string[], places: Places, label: string): string {
 	if (!refs.length) return `<td class="dist"><span class="sr">${label}: no passage linked</span></td>`;
 	const at = wheres(places, refs).replace(/<[^>]*>/g, "");

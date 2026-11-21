@@ -72,7 +72,6 @@ test("every JSON file reader reports a bounded parse error with filename and pos
 		assert.ok(!result.stderr.includes("PRIVATE"));
 		assert.equal(result.stderr.trim().split("\n").length, 1);
 	}
-	// The adjacent operator file is a separate input reader.
 	const bundle = join(dir, "cues"); await prepareItemCues(course, bundle, 42);
 	const review = itemCuesReviewDirectory(bundle);
 	const manifest = JSON.parse(await readFile(join(bundle, "manifest.json"), "utf8"));
