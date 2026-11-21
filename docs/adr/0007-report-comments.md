@@ -18,7 +18,7 @@ A comments file checked field by field, for imports and for comments the browser
 
 ### `src/comments.ts`: `quoteContext`
 
-Context uses the same 32-character limit as a TextQuoteSelector.
+Trace limits each quote prefix and suffix to 32 JavaScript string code units. `quoteContext` clips the context to that length, and `commentsFile` rejects longer imports. This is Trace's format limit: [Web Annotation Data Model, section 4.2.4](https://www.w3.org/TR/annotation-model/#text-quote-selector) defines prefix and suffix strings without a 32-character limit.
 
 ### `src/comments.ts`: `COMMENTS_MARKUP`
 

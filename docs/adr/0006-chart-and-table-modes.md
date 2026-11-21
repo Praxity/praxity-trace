@@ -24,7 +24,9 @@ Absence claims share one coverage qualifier in HTML, SVG labels and plain toolti
 
 ### `src/modes.ts`: `reflowTables`
 
-Narrow screens stack each table row into "column: value" lines (MODES_STYLE). Chromium drops table semantics from elements shown as blocks, so each data table carries explicit table roles, and each body cell names its column in data-label for the visible label. A label is the header cells over the cell's logical column, outermost first; a cell spanning columns takes only the headers those columns share, so a note across a whole row has none. The attributes go in at their parsed offsets and every other byte stays as the renderer wrote it. A table hidden from assistive technology is a chart drawn with table markup and keeps its layout.
+Narrow screens stack each table row into "column: value" lines (MODES_STYLE). Each data table carries explicit table roles to preserve its accessible structure when CSS changes its display, and each body cell names its column in data-label for the visible label. A label is the header cells over the cell's logical column, outermost first; a cell spanning columns takes only the headers those columns share, so a note across a whole row has none. The attributes go in at their parsed offsets and every other byte stays as the renderer wrote it. A table hidden from assistive technology is a chart drawn with table markup and keeps its layout.
+
+The original comment reported that Chromium drops table semantics after block display is applied. Evidence: the code comment this replaced (commit 43b707be616875eec49542460baecd77d95d0db8); not independently verified. The existing tests establish Trace's guarded output, not a reproduction with the roles removed: `test/report-shell.test.ts`, "reflowed tables keep explicit roles and label each cell by its logical column", checks generated roles; `test/report-accessibility.test.ts`, "stacked Table accessibility semantics at 320 CSS px", compares accessibility snapshots before and after reflow.
 
 ### `src/modes.ts`: `viewBlock`
 
@@ -44,7 +46,9 @@ The comment composer sits where the tooltip would; hovering marks behind it must
 
 ### `src/report.ts`: `setup`
 
-ARIA prohibits a name on generic elements and role-less SVG shapes; those keep only data-tip, which the tooltip and comments read. Chromium makes SVG elements with focus listeners tabbable even without tabindex. Marks keep pointer previews; their Table representation supplies keyboard access to the same details. Focus moved by script after a click must not pop a tooltip.
+`reportClient.setup` only adds an `aria-label` when the element has an explicit role or is one of its listed native elements. Other elements, including SVG shapes without a role, retain `data-tip` for tooltip and comment text. [WAI-ARIA 1.2, generic role](https://www.w3.org/TR/wai-aria-1.2/#generic) prohibits accessible names on generic containers; the SVG exclusion is Trace's implementation rule, not a blanket ARIA prohibition on SVG names.
+
+Keep focus listeners off SVG chart marks. Chromium's [`SVGGraphicsElement::SupportsFocus`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/svg/svg_graphics_element.h) makes a rendered graphics element focusable when `HasFocusEventListeners()` is true. [`SVGElement::HasFocusEventListeners`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/svg/svg_element.cc) checks focusin, focusout, focus and blur listeners. Marks retain pointer previews; Table mode supplies keyboard access to the same details, without adding chart marks to focus navigation. The existing "Chart Tab order and focus contrast" subtest in `test/report-accessibility.test.ts` checks Trace's resulting keyboard order. Focus moved by script after a click must not pop a tooltip.
 
 ### `src/report.ts`: `sizeTables`
 

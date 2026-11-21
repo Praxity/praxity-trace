@@ -66,11 +66,9 @@ A narration-only page still needs a positional ref for quotes and reviewer answe
 
 ### `src/item-cues.ts`: `probeHtml`
 
-HTML class tokens split on ASCII whitespace. Unicode spaces remain part of an unknown class.
+HTML class tokens split on ASCII whitespace, as defined by [HTML section 2.3.7, Space-separated tokens](https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#space-separated-tokens). Unicode spaces remain part of an unknown class. The existing `test/item-cues.test.ts` test "HTML probe eligibility allows only inventoried paragraphs and tooltips across file, stdin and owning preparation" exercises ASCII whitespace alongside non-breaking space, zero-width space and BOM cases.
 
-### `src/item-cues.ts`: `probeHtml`
-
-Fragment parsing silently discards some tags, including html/body; every source character must be accounted for.
+A parsed fragment alone does not establish that every source tag was accepted. [HTML section 13.2.6.4.7, The "in body" insertion mode](https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody), handles `html` start tags without inserting a new element and ignores a `body` start tag when the stack lacks a body element, as can occur in fragment parsing. `probeHtml` requires source-location coverage for every source character so discarded tags cannot bypass its allow-list. The existing `test/item-cues.test.ts` test "HTML allow-list refuses hiding, unfamiliar markup and malformed attributes even when visible text looks safe" includes `html`, `body`, `head` and doctype inputs.
 
 ### `src/item-cues.ts`: `keyedChoices`
 
