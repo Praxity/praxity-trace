@@ -36,7 +36,6 @@ test("prerequisite depth follows the deepest prerequisite and collapses cycles w
 		if (link.cycle) assert.equal(depths.get(link.prerequisite), depths.get(link.dependent));
 		else assert.ok(depths.get(link.prerequisite)! < depths.get(link.dependent)!);
 	}
-	// Removing external prerequisites leaves a cycle at depth zero, with its dependents still to the right.
 	const cycleOnly = { ...view, dependencies: view.dependencies.filter((link) => link.cycle || link.dependent === "C8") };
 	assert.deepEqual(prerequisiteLayers(cycleOnly)[1]?.map((concept) => concept.id), ["C8"]);
 	assert.deepEqual(prerequisiteLayers({ ...view, concepts: [], dependencies: [] }), []);

@@ -12,7 +12,6 @@ import type { Course } from "../src/inspect.ts";
 import type { Located } from "../src/places.ts";
 import { keyedChoices } from "../src/item-cues.ts";
 
-// The override runs this gate against an untouched worktree as well as the changed renderer.
 const sourceRoot = resolve(process.env.TRACE_A11Y_SOURCE_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), ".."));
 const artifacts = process.env.TRACE_A11Y_ARTIFACTS;
 const tags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -23,8 +22,6 @@ function cli(args: string[]): void {
 }
 
 const reportFixtures = [
-	// A fixture earns a browser run only with markup the others lack. Schema 0 and projection 2 alone drew
-	// nothing that html-export and all-model-views (projection 2 with every view) do not also draw.
 	["html-export", "html/studio"],
 	["lantern-marsh", "lantern-marsh/inspect.json"],
 	["objective-levels", "objective-levels/inspect.json"],
@@ -49,7 +46,6 @@ async function reportFixture(directory: string, name: string, inputPath: string 
 		cli(["report", input, "--out", output, ...answers]);
 		return join(output, "report.html");
 	}
-	// Read real fixture text through its owner. Every quote is accepted by the production parsers.
 	const { parseCourse } = await import(pathToFileURL(join(sourceRoot, "src/inspect.ts")).href);
 	const { locateBlocks } = await import(pathToFileURL(join(sourceRoot, "src/places.ts")).href);
 	const { blockTexts } = await import(pathToFileURL(join(sourceRoot, "src/text.ts")).href);
@@ -155,8 +151,6 @@ async function expandDisclosures(page: Page): Promise<void> {
 	}
 }
 
-// The expectation starts with semantic controls, not tabindex >= 0. Removing a Tab stop must fail.
-// Browser-native radio groups have one checked Tab stop; arrow checks below cover the other options.
 async function tabOrder(page: Page): Promise<void> {
 	await page.evaluate(() => {
 		(document.activeElement as HTMLElement)?.blur();
@@ -191,8 +185,6 @@ async function tabOrder(page: Page): Promise<void> {
 	assert.deepEqual(expected.filter(target => target.tabindex !== null && Number(target.tabindex) < 0), [], "Visible controls must participate in keyboard traversal, including scroll arrows");
 	const reached = [];
 	for (const target of expected) {
-		// Focusing a far-right table cell can scroll its region and hide an edge arrow.
-		// Apply the hidden-control exclusion at the time of traversal too; negative tabindex fails above.
 		if (!await page.locator(`[data-trace-a11y="${target.id}"]`).isVisible()) continue;
 		await page.keyboard.press("Tab");
 		await page.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
@@ -204,7 +196,6 @@ async function tabOrder(page: Page): Promise<void> {
 	assert.equal(new Set(reached).size, reached.length, "Tab traversal must reach each visible control once");
 	await page.keyboard.press("Tab");
 	assert.equal(await page.evaluate(() => document.activeElement === document.body), true, "Tab must leave the report after its last control");
-	// Reverse traversal also sees scroll arrows that appeared behind the forward Tab position.
 	const reverse = await capture();
 	assert.deepEqual(reverse.filter(target => target.tabindex !== null && Number(target.tabindex) < 0), [], "Newly visible controls must participate in keyboard traversal");
 	for (const target of reverse.reverse()) {
@@ -234,7 +225,6 @@ async function focusIndicator(page: Page, before: { outline: string; shadow: str
 		const luminance = (color: number[]) => color.slice(0, 3).map(value => { const channel = value / 255; return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4; }).reduce((sum, value, i) => sum + value * [0.2126, 0.7152, 0.0722][i]!, 0);
 		const contrast = (color: number[], adjacent: number[]) => { const a = luminance(over(color, adjacent)), b = luminance(adjacent); return (Math.max(a, b) + .05) / (Math.min(a, b) + .05); };
 		const candidates = [{ element: active, outline: previous.outline, shadow: previous.shadow }];
-		// Segmented inputs are transparent over their label. The label paints the actual focus ring.
 		if (active instanceof HTMLInputElement && active.type === "radio" && active.closest("label")) candidates.push({ element: active.closest("label")!, outline: previous.labelOutline ?? "", shadow: previous.labelShadow ?? "" });
 		return candidates.flatMap(({ element, outline, shadow }) => {
 			const style = getComputedStyle(element), adjacent = background(element.parentElement);
@@ -320,7 +310,6 @@ async function keyboard(page: Page): Promise<void> {
 			const selected = (start + option + 1) % count;
 			await page.keyboard.press("ArrowRight");
 			assert.equal(await radios.nth(selected).isChecked(), true, "ArrowRight reaches each lesson option");
-			// Selection closes this native disclosure; reopen and Tab to the selected option.
 			assert.equal(await summary.evaluate(element => (element.parentElement as HTMLDetailsElement).open), false, "Selecting a lesson closes its menu");
 			await page.keyboard.press("Enter");
 			const before = await focusStyle(radios.nth(selected));
@@ -332,7 +321,6 @@ async function keyboard(page: Page): Promise<void> {
 		assert.equal(await summary.evaluate(element => (element.parentElement as HTMLDetailsElement).open), false, "Escape closes lesson menu");
 		assert.equal(await summary.evaluate(element => element === document.activeElement), true, "Escape returns focus to lesson menu trigger");
 	}
-	// Exercise each extra segmented choice as well, including theme and Pace, with native arrows.
 	for (const name of await page.locator('.seg:not(.seg-mode) input:checked').evaluateAll(elements => elements.map(element => (element as HTMLInputElement).name))) {
 		const options = page.locator(`.seg input[name="${name}"]`);
 		await page.locator(`.seg input[name="${name}"]:checked`).focus();
@@ -503,7 +491,6 @@ async function sortKeyboard(page: Page): Promise<void> {
 			if (!original.every(row => row.value) || new Set(original.map(row => row.value)).size < 2) continue;
 			candidates.push({ column, original, numeric: original.every(row => /^\d+(?:,\d{3})*(?:\.\d+)?$/.test(row.value)) });
 		}
-		// Prefer numeric columns for an independent ordering expectation, including repeated values.
 		const chosen = candidates.find(candidate => candidate.numeric) ?? candidates[0];
 		if (chosen) {
 			const { column, original, numeric } = chosen;
@@ -526,7 +513,6 @@ async function sortKeyboard(page: Page): Promise<void> {
 	}
 	if (sortButtons) assert.ok(exercisedSorts, "A fixture with sort controls must exercise actual sorting and course-order reset");
 	if (await page.locator('table:has(> caption:text-is("Course trace by page")) tbody tr').count() > 6) assert.ok(numericSorts, "A large report must exercise numeric ordering as well as course-order reset");
-	// This traverses the real keyboard order and checks every visible control's focus contrast.
 	await tabOrder(page);
 }
 
@@ -559,7 +545,6 @@ async function serverLabels(browser: Browser, html: string): Promise<void> {
 	} finally { await context.close(); }
 }
 
-// Each fixture has its own timeout, including contention with verify's CLI and package tests.
 for (const [name, inputPath] of reportFixtures) test(`generated report ${name} meets browser accessibility requirements`, { timeout: 360_000 }, async context => {
 	if (!existsSync(chromium.executablePath())) {
 		if (process.env.TRACE_SKIP_BROWSER === "1") { context.skip("Chromium executable missing; explicit TRACE_SKIP_BROWSER=1"); return; }

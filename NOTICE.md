@@ -108,3 +108,9 @@ A distribution that bundles them must include their licence texts from
 
 Development dependencies include TypeScript under Apache-2.0 and type packages
 under MIT terms. The lockfile is the authoritative version inventory.
+
+## Implementation source notes
+
+`scripts/build-lexicon.ts` builds the TUBELEX derivative described above. To regenerate it, decompress `frequencies/tubelex-en.tsv.xz` and `frequencies/tubelex-en-lemma-pos.tsv.xz` from the TUBELEX repository, then run `node scripts/build-lexicon.ts tubelex-en.tsv tubelex-en-lemma-pos.tsv`.
+
+The short revised-taxonomy verb list in `src/outcomes.ts` follows Anderson and Krathwohl (2001), separately from the attributed verb-placement data above.

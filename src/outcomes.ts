@@ -1,22 +1,14 @@
 import { readFileSync } from "node:fs";
-/**
- * Classifies an objective by its leading verb. Published verb lists disagree on many verbs'
- * levels (Stanny 2016; Newton et al. 2020), and a verb's level depends on its object, so this is
- * a starting point that the model's reading of the whole objective completes, not a verdict.
- */
 
 export const BLOOM = ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"] as const;
 export type Bloom = (typeof BLOOM)[number];
 
-/** Bloom's knowledge dimension (Krathwohl 2002): what kind of knowledge the objective works with. */
 export const KNOWLEDGE = ["Factual", "Conceptual", "Procedural", "Metacognitive"] as const;
 export type Knowledge = (typeof KNOWLEDGE)[number];
 
-/** Gagné's learned capabilities: what kind of capability the objective intends. Not a hierarchy. */
 export const GAGNE = ["Verbal information", "Intellectual skill", "Cognitive strategy", "Attitude", "Motor skill"] as const;
 export type Gagne = (typeof GAGNE)[number];
 
-/** Trace's own one-line definitions, given to the reviewer and shown on hover. */
 export const GAGNE_HELP: Record<Gagne, string> = {
 	"Verbal information": "Stating or recalling facts, names, rules or ideas in words.",
 	"Intellectual skill": "Using concepts, rules or procedures to do something: classify, decide, solve, build.",
@@ -41,7 +33,6 @@ export const FINK = [
 ] as const;
 export type Fink = (typeof FINK)[number];
 
-// Revised taxonomy verbs after Anderson and Krathwohl (2001).
 const BLOOM_VERBS: Record<Bloom, string[]> = {
 	Remember: ["define", "identify", "list", "name", "recall", "recognize", "recite", "state", "label", "match"],
 	Understand: ["describe", "explain", "summarize", "summarise", "interpret", "classify", "discuss", "paraphrase", "illustrate", "outline", "understand"],
@@ -52,11 +43,6 @@ const BLOOM_VERBS: Record<Bloom, string[]> = {
 };
 
 
-/**
- * Every Bloom level a verb is listed at: the short list above plus the CC BY placements from Stanny
- * (2016) and Community Nutrition (data/bloom-verbs.json). A verb listed at several levels is ambiguous
- * on its own; its object decides, so the model's reading of the whole objective settles it.
- */
 const BLOOM_LEVELS_BY_VERB = (() => {
 	const listed = JSON.parse(readFileSync(new URL("../data/bloom-verbs.json", import.meta.url), "utf8")) as { levels: Record<Bloom, string[]> };
 	const levels = new Map<string, Set<Bloom>>();
@@ -68,7 +54,6 @@ const BLOOM_LEVELS_BY_VERB = (() => {
 	return levels;
 })();
 
-/** Words that can precede the verb without being it. */
 const LEAD_IN = /^(?:(?:you will )?be able to|learners will|participants will|to)\s+/i;
 
 export function leadingVerb(objective: string): string {
@@ -79,7 +64,6 @@ export function leadingVerb(objective: string): string {
 export interface VerbLevels {
 	verb: string;
 	bloom: Bloom | null;
-	/** Every level the verb lists at; more than one means the verb alone is ambiguous. */
 	bloomCandidates?: Bloom[];
 }
 

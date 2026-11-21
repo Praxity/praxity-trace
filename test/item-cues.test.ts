@@ -235,8 +235,6 @@ async function maskedFixture(context: { after: (cleanup: () => Promise<void>) =>
 	return { course, bundle, operator, aligned, dir };
 }
 
-// One row per masking rule, through keyedChoices so HTML stems take the probe projection. The seed-17
-// unicorn and singular-noun rows live in the bounded-masking table below.
 test("masked forms keep literal overlap, article sound, plurals, digits and NFC per item", () => {
 	const cases: Array<[string, string, string[], boolean, number, { stem: string; options: string[] }]> = [
 		["masked stem/key overlap has literal shared words", "Which cell?", ["A cell", "A wall", "A pipe", "A wire"], false, 17, { stem: "Which xepe?", options: ["A xepe", "A rori", "A vevi", "A mife"] }],
@@ -258,7 +256,6 @@ test("masked forms keep literal overlap, article sound, plurals, digits and NFC 
 	}
 });
 
-// Literal review cases cover the bounded masking transform independently of eligibility.
 test("bounded masking preserves the review article acronym plural and pronoun cases across seeds", () => {
 	const cases = [
 		{ stem: "Which is a useful utility?", options: ["utility", "useful tool", "urn", "uninsured patient"], expected: [{ stem: "Which is a gojuya mugecuc?", options: ["mugecuc", "gojuya helu", "ici", "uzegiyota lumajoh"] }, { stem: "Which is a coweqo tafarey?", options: ["tafarey", "coweqo hepu", "eza", "abedekatu buxarax"] }, { stem: "Which is a keqayu fupoqil?", options: ["fupoqil", "keqayu fano", "ogi", "amarajago gejexil"] }] },
@@ -1448,7 +1445,6 @@ test("deny-only text conflicts screen every stem with options despite an erroneo
 		assert.ok(result.view.banks[0]!.masked.applies);
 		assert.match(renderItemCues(result.view), /Unavailable: language/);
 	}
-	// Four English and five French items cannot dilute one another inside a bank.
 	const raw = authored(); raw.lessons = [raw.lessons[0]!];
 	const template = structuredClone(raw.lessons[0]!.pages[0]!.blocks[0]!);
 	raw.lessons[0]!.pages[0]!.blocks = Array.from({ length: 9 }, (_, i) => {

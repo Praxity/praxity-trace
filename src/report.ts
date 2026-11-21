@@ -31,7 +31,6 @@ export interface Report {
 	coverage?: { status: "partial"; limitations: string };
 	source: { schema: string; studioVersion: string; revision?: string; projectionVersion?: 2; places?: import("./places.ts").Places; unlinkedNarrationCount?: number; mediaInventory?: Array<TypedMedia & { ref: string; lesson: number; page: number; location: SourceLocation | null }>; assessmentGroups?: Array<TypedAssessmentGroup & { ref: string; location: SourceLocation | null }>; unlinkedNarration?: Array<TypedNarration & { lesson: number; lessonFile: string }> };
 	course: { title: string; locale: string };
-	/** Schema 0 measured rate when available; otherwise a script-estimate fallback. */
 	speakingWpm: number;
 	anatomy: LessonAnatomy[];
 	rhythm: Rhythm;
@@ -47,12 +46,10 @@ export interface Report {
 	availability?: AvailabilityView;
 	tasks?: TasksView;
 	itemCues?: ItemCuesView;
-	/** What to look for in each view (src/guides.ts), for agents reading this file. */
 	guides: Omit<typeof GUIDES, "tasks"> & Partial<Pick<typeof GUIDES, "tasks">>;
 	recommendations?: RecommendationsView;
 }
 
-/** Additional views supplied by the caller; item cues also include scripted measurements. */
 export type ModelViews = Pick<Report, "alignment" | "tasks" | "concepts" | "terms" | "visuals" | "spacing" | "distinctions" | "availability" | "itemCues">;
 
 const { tasks: taskGuide, ...baseGuides } = GUIDES;
@@ -257,7 +254,6 @@ function hide(force = false) {
   tip.hidden = true;
 }
 function show(el: Element, event?: PointerEvent) {
-  // The comment composer sits where the tooltip would; hovering marks behind it must not cover it.
   if (document.getElementById('comments-composer')?.hidden === false) return;
   if (dismissed && active === el) return;
   clearTimeout(timer);
@@ -271,7 +267,6 @@ function show(el: Element, event?: PointerEvent) {
     heading.textContent = page.lesson + '.' + page.number + '  ' + page.title;
     tip.append(heading);
   }
-  // A mark's own note: lines, and "label<TAB>value" pairs lined up in two columns.
   const note = (el as HTMLElement | SVGElement).dataset.tip;
   if (note) {
     const facts = document.createElement('div');
@@ -318,13 +313,11 @@ function show(el: Element, event?: PointerEvent) {
   if (!tip.childNodes.length) return hide(true);
   tip.hidden = false;
   el.setAttribute('aria-describedby', tip.id);
-  // Tall chart columns: open beside the pointer, not below the whole plot.
   const rect = el.getBoundingClientRect();
   const atPointer = event && rect.height > 48;
   const left = atPointer ? event.clientX + 14 : rect.left;
   const top = atPointer ? event.clientY + 14 : rect.bottom + 8;
   tip.style.left = Math.max(8, Math.min(left, window.innerWidth - tip.offsetWidth - 8)) + 'px';
-  // No room below: open above the trigger rather than clamping over it, which would block its click.
   const above = !atPointer && top + tip.offsetHeight > window.innerHeight - 8;
   tip.style.top = Math.max(8, above ? rect.top - tip.offsetHeight - 8 : Math.min(top, window.innerHeight - tip.offsetHeight - 8)) + 'px';
 }
@@ -332,7 +325,6 @@ const targets = new Set(document.querySelectorAll('[data-page], [title]'));
 document.querySelectorAll('svg title').forEach(title => { if (title.parentElement) targets.add(title.parentElement); });
 const setup = (el: Element) => {
   const title = el.getAttribute('title') || el.querySelector(':scope > title')?.textContent || '';
-  // ARIA prohibits a name on generic elements and role-less SVG shapes; those keep only data-tip, which the tooltip and comments read.
   const nameable = el.hasAttribute('role') || el.matches('a[href], button, input, select, textarea, img');
   if (title && nameable && !el.hasAttribute('aria-label') && (el.namespaceURI === 'http://www.w3.org/2000/svg' || !el.textContent.trim())) el.setAttribute('aria-label', title);
   if (title) (el as HTMLElement | SVGElement).dataset.tip = title;
@@ -341,16 +333,12 @@ const setup = (el: Element) => {
   if (el.namespaceURI === 'http://www.w3.org/2000/svg' || el.closest('.mode-chart')) el.removeAttribute('tabindex');
   el.addEventListener('pointerenter', event => show(el, event instanceof PointerEvent ? event : undefined));
   el.addEventListener('pointerleave', () => { dismissed = false; timer = setTimeout(() => hide(), 120); });
-  // Chromium makes SVG elements with focus listeners tabbable even without tabindex. Marks keep
-  // pointer previews; their Table representation supplies keyboard access to the same details.
   if (el.namespaceURI !== 'http://www.w3.org/2000/svg' && !el.closest('.mode-chart')) {
-    // Focus moved by script after a click must not pop a tooltip.
     el.addEventListener('focus', () => { if (el.matches(':focus-visible')) show(el); });
     el.addEventListener('blur', () => { dismissed = false; hide(true); });
   }
 };
 targets.forEach(setup);
-// Buttons added after load (a comment's actions) adopt the same tooltip on first hover or focus.
 const adopt = (event: Event) => {
   const el = event.target instanceof Element ? event.target.closest('button[title]') : null;
   if (!el || targets.has(el)) return;
@@ -361,7 +349,6 @@ const adopt = (event: Event) => {
 document.addEventListener('pointerover', adopt);
 document.addEventListener('focusin', adopt);
 document.querySelectorAll('.mode-chart svg [tabindex]').forEach(el => el.removeAttribute('tabindex'));
-// Segmented controls: the option's name shows as a tooltip on hover and on keyboard focus.
 document.querySelectorAll('.seg input').forEach(input => {
   const label = input.closest('label');
   input.addEventListener('focus', () => { if (label) show(label); });
@@ -393,13 +380,10 @@ currentSection();
 function sizeTables() {
   document.querySelectorAll<HTMLElement>('.table-wrap').forEach(wrap => {
     wrap.classList.remove('long-table');
-    // The scroll hint may later wrap the table in a frame; the cue sits before whichever is outermost.
     const outer = wrap.parentElement?.classList.contains('scroll-frame') ? wrap.parentElement : wrap;
     const cue = outer.previousElementSibling?.classList.contains('table-cue') ? outer.previousElementSibling as HTMLElement : null;
     if (wrap.querySelectorAll('tbody tr').length > 15) wrap.classList.add('sticky-table');
     if (wrap.scrollHeight > window.innerHeight * 1.5) wrap.classList.add('long-table');
-    // A table stacked for a narrow screen keeps its full height in the page; the cue claims a
-    // scroll region only where the region really scrolls.
     if (wrap.classList.contains('long-table') && wrap.scrollHeight <= wrap.clientHeight + 1) wrap.classList.remove('long-table');
     if (wrap.classList.contains('long-table')) {
       if (!cue) outer.insertAdjacentHTML('beforebegin', '<p class="table-cue">Scroll within this table for more rows.</p>');
@@ -407,8 +391,6 @@ function sizeTables() {
     } else if (cue) cue.hidden = true;
   });
 }
-// Sortable tables: a sort button beside each column label cycles ascending, descending and the
-// original (course) order. Tables whose rows form groups (rowspans, grouped members) keep their order.
 const SORT_ICONS: Record<string, string> = {
   none: '<path d="M3 9l4 -4l4 4m-4 -4v14" /><path d="M21 15l-4 4l-4 -4m4 4v-14" />',
   ascending: '<path d="M12 5l0 14" /><path d="M16 9l-4 -4" /><path d="M8 9l4 -4" />',
@@ -422,7 +404,6 @@ const compare = (a: string, b: string) => {
   return Number.isFinite(x) && Number.isFinite(y) ? x - y : collator.compare(a, b);
 };
 document.querySelectorAll<HTMLTableElement>('.report-content .table-wrap > table').forEach(table => {
-  // Decorative chart tables are hidden from assistive technology and must not gain controls.
   if (table.closest('[aria-hidden="true"]')) return;
   const body = table.tBodies[0];
   const heads = [...(table.tHead?.rows[0]?.cells ?? [])];
@@ -482,7 +463,6 @@ export function renderHtml(report: Report): string {
 		{ lesson: index + 1, lessonTitle: lesson.title, number: page.number, title: page.title, lines: page.preview?.lines ?? [], narrated: page.preview?.narrated ?? page.narrationSeconds > 0, checks: page.preview?.checks ?? 0, activities: page.preview?.activities ?? 0, unknownResponses: page.preview?.unknownResponses, partial: page.measurementStatus === "partial" },
 	])));
 	const { html: body, entries } = outline(() => SECTIONS.filter((section) => report.tasks || section.views[0]?.id !== "tasks").map((section) => section.render(report)).join("\n"));
-	// Recommendations open the report but link to views drawn after them, so they render last.
 	const recommendations = report.recommendations ? `${renderRecommendations(report.recommendations, new Map(entries.flatMap((entry) => (entry.view ? [[entry.view, esc(entry.title)] as const] : []))))}\n` : "";
 	const html = `<!doctype html>
 <html lang="${esc(report.course.locale)}">

@@ -55,8 +55,6 @@ async function installedPackage(name: string, owner: string): Promise<string> {
 	}
 }
 
-// Node 24's permission model restricts filesystem, subprocesses and addons, but not networking.
-// Patch both CommonJS and ESM builtins before importing Trace, and prove the guard with probes.
 const networkGuard = `import net from 'node:net';
 import dgram from 'node:dgram';
 import dns from 'node:dns';
@@ -138,7 +136,6 @@ test("portable artifact inventories unchanged payload and runs after relocation 
 	await mkdir(inputRoot);
 	await mkdir(output);
 	await cp(join(fixture, "html/studio"), join(inputRoot, "studio"), { recursive: true });
-	// Exercise entities with the existing synthetic export, including an entity inside nested markup.
 	const lesson = join(inputRoot, "studio/lesson-one.html");
 	await writeFile(lesson, (await readFile(lesson, "utf8")).replace("A short note.", "A short &amp; <strong>nested &copy;</strong> note &#x1F642;."));
 	const schemaInput = join(inputRoot, "inspect.json");
@@ -146,7 +143,6 @@ test("portable artifact inventories unchanged payload and runs after relocation 
 	const guard = join(inputRoot, "deny-network.mjs");
 	await writeFile(guard, networkGuard);
 	const env: NodeJS.ProcessEnv = { PATH: "", ...(process.platform === "win32" ? { SystemRoot: process.env.SystemRoot } : {}) };
-	// POSIX module resolution walks ancestors; macOS temporary paths live under /private.
 	const readable = process.platform === "win32" ? scratch : join(sep, scratch.split(sep).filter(Boolean)[0]!);
 	assert.ok(!resolve(root).startsWith(`${readable}${sep}`), "The readable temporary tree must exclude the checkout");
 	const restrictions = ["--permission", `--allow-fs-read=${readable}`, `--allow-fs-write=${output}`, "--import", pathToFileURL(guard).href];
@@ -176,7 +172,6 @@ test("portable artifact inventories unchanged payload and runs after relocation 
 		assert.match(html, /Permission is hereby granted/);
 		assert.match(html, /SOFTWARE\.\n-->/);
 		assert.doesNotMatch(html, /import\s*\(|require\s*\(|sourceMappingURL|D:\\GitHub/);
-		// Parsing emitted scripts verifies raw function serialization still yields runnable JavaScript.
 		const scripts = [...html.matchAll(/<script(?![^>]*type=["']application\/json["'])[^>]*>([\s\S]*?)<\/script>/g)];
 		assert.ok(scripts.length > 0);
 		for (const script of scripts) assert.doesNotThrow(() => new Function(script[1]!), "Emitted browser script must parse");
@@ -199,7 +194,6 @@ const electron = process.env.TRACE_ELECTRON;
 test("packaged report matches plain Node under Electron in Node mode", { skip: electron ? false : "Set TRACE_ELECTRON to an Electron executable" }, async (t) => {
 	const scratch = await mkdtemp(join(tmpdir(), "trace electron package "));
 	t.after(() => rm(scratch, { recursive: true, force: true }));
-	// Stage outside node_modules, where Node refuses to strip TypeScript.
 	const artifact = join(scratch, "portable artifact with spaces");
 	const packaged = JSON.parse(run([packager, "--output", artifact], scratch).stdout);
 	const inventory = JSON.parse(await readFile(packaged.inventory, "utf8"));

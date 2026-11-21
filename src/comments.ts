@@ -2,7 +2,6 @@ import { parseJson } from "./input.ts";
 import { inlineClient } from "./client.ts";
 import { pageKey } from "./places.ts";
 import { icon } from "./icons.ts";
-/** Personal notes exported from one course revision of a Trace report. */
 export interface CommentsFile {
 	schema: "praxity-trace-comments/0";
 	course: string;
@@ -30,20 +29,10 @@ export interface Comment {
 
 const positive = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 
-/**
- * A sentence id as the Language views print it: lesson.page, then s for on screen, n for
- * narration or t for transcript and the sentence's order, "3.9.s2". "L3.p9.s2" is the earlier
- * form, still read so comments saved before the change keep their sentence. Self-contained:
- * the browser inlines it.
- */
 export function isSentenceId(value: unknown): value is string {
 	return typeof value === "string" && /^(?:[1-9]\d*\.[1-9]\d*\.[snt]|L[1-9]\d*\.p[1-9]\d*\.s)[1-9]\d*$/.test(value);
 }
 
-/**
- * A comments file checked field by field, for imports and for comments the browser stored.
- * Self-contained apart from isSentenceId, because the browser inlines both.
- */
 export function commentsFile(value: unknown): CommentsFile {
 	const record = (item: unknown): item is Record<string, unknown> => typeof item === "object" && item !== null && !Array.isArray(item);
 	const keys = (item: Record<string, unknown>, expected: string[]) =>
@@ -81,24 +70,20 @@ export function commentsFile(value: unknown): CommentsFile {
 			throw new Error("Invalid comment quote");
 		}
 	}
-	// Every field has been checked above; the cast only restates what the checks established.
 	return value as unknown as CommentsFile;
 }
 
-/** Reject malformed or cross-version imports before an agent consumes them. */
 export function parseComments(json: string, source = "comments.json"): CommentsFile {
 	const value = parseJson(json, source);
 	return commentsFile(value);
 }
 
-/** The final source pointer in a location tooltip, if it has a line number. */
 export function sourceFromTitle(title: string): Comment["source"] {
 	const part = title.split("·").at(-1)?.trim() ?? "";
 	const match = /^(.*\S):(\d+)$/.exec(part);
 	return match && positive(Number(match[2])) ? { file: match[1]!, line: Number(match[2]) } : null;
 }
 
-/** Context uses the same 32-character limit as a TextQuoteSelector. */
 export function quoteContext(text: string, start: number, end: number): NonNullable<Comment["quote"]> {
 	if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end > text.length || start >= end) {
 		throw new Error("Invalid quote range");
@@ -110,17 +95,14 @@ function clipped(value: string | null | undefined, length = 90): string | null {
 	return value ? (value.length > length ? `${value.slice(0, length - 1).trimEnd()}…` : value) : null;
 }
 
-/** What the comment points at, most specific first, without repeating itself. */
 function targetText(comment: Pick<Comment, "target">): string {
 	const { objectives, page, sentence, row, label } = comment.target;
 	const named = objectives?.length ? objectives.join(", ") : clipped(row);
 	const parts = [named, page && `page ${pageKey(page.lesson, page.page)}`, sentence];
-	// The mark's own label adds something only when the row or objectives do not already say it.
 	if (label && !(row && (row.includes(label) || label.includes(row))) && !(objectives?.length && objectives.some((id) => label.startsWith(id)))) parts.push(clipped(label, 60));
 	return parts.filter((part, index, all) => part && all.indexOf(part) === index).join(" · ") || "No target";
 }
 
-/** Plain text for one batch sent to a course-editing assistant. */
 export function formatCommentsMarkdown(file: CommentsFile): string {
 	const lines = [
 		`# Comments on ${file.course} (${file.courseHash})`,
@@ -139,7 +121,6 @@ export function formatCommentsMarkdown(file: CommentsFile): string {
 	return lines.join("\n").trimEnd() + "\n";
 }
 
-/** Insert near the top of .report-content. The panel stays inside .viz-root for theme variables. */
 export const COMMENTS_MARKUP = `<button type="button" id="comments-open" class="icon-button" aria-controls="comments-panel" aria-expanded="false" aria-label="Comments, 0" title="Comments">${icon("message-circle", 18)}<span class="comment-count" aria-hidden="true" hidden>0</span></button>
 <aside id="comments-panel" class="comments-panel" aria-labelledby="comments-title" hidden>
 <div class="comments-panel-head"><h2 id="comments-title">Comments</h2><button type="button" id="comments-close" class="icon-button" aria-label="Close comments" title="Close">${icon("x", 18)}</button></div>
@@ -194,7 +175,6 @@ svg .trace-commented:not(text){outline:2px solid var(--note-ring);outline-offset
 .comment-pin.current{background:var(--note-ring);color:var(--surface)}
 `;
 
-/** Append after the report's own script, which copies title text to data-tip. */
 export function commentsClient() {
   const metaElement = document.getElementById('report-meta');
   const root = document.querySelector<HTMLElement>('.viz-root');
@@ -230,7 +210,6 @@ export function commentsClient() {
   let returnFocus: Element | null = null;
   const say = (message: string) => { status.textContent = message; };
   const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
-  // Adjacent elements (an objective id and its text) read as separate words, not run together.
   const spaced = (element: Element) => {
     const parts: string[] = [];
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
@@ -255,7 +234,6 @@ export function commentsClient() {
     if (!head) return null;
     const copy = head.cloneNode(true) as Element;
     copy.querySelectorAll('.file,[data-page]').forEach(element => element.remove());
-    // Separate the text of adjacent elements, which textContent runs together.
     copy.querySelectorAll('*').forEach(element => element.append(' '));
     return text(copy.textContent) || null;
   };
@@ -373,8 +351,6 @@ export function commentsClient() {
     if (className) element.className = className;
     return element;
   };
-  // Short visible text; the accessible name says which comment.
-  // Icon buttons come from a template, since the icons are drawn when the report is built.
   const actions = document.getElementById('comments-item-actions') as HTMLTemplateElement | null;
   const action = (container: Element, act: 'jump' | 'edit' | 'delete', name: string, callback: () => void) => {
     const button = actions?.content.querySelector('[data-act="' + act + '"]')?.cloneNode(true) as HTMLButtonElement | undefined;
@@ -383,7 +359,6 @@ export function commentsClient() {
     button.addEventListener('click', callback);
     container.append(button);
   };
-  // Page order where the anchor is found, then creation order; the panel and the copied list share it.
   const inOrder = () => {
     const positions = new Map(comments.map(comment => [comment.id, findAnchors(comment)] as const));
     return { positions, ordered: [...comments].sort((a, b) => {
@@ -393,13 +368,10 @@ export function commentsClient() {
       return a.created.localeCompare(b.created);
     }) };
   };
-  // A pin in the left gutter beside each visible commented item, so comments are findable at a glance.
-  // Hover or focus shows the note; click edits it, or opens the panel when one pin holds several.
   const gutter = document.createElement('div');
   gutter.className = 'comment-gutter';
   content.prepend(gutter);
   let placed: Array<{ comment: Comment; anchors: Element[] }> = [];
-  // The comment just reached with Go to stays marked, with its pin, until the next click or key press.
   let current: { id: string; anchor: Element } | null = null;
   const clearCurrent = () => {
     current?.anchor.classList.remove('trace-comment-current');
@@ -512,7 +484,6 @@ export function commentsClient() {
     hideSelection();
     pending = anchor || null;
     noteInput.value = existing?.note || '';
-    // Show what the comment will attach to, so the designer can confirm it before saving.
     const subject = existing || anchor?.data;
     context.textContent = subject ? (subject.quote ? '“' + clipped(subject.quote.exact, 140) + '” · ' : '') + targetText(subject) : '';
     context.hidden = !context.textContent;
@@ -543,7 +514,6 @@ export function commentsClient() {
     comments = [];
     save(); render(); say('All comments deleted.');
   });
-  // Escape closes the composer wherever focus went, not only inside it.
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && !composer.hidden) { event.preventDefault(); closeComposer(); } });
   composer.addEventListener('keydown', event => {
     if (event.key === 'Tab') {
@@ -571,7 +541,6 @@ export function commentsClient() {
   focusedButton.addEventListener('click', () => {
     if (lastFocused?.isConnected) showComposer({ element: lastFocused, data: anchorOf(lastFocused, null) });
   });
-  // Clicking a chart mark offers the comment icon beside it; Option-click opens the composer at once.
   content.addEventListener('click', event => {
     const mark = event.target instanceof Element ? event.target.closest('svg [data-page],.mode-chart [data-page]') : null;
     if (!mark) return;
@@ -579,7 +548,6 @@ export function commentsClient() {
     if (event instanceof MouseEvent && event.altKey) { event.preventDefault(); showComposer(anchor); return; }
     pending = anchor;
     const rect = mark.getBoundingClientRect();
-    // Above the mark: the page preview opens below it.
     placePopover(selectionButton, { left: rect.left - 6, bottom: rect.top - 44 });
   });
   const selected = () => {

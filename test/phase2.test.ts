@@ -22,7 +22,6 @@ const taskFixture = (name: string) => {
 	const course = load(`tasks/${name}/inspect.json`);
 	const frozen = fixture(`tasks/${name}/answer.json`);
 	assert.throws(() => parseTasks(frozen, course), /expected view/);
-	// Preserve historical coding as synthetic cases, revalidating every quote through the parser.
 	const json = JSON.stringify({ ...JSON.parse(frozen), promptVersion: `${TASKS_VERSION}-projection-2`, courseHash: courseHash(course), model: "synthetic-test" });
 	return { course, json, answer: parseTasks(json, course) };
 };

@@ -4,21 +4,14 @@ import { type ConceptsView, ROLE_LABEL } from "./concepts-view.ts";
 import { legend, method, viewBlock } from "./modes.ts";
 import { esc, pageKey } from "./places.ts";
 
-/**
- * When each concept comes back, in course minutes. Spacing research (Cepeda et al., 2008)
- * ties the useful gap to how long learners must retain it, so the view shows gaps and
- * leaves the judgement to the designer.
- */
 const ENCOUNTER: Role[] = ["defined", "example", "activity", "checked", "recap"];
 
 export interface SpacingRow {
 	name: string;
 	encounters: Array<{ minute: number; role: Role; ref: string; page: string | null }>;
 	definedAt: number | null;
-	/** Minutes from the first definition to the first knowledge check after it. */
 	toFirstCheck: number | null;
 	longestGap: number;
-	/** Minutes from the last encounter to the end of the course. */
 	afterLast: number;
 }
 
@@ -86,7 +79,6 @@ export function renderSpacing(view: SpacingView): string {
 					const tip = `<title>${esc(row.name)}\n${ROLE_LABEL[encounter.role]} at minute ${Math.round(encounter.minute)}</title>`;
 					const cx = x(encounter.minute);
 					const at = encounter.page ? ` data-page="${encounter.page}"` : "";
-					// Symbols follow GLOSSARY.md, as in the concept lanes.
 					return encounter.role === "defined"
 						? `<circle class="c-defined"${at} cx="${cx}" cy="${y}" r="4.5">${tip}</circle>`
 						: encounter.role === "checked"

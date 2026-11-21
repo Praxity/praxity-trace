@@ -1,26 +1,16 @@
 import type { Block, Course, Page, SourceLocation } from "./inspect.ts";
 
-/**
- * Where everything in a course is. Lessons are numbered from 1, a page is keyed "3.9" (lesson.page),
- * and a block's ref is `lesson.page.block`, 1-based, with `.n` for a column child. Unlike block IDs,
- * refs are stable for a given source, which the course hash pins. Built once per course.
- */
 export interface Located {
 	ref: string;
-	/** The lesson's file. */
 	lesson: string;
 	lessonNumber: number;
 	page: number;
-	/** Position of the block within its lesson, for ordering support against checks. */
 	order: number;
-	/** Position of the block in the whole course: the x of every course-position chart. */
 	position: number;
-	/** On a source or credit page, which text measures leave out. */
 	credit: boolean;
 	block: Block;
 }
 
-/** Where a ref sits, in terms a designer reads: lesson title, page, file and line. */
 export interface Place {
 	sourceRef?: string;
 	parentRef?: string | null;
@@ -30,7 +20,6 @@ export interface Place {
 	page: number;
 	file: string;
 	line: number | null;
-	/** Course-wide block position, for placing marks on a shared axis. */
 	position: number;
 }
 
@@ -39,7 +28,6 @@ export type Places = Record<string, Place>;
 export interface LessonSpan {
 	file: string;
 	title: string;
-	/** Course-wide position of the lesson's first block, or -1 when it has none. */
 	start: number;
 }
 
@@ -47,21 +35,16 @@ export interface CourseIndex {
 	blocks: readonly Located[];
 	block(ref: string): Located | undefined;
 	sourceBlock(ref: string): Located | undefined;
-	/** 1-based lesson number for a lesson file, 0 when the file is not in the course. */
 	lessonNumber(file: string): number;
 	page(lesson: number, page: number): Page | undefined;
-	/** The shared axis every course-position chart uses. */
 	axis: { blocks: number; lessons: LessonSpan[] };
 }
 
-/** A page as lesson.page, "3.9": the key of every page lookup and the label a designer reads. */
 export const pageKey = (lesson: number, page: number) => `${lesson}.${page}`;
 
 const CREDIT = /^(sources?\b|source photos|source references)/i;
-/** Source and credit pages list references, not teaching, so text measures leave them out. */
 export const isCreditPage = (title: string) => CREDIT.test(title);
 
-/** A `columns` block is layout, so its children stand in its place. */
 export function contentBlocks(block: Block): Block[] {
 	if (block.ref || block.type !== "columns") return [block];
 	const items = Array.isArray(block.data.items) ? block.data.items : [];
@@ -141,21 +124,17 @@ export function buildPlaces(course: Course, refs: Iterable<string>): Places {
 export const esc = (value: string | number) =>
 	String(value).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 export const clip = (text: string, length: number) => (text.length > length ? `${text.slice(0, length - 1)}…` : text);
-/** A lesson's title without a leading "Lesson 3:" that repeats its code. */
 export const lessonTitle = (number: number, title: string) => title.replace(new RegExp(`^Lesson\\s+${number}\\s*[:.–-]\\s*`, "i"), "");
 export const lessonHeading = (number: number, title: string) => `L${number} · ${lessonTitle(number, title)}`;
 
-/** "lesson.prax:12", or the file alone when the input gives no line. */
 export const sourceOf = (place: Place) => (place.line === null ? place.file : `${place.file}:${place.line}`);
 
-/** "3.9", with the lesson title and source file and line on hover. */
 export function where(places: Places, ref: string): string {
 	const place = places[ref];
 	if (!place) return esc(ref);
 	return `<span data-page="${pageKey(place.lesson, place.page)}" title="${esc(`${place.lessonTitle}, page ${place.page} · ${sourceOf(place)}`)}">${pageKey(place.lesson, place.page)}</span>`;
 }
 
-/** Several locations, deduplicated and in course order: "3.9, 3.14, 4.2". */
 export function wheres(places: Places, refs: string[]): string {
 	const byLesson = new Map<number, { title: string; pages: Set<number> }>();
 	for (const ref of refs) {
@@ -171,7 +150,6 @@ export function wheres(places: Places, refs: string[]): string {
 		.join(", ");
 }
 
-/** Compact lesson.page label used by matrix columns and strip rows; the lesson key explains L numbers. */
 export function short(places: Places, ref: string): string {
 	const place = places[ref];
 	return place ? pageKey(place.lesson, place.page) : ref;
@@ -181,7 +159,6 @@ export function lessonKey(lessons: LessonSpan[]): string {
 	return `<p class="legend lesson-key">${lessons.map((lesson, index) => `<span><strong>L${index + 1}</strong> ${esc(lesson.title)}</span>`).join("")}</p>`;
 }
 
-/** All lessons represented by these refs; empty means no located evidence, so keep the row visible. */
 export function lessonTags(places: Places, refs: string[]): string {
 	return `data-lessons="${[...new Set(refs.flatMap((ref) => places[ref] ? [places[ref].lesson] : []))].sort((a, b) => a - b).join(" ")}"`;
 }

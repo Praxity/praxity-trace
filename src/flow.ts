@@ -3,11 +3,6 @@ import { groupObjectives, type AlignmentView } from "./alignment-view.ts";
 import { esc, pageKey } from "./places.ts";
 import { absence, legend, method, viewBlock } from "./modes.ts";
 
-/**
- * Constructive alignment as an alluvial chart: objectives flow to checks and
- * activities, and checks flow on to where their instruction sits.
- * One unit is one objective–item pair, so every stage adds up to the same total.
- */
 export type Status = "before" | "earlier-lesson" | "narration" | "after" | "untaught" | "practised" | "no-evidence";
 
 const STATUS_LABEL: Record<Status, string> = {
@@ -26,7 +21,6 @@ export interface FlowView {
 	partial?: true;
 	objectives: Array<{ id: string; text: string; depth: 0 | 1; page?: string }>;
 	evidence: string[];
-	/** One per objective group and item; groups without evidence get one to "No check or activity". */
 	pairs: Array<{ objective: string; evidence: string; status: Status }>;
 }
 
@@ -116,12 +110,10 @@ export function renderFlow(view: FlowView, objectiveLessons: Record<string, numb
 	const right = stack(statuses, (status) => count((p) => p.status === status), top);
 	const height = Math.max(top, ...[left, middle, right].flatMap((nodes) => [...nodes.values()].map((node) => node.y + node.height))) + 20;
 
-	// Short keys let the highlight script trace exact objective–evidence–instruction paths.
 	const oKey = new Map(view.objectives.map((o, i) => [o.id, `o${i}`]));
 	const eKey = new Map(view.evidence.map((e, i) => [e, `e${i}`]));
 	const sKey = new Map(statuses.map((st, i) => [st, `s${i}`]));
 	const keysOf = <T>(values: T[], map: Map<T, string>) => [...new Set(values.map((value) => map.get(value)))].join(" ");
-	// Each node hands out its bands top to bottom in the order of their far end, to limit crossings.
 	const offsets = new Map<string, number>();
 	const take = (side: string, node: Node, units: number) => {
 		const used = offsets.get(side) ?? 0;
@@ -208,7 +200,6 @@ ${nodeRects(left, X[0] as number, objectiveLabel, "left", (id) => count((p) => p
 	});
 }
 
-/** Every objective group, evidence and instruction triple, with how many pairs follow it. */
 function flowTable(view: FlowView, objectiveLessons: Record<string, number[]>): string {
 	const rows = new Map<string, { objective: string; evidence: string; status: Status; count: number }>();
 	for (const pair of view.pairs) {
@@ -224,7 +215,6 @@ function flowTable(view: FlowView, objectiveLessons: Record<string, number[]>): 
 	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Constructive alignment pairs"><table class="blocks"><caption class="sr">Constructive alignment pairs</caption><thead><tr><th scope="col">Objective group</th><th scope="col">Evidence</th><th scope="col">Instruction</th><th scope="col" class="num">Pairs</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
-/** Hover previews a node's or band's paths; click pins them; Escape or a click on empty space clears. */
 export function flowClient() {
   document.querySelectorAll<SVGSVGElement>('svg.flow-chart').forEach((svg) => {
     const bands = [...svg.querySelectorAll<SVGElement>('path.flow')];
@@ -237,7 +227,6 @@ export function flowClient() {
         const col = target.dataset.node, key = target.dataset.key;
         return bands.filter((band) => has(band, col, key));
       }
-      // A band lights every band on the same objective–evidence–instruction paths.
       const o = (target.dataset.o || '').split(' '), e = target.dataset.e, s = (target.dataset.s || '').split(' ');
       return bands.filter((band) => band === target || (band.dataset.e === e && o.some((key) => has(band, 'o', key)) && s.some((key) => has(band, 's', key))));
     };

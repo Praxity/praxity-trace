@@ -25,10 +25,6 @@ export interface RecommendationsView {
 	places: ReturnType<typeof buildPlaces>;
 }
 
-/**
- * The course findings a recommendations answer was written from, so changed findings ask for a
- * fresh answer. The guides are fixed tool text, not findings, so editing one leaves answers valid.
- */
 export function reportHash(report: Report | Record<string, unknown>): string {
 	return createHash("sha256").update(JSON.stringify({ ...report, recommendations: undefined, guides: undefined })).digest("hex");
 }
@@ -117,7 +113,6 @@ export function parseRecommendations(json: string, course: Course, report: Repor
 	return { model: text(raw.model, "model"), items, places: buildPlaces(course, items.flatMap((item) => item.refs)) };
 }
 
-/** `titles` maps view ids to the headings the report draws (already escaped), so links read as the views do. */
 export function renderRecommendations(view: RecommendationsView, titles: Map<string, string>): string {
 	const items = view.items
 		.map((item) => {

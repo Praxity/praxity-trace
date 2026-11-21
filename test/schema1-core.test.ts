@@ -41,9 +41,8 @@ test("typed text counts descendants once and respects plain, markdown, glossary 
 	const block = course.lessons[0]!.pages[0]!.blocks[0]!;
 	const typed = (role: string, value: string, format = "plain") => ({ ref: role, role, value, format, location: null });
 	block.data.typedTexts = [typed("body", "<tag> &lt; [pause]"), typed("body", "**bold** <tag> &amp;lt;", "markdown"), typed("body", "<p>un<em>broken</em> &eacute;</p><script>hidden</script>", "html"), typed("glossary-term", "term"), typed("glossary-definition", "<p>definition</p>", "html"), typed("feedback", "After answering")];
-	// Tag boundaries read as spaces, as they always have, so quotes reviewers took from course.md stay valid.
 	assert.deepEqual(visibleText(block.data).map((text) => text.replace(/\s+/g, " ").trim()), ["<tag> &lt; [pause]", "bold <tag> &lt;", "un broken é"]);
-	assert.equal(countWords(block.data), 9); // "un broken" counts as two words, as tag boundaries always have
+	assert.equal(countWords(block.data), 9);
 	assert.deepEqual(blockTexts(block).tooltips, [{ term: "term", text: "definition" }]);
 	assert.ok(!blockTexts(block).screen.includes("After answering"));
 	const columns = course.lessons.flatMap(lesson => lesson.pages).flatMap(page => page.blocks).find(block => block.type === "columns");

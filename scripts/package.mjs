@@ -59,7 +59,6 @@ async function build(directory) {
 			if (ancestors.has(physical)) throw new Error(`Directory link cycle: ${source}`);
 			const next = new Set([...ancestors, physical]);
 			for (const name of (await readdir(physical)).sort()) {
-				// Dependencies are resolved separately, rather than copying a package manager's links.
 				if (name === "node_modules" || name === ".git") continue;
 				await collect(join(physical, name), join(target, name), next, repository);
 			}
@@ -82,7 +81,6 @@ async function build(directory) {
 		linked.add(absolute);
 		if (!inside(root, absolute)) throw new Error(`Local link leaves the repository: ${source}`);
 		await collect(absolute, relative(root, absolute), new Set(), true);
-		// Markdown in linked directories can introduce further local files or directories.
 		for (const [target, file] of [...payload]) {
 			if (!/\.md$/i.test(target) || linked.has(`read:${file}`)) continue;
 			linked.add(`read:${file}`);
@@ -130,12 +128,10 @@ async function build(directory) {
 		}
 	}
 
-	// Preserve the raw TypeScript: inlineClient serializes type-stripped function source.
 	for (const path of ["src", "data/bloom-verbs.json", "data/tubelex-en.tsv.gz", "package.json", "LICENSE", "LICENSING.md", "NOTICE.md"]) {
 		await collect(join(root, path), path, new Set(), true);
 	}
 	await localContent(join(root, "skill"));
-	// The tasks prompt cites the coding guide by package path; the skill no longer links it.
 	await localContent(join(root, "docs/task-coding-guide.md"));
 	for (const name of Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies }).sort()) {
 		await dependency(name, root, join("node_modules", name));
@@ -156,7 +152,6 @@ async function build(directory) {
 	}
 	const git = (...args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
 	const source = { revision: git("rev-parse", "HEAD"), dirty: git("status", "--porcelain").length > 0 };
-	// mkdir reserves the leaf exclusively, including a racing directory or dangling symlink.
 	await mkdir(dirname(directory), { recursive: true });
 	await mkdir(directory);
 	const files = [];

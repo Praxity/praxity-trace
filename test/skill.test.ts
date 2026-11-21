@@ -4,7 +4,6 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, posix } from "node:path";
 import { test } from "node:test";
 
-// Rubato installs skill/ alone, so every relative link must stay inside it.
 test("skill links resolve inside the installed skill folder", async () => {
 	const files = (await readdir("skill", { recursive: true })).map((path) => path.replaceAll("\\", "/")).filter((path) => path.endsWith(".md"));
 	assert.ok(files.includes("SKILL.md"));
@@ -33,7 +32,6 @@ test("public Markdown carries no machine paths", async () => {
 
 test("skill keeps judge evidence out of the bundle and edits course source through prax-format", async () => {
 	const skill = await readFile("skill/SKILL.md", "utf8");
-	// The bundle prompt says no keys or judge evidence belong in the preparation bundle.
 	assert.doesNotMatch(skill, /--item-cues <bundle>/);
 	assert.match(skill, /--item-cues <review>\/answer\.json/);
 	assert.match(skill, /change the course source with the prax-format skill: validate, then record identity\. Never patch an export/);

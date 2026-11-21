@@ -1,10 +1,7 @@
 import type { ItemCuesView } from "./item-cues.ts";
 
-/** Patterns to inspect after each view, also supplied to report readers and reviewers. */
 export interface Reading {
-	/** A pattern visible in the view. */
 	see: string;
-	/** A specific inspection the pattern calls for. */
 	could: string;
 	mode?: "table";
 	paceMode?: "cumulative";

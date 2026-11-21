@@ -7,12 +7,6 @@ import { absence, legend, method, renderFeedback, segmented, viewBlock } from ".
 import { clip, esc, indexCourse, pageKey, type Places, where, wheres } from "./places.ts";
 import { blockTexts, feedbackText, type Feedback } from "./text.ts";
 
-/**
- * Where the instruction a knowledge check needs is when the check comes: still in view, on an
- * earlier page, behind a click, only spoken, only in a tooltip, only after the check, or not found.
- * A pre-assessment, placed before its teaching on purpose, is its own case and not a concern.
- * Built from the alignment review's instruction links; the most available instruction decides.
- */
 export const AVAILABLE = ["same-page", "earlier-page", "behind-click", "tooltip", "transcript", "narration", "pre", "after", "none"] as const;
 export type Available = (typeof AVAILABLE)[number];
 
@@ -28,7 +22,6 @@ export const AVAILABLE_LABEL: Record<Available, string> = {
 	none: "No instruction found",
 };
 
-/** Places a designer may want to look at, drawn in orange. */
 const LOOK = new Set<Available>(["behind-click", "tooltip", "narration", "after", "none"]);
 
 export interface AvailabilityView {
@@ -39,11 +32,8 @@ export interface AvailabilityView {
 		page: number;
 		question: string;
 		available: Available;
-		/** The instruction that decided, or null when none was found before or after. */
 		source: { ref: string; type: string } | null;
-		/** Course minutes from the start of that instruction's page to the start of the check's page. */
 		minutesBefore: number | null;
-		/** Every block the alignment review found teaching what the check needs. */
 		instruction: string[];
 		instructionLinks: Array<{ ref: string; channel: Channel; after: boolean; available: Available; text: string }>;
 		feedback: Feedback;
@@ -61,8 +51,6 @@ export function availabilityView(course: Course, alignment: AlignmentView, anato
 	};
 	const checks = alignment.checks.map((check) => {
 		const at = alignment.places[check.ref];
-		// Schema 1 lists nested blocks separately, so instruction inside an accordion is its own block
-		// whose parent chain, not its own type, shows that a learner must open something to see it.
 		const insideExplore = (ref: string) => {
 			let block = index.block(ref)?.block;
 			for (let depth = 0; block && depth < 50; depth += 1) {
@@ -80,7 +68,6 @@ export function availabilityView(course: Course, alignment: AlignmentView, anato
 			const place = alignment.places[support.ref];
 			return place && at && place.lesson === at.lesson && place.page === at.page ? "same-page" : "earlier-page";
 		};
-		// A pre-assessment comes before its teaching by design.
 		const instruction = check.support.map((support) => support.ref);
 		const instructionLinks = check.support.map(support => {
 			const text = blockTexts(index.block(support.ref)!.block);
@@ -88,7 +75,6 @@ export function availabilityView(course: Course, alignment: AlignmentView, anato
 		});
 		const feedback = feedbackText(index.block(check.ref)!.block);
 		if (check.pre) return { ref: check.ref, lesson: at?.lesson ?? 0, page: at?.page ?? check.page, question: check.question, available: "pre" as const, source: null, minutesBefore: null, instruction, instructionLinks, feedback };
-		// Most available first; among equals, the instruction nearest the check.
 		const best = check.support
 			.map((support) => ({ support, available: kind(support) }))
 			.sort((a, b) => AVAILABLE.indexOf(a.available) - AVAILABLE.indexOf(b.available) || b.support.position - a.support.position)[0];
@@ -148,7 +134,6 @@ function table(view: AvailabilityView): string {
 	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Where each knowledge check's instruction is"><table class="blocks availability-table"><caption class="sr">Where each knowledge check's instruction is</caption><thead><tr><th scope="col">Knowledge check</th><th scope="col">Instruction it needs</th><th scope="col" class="num two-line">Minutes<br>before</th><th scope="col">Instruction at</th><th scope="col">Check at</th><th scope="col">All instruction</th><th scope="col"><abbr class="defined" tabindex="0" title="Supplied feedback text, without a quality classification. Empty feedback means a supplied field contains no text; not supplied by the input means no feedback field was included.">Feedback after responding</abbr></th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-/** `positions` is the course-position strip of each check and its instruction, a second way to read the same links. */
 export function renderAvailability(view: AvailabilityView, positions = ""): string {
 	const look = view.checks.filter((check) => LOOK.has(check.available)).length;
 	const pre = view.checks.filter((check) => check.available === "pre").length;

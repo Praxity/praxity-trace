@@ -1,14 +1,8 @@
 import { inlineClient } from "./client.ts";
-/**
- * Wide charts and tables scroll sideways. A faded edge and an arrow on the side with more to see
- * tell the reader it is there. The region supports arrow keys; named buttons also let keyboard and
- * pointer users scroll by most of a region at a time.
- */
 export function scrollHintClient() {
   const update = (frame: HTMLElement, region: HTMLElement) => {
     const left = region.scrollLeft > 2;
     const right = region.scrollLeft + region.clientWidth < region.scrollWidth - 2;
-    // An arrow disappears at the edge. Keep keyboard focus in its scroll region when it does.
     if ((!left && document.activeElement === frame.querySelector('.scroll-arrow.left')) ||
         (!right && document.activeElement === frame.querySelector('.scroll-arrow.right'))) {
       if (!region.hasAttribute('tabindex')) region.tabIndex = 0;
@@ -22,7 +16,6 @@ export function scrollHintClient() {
     button.type = 'button';
     button.className = 'scroll-arrow ' + side;
     button.setAttribute('aria-label', 'Scroll ' + side);
-    // Tabler chevron: a text glyph sits on its baseline and never centres in the circle.
     button.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + (side === 'left' ? 'M15 6l-6 6l6 6' : 'M9 6l6 6l-6 6') + '"/></svg>';
     button.addEventListener('click', () => region.scrollBy({ left: (side === 'left' ? -0.8 : 0.8) * region.clientWidth, behavior: 'smooth' }));
     return button;

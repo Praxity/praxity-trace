@@ -1,8 +1,3 @@
-// Builds data/tubelex-en.tsv.gz from TUBELEX's English lists (https://github.com/naist-nlp/tubelex,
-// frequencies/tubelex-en.tsv.xz and tubelex-en-lemma-pos.tsv.xz, BSD-3-Clause). Decompress both, then:
-//   node scripts/build-lexicon.ts tubelex-en.tsv tubelex-en-lemma-pos.tsv
-// Each entry is a single word at Zipf 2 or above, rounded to one decimal. A base form takes its
-// lemma frequency, which counts all its inflections, when that is higher than its own.
 import { readFileSync, writeFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 

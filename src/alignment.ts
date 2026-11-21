@@ -73,7 +73,6 @@ export interface AlignmentAnswer {
 	checks: Array<{
 		ref: string;
 		purpose: Purpose;
-		/** A knowledge check placed before its teaching on purpose, such as a pre-test. */
 		pre: boolean;
 		objectives: string[];
 		support: Array<{ ref: string; channel: Channel }>;
@@ -86,8 +85,6 @@ const FINK_SET = new Set<string>(FINK);
 const PURPOSES = new Set<string>(["knowledge", "survey", "reflection", "worksheet"]);
 const CHANNELS = new Set<string>(["screen", "tooltip", "narration", "transcript"]);
 
-/** Rejects answers for another course revision or citing refs the course does not have. */
-/** Words quoted from an objective for each part of a performance objective (Mager): null when not stated. */
 export interface Performance {
 	action: string | null;
 	conditions: string | null;
@@ -102,7 +99,6 @@ function performanceOf(value: unknown, objective: string, at: string, problem: (
 		const quoted = record[name];
 		if (quoted === null || quoted === undefined) return null;
 		if (typeof quoted !== "string" || !quoted.trim()) return problem(`${at}.${name} must be words from the objective or null`);
-		// Quoted, not paraphrased, so a designer can see exactly what the objective states.
 		if (!objective.toLowerCase().includes(quoted.trim().toLowerCase())) problem(`${at}.${name} must be copied from the objective's text`);
 		return quoted.trim();
 	};

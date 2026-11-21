@@ -9,10 +9,8 @@ import { renderTerms, type TermsView } from "./terms.ts";
 
 export type Channel = "screen" | "narration" | "transcript";
 
-/** Transcript figures exist only when the course supplies transcript text, so courses without media prose keep their report as it was. */
 export type Channels<T> = Record<"screen" | "narration", T> & { transcript?: T };
 
-/** A lesson's channels in display order, transcript only when present. */
 const present = <T>(channels: Channels<T>) =>
 	(["screen", "narration", "transcript"] as const).flatMap((channel) => {
 		const data = channels[channel];
@@ -20,7 +18,6 @@ const present = <T>(channels: Channels<T>) =>
 	});
 
 export interface Sentence {
-	/** Stable within a course revision: lesson, page, then s (on screen), n (narration) or t (transcript) and the sentence's order on that page, e.g. 3.9.s2. */
 	id: string;
 	lesson: number;
 	page: number;
@@ -37,11 +34,9 @@ export interface SentenceStructure {
 	passive: boolean;
 	nominalisations: number;
 	frontLoaded: boolean;
-	/** Character offsets into the exact sentence text. */
 	triggers: Array<{ start: number; end: number }>;
 }
 
-/** Counts of sentences, so a designer sees how many to revise; shares are derived from them. */
 export interface StructureSummary {
 	clauseCuesPer100Sentences: number;
 	twoOrMoreClauseCues: number;
@@ -52,11 +47,6 @@ export interface StructureSummary {
 
 export type Construction = "passive" | "clauses" | "frontLoaded" | "nominal";
 
-/**
- * How sentences hold together, after Coh-Metrix's referential and deep cohesion (Graesser,
- * McNamara and Kulikowich 2011): adjacent sentences on a page that share a content word, and
- * connectives that state a cause or a contrast. Counts; the report derives shares and rates.
- */
 export interface Cohesion {
 	adjacentPairs: number;
 	overlapping: number;
@@ -64,14 +54,12 @@ export interface Cohesion {
 	contrastive: number;
 }
 
-// Unambiguous connectives only: "since" and "while" also mark time, so they are left out.
 const CAUSAL = /\b(?:because|therefore|thus|hence|consequently|as a result|due to|so that|in order to|that's why|that is why|which means)\b|(?:^|[,;:]\s*)so\b/gi;
 const CONTRASTIVE = /\b(?:but|however|although|though|whereas|yet|instead|nevertheless|nonetheless|despite|in contrast|on the other hand|unlike|rather than)\b/gi;
 
 const contentWords = (sentence: string) =>
 	new Set((sentence.toLowerCase().match(WORD) ?? []).filter((word) => word.length >= 4 && !STOP_WORDS.has(word)).map((word) => (word.length > 4 && word.endsWith("s") && !word.endsWith("ss") ? word.slice(0, -1) : word)));
 
-/** Cohesion of one run of sentences in order, such as one page's on-screen text. */
 export function cohesionOf(sentences: string[]): Cohesion {
 	let overlapping = 0;
 	for (let i = 1; i < sentences.length; i += 1) {
@@ -82,7 +70,6 @@ export function cohesionOf(sentences: string[]): Cohesion {
 	return { adjacentPairs: Math.max(0, sentences.length - 1), overlapping, causal: count(CAUSAL), contrastive: count(CONTRASTIVE) };
 }
 
-/** Sentences worth a look, by construction, in course order; the same lists an agent can revise from. */
 export type Flagged = Record<Construction, Sentence[]>;
 
 export interface LessonLanguage {
@@ -96,13 +83,10 @@ export interface ChannelLanguage {
 	words: number;
 	medianLength: number | null;
 	p90Length: number | null;
-	/** Share of words with three or more syllables. */
 	longWordShare: number | null;
-	/** Flesch–Kincaid grade level; null outside English or below the sample size. */
 	grade: number | null;
 	lengths: number[];
 	structure: StructureSummary | null;
-	/** English only; null for other languages. */
 	cohesion: Cohesion | null;
 }
 
@@ -112,30 +96,23 @@ export interface LanguageView {
 	longest: Sentence[];
 	flagged: Flagged;
 	acronyms: Acronym[];
-	/** English only; null for other languages. */
 	vocabulary: Vocabulary | null;
 	places: Places;
 }
 
-/** Word familiarity from TUBELEX subtitle frequencies, as Zipf values: log10 of uses per billion words. */
 export interface Vocabulary {
 	lessons: Array<Channels<{ words: number; lessCommon: number; rare: number }>>;
-	/** Words below Zipf 3, fewer than one use per million, in order of first use. */
 	rare: RareWord[];
 }
 
 export interface RareWord {
 	word: string;
-	/** Every form counted under this word, when a plural joined its singular. */
 	forms?: string[];
-	/** null when the word is below Zipf 2 or not in the list. */
 	zipf: number | null;
 	uses: number;
-	/** Sentence id and block of the first use. */
 	firstUse: string;
 	ref: string;
 	lessons: number[];
-	/** A glossary tooltip's term contains the word. */
 	glossed: boolean;
 }
 
@@ -143,7 +120,6 @@ export interface Acronym {
 	acronym: string;
 	uses: number;
 	firstUse: string;
-	/** First block that spells it out, as "Full Name (ACR)" or a glossary tooltip; null when none does. */
 	expandedAt: string | null;
 	usedBeforeExpansion: boolean;
 }
@@ -152,10 +128,6 @@ const ACRONYM = /\b([A-Z][A-Z0-9]{1,5})s?\b/g;
 
 const CONNECTOR = new Set(["and", "of", "the", "for", "on", "to", "in", "at", "de", "du", "des", "la", "le", "et"]);
 
-/**
- * True when a capitalised name is followed by "(ACR)", a name's initials spell the acronym,
- * or the acronym introduces a list whose items spell it ("FLOOD: Forecast, Levee check, …").
- */
 export function spelledOut(acronym: string, text: string): boolean {
 	if (new RegExp(`\\b\\p{Lu}[\\p{L}'’-]*\\s+\\(\\s*${acronym}\\s*\\)`, "u").test(text)) return true;
 	const list = new RegExp(`\\b${acronym}\\b[^:.]{0,30}:\\s*([^.]+)`, "u").exec(text)?.[1];
@@ -181,11 +153,9 @@ export function spelledOut(acronym: string, text: string): boolean {
 	return false;
 }
 
-/** Every string in block data, so code can be found in any field. */
 const strings = (value: unknown): string[] =>
 	typeof value === "string" ? [value] : Array.isArray(value) ? value.flatMap(strings) : typeof value === "object" && value !== null ? Object.values(value).flatMap(strings) : [];
 
-/** Words inside inline code or backticks anywhere in the course: identifiers and sample input, not vocabulary. */
 function codeWords(course: Course): Set<string> {
 	const code = locateBlocks(course)
 		.flatMap((item) => [...strings(item.block.data), ...transcriptStrings(item.block).map((transcript) => transcript.text)])
@@ -193,7 +163,6 @@ function codeWords(course: Course): Set<string> {
 	return new Set(code.flatMap((text) => text.match(/[\p{L}\p{N}_]+/gu) ?? []));
 }
 
-/** Every acronym, where it first appears and where, if anywhere, it is spelled out. */
 function acronyms(course: Course): Acronym[] {
 	const code = codeWords(course);
 	const lowercase = new Set(locateBlocks(course).flatMap((item) => {
@@ -207,7 +176,6 @@ function acronyms(course: Course): Acronym[] {
 		const all = [texts.screen, ...texts.tooltips.map((tip) => tip.text), ...texts.narration, ...texts.transcript].join(" ");
 		for (const match of all.matchAll(ACRONYM)) {
 			const acronym = match[1] as string;
-			// Capitals in code, or a word the course also writes in lower case ("STOP", "IS"), are not acronyms.
 			if (code.has(acronym) || lowercase.has(acronym.toLowerCase())) continue;
 			const entry = found.get(acronym) ?? { uses: 0, firstUse: item.ref, expandedAt: null, firstPosition: position, expandedPosition: Infinity };
 			entry.uses += 1;
@@ -220,7 +188,6 @@ function acronyms(course: Course): Acronym[] {
 			found.set(acronym, entry);
 		}
 	});
-	// A capitalised plural such as "SOPS" is the same acronym as "SOP".
 	for (const [acronym, entry] of [...found]) {
 		const singular = found.get(acronym.slice(0, -1));
 		if (!acronym.endsWith("S") || !singular) continue;
@@ -240,7 +207,6 @@ function acronyms(course: Course): Acronym[] {
 		.sort((a, b) => a.acronym.localeCompare(b.acronym));
 }
 
-/** Headings, checks, controls and data displays are not prose; source and credit pages are citations. */
 const SKIPPED_TYPES = new Set([
 	"heading",
 	"assessment",
@@ -257,9 +223,7 @@ const SKIPPED_TYPES = new Set([
 	"variable",
 	"logic",
 ]);
-/** A full stop after these does not end a sentence. */
 const ABBREVIATION = /\b(?:v|vs|e\.g|i\.e|etc|Dr|Mr|Mrs|Ms|St|No|Inc|Ltd|[A-Z])\.(?=\s)/g;
-/** Below this many words a readability grade is noise. */
 const MIN_GRADE_WORDS = 100;
 
 const WORD = /[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu;
@@ -269,7 +233,6 @@ const BE = new Set(["am", "is", "are", "was", "were", "be", "been", "being"]);
 const IRREGULAR_PARTICIPLE = new Set(["known", "given", "made", "seen", "done", "taken", "written", "built", "shown", "found", "told", "sent", "held", "read", "taught", "bought", "brought", "chosen"]);
 const NOMINALISATION = /(?:tion|sion|ment|ness|ity|ance|ence)$/;
 
-// ponytail: lexical English cues miss clauses and include some non-passives; use a parser only if course checks show the extra accuracy is needed.
 export function sentenceStructure(text: string): SentenceStructure {
 	const tokens = [...text.matchAll(WORD)].map((match) => ({ word: match[0].toLowerCase(), start: match.index, end: match.index + match[0].length }));
 	let subordinateClauses = 0;
@@ -305,8 +268,6 @@ export function sentenceStructure(text: string): SentenceStructure {
 	};
 }
 
-// ponytail: English vowel-group heuristic, the usual basis for Flesch–Kincaid; swap for a
-// dictionary (CMUdict) if grades need to match a specific tool exactly.
 export function syllables(word: string): number {
 	const w = word.toLowerCase().replace(/[^a-z]/g, "");
 	if (!w) return 0;
@@ -315,27 +276,17 @@ export function syllables(word: string): number {
 	return Math.max(1, trimmed.match(/[aeiouy]{1,2}/g)?.length ?? 1);
 }
 
-/**
- * Splits prose into sentences. Blank-line paragraphs and structural items end a sentence even without punctuation,
- * and so does a closing bracket, colon or semicolon followed by a capital: that is how a list read
- * aloud separates its items.
- */
 export function sentences(text: string): string[] {
-	// HTML whitespace wraps source code, not paragraphs; its elements carry the boundaries.
 	const html = Boolean(text.match(TAG));
 	return text
 		.replace(/\r\n?/g, "\n")
 		.split(/<\/(?:p|li|h\d|dd|dt|td|th)>|<br\s*\/?>/i)
 		.flatMap(segment => html ? [segment] : segment.split(/\n[ \t]*\n/))
-		// Inline tags sit inside words and before punctuation; other tags separate text.
 		.map((segment) => stripTags(segment.replace(/<\/?(?:a|abbr|b|code|em|i|kbd|mark|q|s|small|span|strong|sub|sup|u)\b[^>]*>/gi, "")).replace(/\s+/g, " ").trim())
 		.filter(Boolean)
 		.flatMap((segment) =>
 			segment
 				.replace(ABBREVIATION, (match) => match.replaceAll(".", "\u0000"))
-				// A spaced hyphen before a capital is a list item read aloud: "…gauge. - Keep the marks…".
-				// A sentence can open with code, and a lowercase one only after a full word (abbreviations are masked above).
-				// A spaced hyphen before a capital or code is a list item read aloud: "…gauge. - Keep the marks…".
 				.split(/(?<=[.!?][”"’)]?|[):;])\s+(?=[\p{Lu}\p{N}“"‘(`])|(?<=\p{Ll}{3}[.!?])\s+(?=\p{Ll}+[/_(.]|\p{Ll}+\s)|\s+-\s+(?=[\p{Lu}`])/u),
 		)
 		.map((sentence) => sentence.replaceAll("\u0000", ".").trim())
@@ -348,7 +299,6 @@ function measure(id: string, lesson: number, page: number, ref: string, channel:
 	return { id, lesson, page, ref, channel, text, words: words.length, syllables: words.reduce((sum, word) => sum + syllables(word), 0), structure: english ? sentenceStructure(text) : null };
 }
 
-/** A sentence with this many nominalisations is listed for review. */
 const NOMINAL_HEAVY = 3;
 
 function quantile(sorted: number[], q: number): number | null {
@@ -370,17 +320,12 @@ export function languageView(course: Course): LanguageView {
 		if (item.credit) continue;
 		const lesson = item.lessonNumber;
 		const at = pageKey(lesson, item.page);
-		// Headings, checks and data displays are not prose on screen; narration attached to them is still spoken prose.
 		for (const text of SKIPPED_TYPES.has(item.block.type) ? [] : visibleStrings(item.block.data)) {
 			for (const sentence of sentences(text)) all.push(measure(`${at}.s${next(`${at}.s`)}`, lesson, item.page, item.ref, "screen", sentence, english));
 		}
 		for (const script of narrations(item.block.data).map((item) => narrationText(item))) {
 			for (const sentence of sentences(script)) all.push(measure(`${at}.n${next(`${at}.n`)}`, lesson, item.page, item.ref, "narration", sentence, english));
 		}
-		// Supplied media prose gets its own channel so it cannot inflate on-screen or narration figures.
-		// It is never timed: Trace has no playback length for the media.
-		// Any nonblank transcript adds the channel, even with no sentence; sentences split the markup, so
-		// paragraph ends still end a sentence and escaped plain angle brackets stay text.
 		if (transcripts(item.block).length) hasTranscripts = true;
 		for (const transcript of transcriptStrings(item.block)) {
 			for (const sentence of sentences(transcript.text)) all.push(measure(`${at}.t${next(`${at}.t`)}`, lesson, item.page, item.ref, "transcript", sentence, english));
@@ -409,7 +354,6 @@ export function languageView(course: Course): LanguageView {
 						? 0.39 * (words / mine.length) + 11.8 * (syllableCount / words) - 15.59
 						: null,
 				lengths,
-				// Adjacent pairs stay within a page: a new page is a new screen of text.
 				cohesion: english
 					? [...Map.groupBy(mine, (sentence) => sentence.page).values()]
 							.map((page) => cohesionOf(page.map((sentence) => sentence.text)))
@@ -428,7 +372,6 @@ export function languageView(course: Course): LanguageView {
 		};
 		return { file: lesson.file, title: lesson.title, channels: { screen: summarize("screen"), narration: summarize("narration"), ...(hasTranscripts ? { transcript: summarize("transcript") } : {}) } };
 	});
-	// A sentence repeated in two channels on the same page, such as on screen and read aloud, is listed once.
 	const longest = [...all]
 		.sort((a, b) => b.words - a.words)
 		.filter((sentence, index, sorted) => sorted.findIndex((other) => other.ref.split(".").slice(0, 2).join(".") === sentence.ref.split(".").slice(0, 2).join(".") && other.lesson === sentence.lesson && other.text.replace(/`/g, "") === sentence.text.replace(/`/g, "")) === index)
@@ -459,9 +402,6 @@ export function languageView(course: Course): LanguageView {
 
 const LESS_COMMON = 4;
 const RARE = 3;
-// Spelling collisions: accidently maps to a noun, cally and dally are not adverbs of cal and dal,
-// and lively is an adjective from life, not an adverb of live. Summarily means without formality,
-// not in a summary way. Misspellings such as publically keep their rarity, so they stay visible.
 const ADVERB_EXCEPTIONS = new Set(["accidently", "cally", "dally", "lively", "publically", "summarily"]);
 let lexicon: Map<string, number> | undefined;
 export const zipfOf = (word: string) => {
@@ -476,13 +416,10 @@ export const zipfOf = (word: string) => {
 			}),
 	);
 	const forms = [word, ...baseForms(word)];
-	// Match only these adjective endings: other -ly words such as gingerly can change meaning.
-	// Look up the adjective directly; stripping prefixes or chaining forms would widen the rule.
 	if (!ADVERB_EXCEPTIONS.has(word)) {
 		let adjective = /(?:fully|lessly|ously|ively|ishly|ally|ently|antly)$/.test(word) ? word.slice(0, -2)
 			: /arily$/.test(word) ? `${word.slice(0, -3)}y`
 				: /[ai]bly$/.test(word) ? `${word.slice(0, -1)}e` : "";
-		// -ically usually comes from -ical; -ic counts only when -ical is absent, not less frequent.
 		if (word.endsWith("ically") && !lexicon.has(adjective)) adjective = word.slice(0, -4);
 		if (lexicon.has(adjective)) forms.push(adjective);
 	}
@@ -490,18 +427,12 @@ export const zipfOf = (word: string) => {
 	return found.length ? Math.max(...found) : null;
 };
 
-/**
- * Base forms an English inflection could come from: spillways → spillway, levied → levy, gauged → gauge.
- * Only forms in the lexicon count, and a word takes its family's frequency, as psycholinguistic norms do.
- * Comparatives are left out because -er also makes nouns: planter is not a form of plant.
- */
 export function baseForms(word: string): string[] {
 	if (word.length < 4) return [];
 	const forms: string[] = [];
 	const add = (stem: string) => {
 		if (stem.length < 2) return;
 		forms.push(stem, `${stem}e`);
-		// Doubled final consonant: stopped → stop.
 		if (/([b-df-hj-np-tv-z])\1$/.test(stem)) forms.push(stem.slice(0, -1));
 	};
 	for (const suffix of ["ies", "ied"]) if (word.endsWith(suffix)) forms.push(`${word.slice(0, -3)}y`);
@@ -510,7 +441,6 @@ export function baseForms(word: string): string[] {
 	return forms;
 }
 
-/** Tokens as TUBELEX counts them: lowercased, NFKC, split at hyphens, with clitics such as 's and n't apart. */
 function tokens(text: string): Array<{ word: string; capital: boolean; index: number }> {
 	const found = text
 		.normalize("NFKC")
@@ -519,7 +449,6 @@ function tokens(text: string): Array<{ word: string; capital: boolean; index: nu
 		.replace(/['’](?:s|re|ve|ll|d|m)\b/gi, "")
 		.matchAll(/[\p{L}\p{N}]+/gu);
 	return [...found]
-		// Acronyms have their own table, and numbers are not vocabulary.
 		.filter((match) => !/\p{N}/u.test(match[0]) && !/^\p{Lu}{2,}$/u.test(match[0]))
 		.map((match, index) => ({ word: match[0].toLowerCase(), capital: /^\p{Lu}/u.test(match[0]), index }));
 }
@@ -542,7 +471,6 @@ function vocabularyOf(course: Course, all: Sentence[], hasTranscripts: boolean):
 		}
 		return words;
 	});
-	// A word never written in lower case and capitalised mid-sentence is a name; names are not vocabulary to teach.
 	const isName = (word: string) => {
 		const entry = seen.get(word);
 		return (!!entry && !entry.lowercase && entry.midSentenceCapital) || code.has(word);
@@ -565,8 +493,6 @@ function vocabularyOf(course: Course, all: Sentence[], hasTranscripts: boolean):
 		return { screen: tally("screen"), narration: tally("narration"), ...(hasTranscripts ? { transcript: tally("transcript") } : {}) };
 	});
 	const rareWords = new Map([...seen].filter(([word]) => !isName(word) && (zipfOf(word) ?? 0) < RARE));
-	// A plural whose singular is also rare is one word to the reader: weir and weirs share an entry.
-	// ponytail: English plural suffixes only (-s, -es, -ies); irregular plurals stay separate.
 	const singular = (word: string) => {
 		const base = word.endsWith("ies") ? `${word.slice(0, -3)}y` : /(s|x|z|ch|sh)es$/.test(word) ? word.slice(0, -2) : /[^s]s$/.test(word) ? word.slice(0, -1) : "";
 		return base && rareWords.has(base) ? base : word;
@@ -591,14 +517,11 @@ function vocabularyOf(course: Course, all: Sentence[], hasTranscripts: boolean):
 }
 
 const CHANNEL_LABEL: Record<Channel, string> = { screen: "On screen", narration: "Narration", transcript: "Transcript" };
-/** True when the course supplies transcript text; every transcript row, legend entry and rule follows it. */
 const transcribed = (view: LanguageView) => view.lessons.some((lesson) => lesson.channels.transcript);
 const LABEL = 260;
 const PLOT = 560;
-/** Shared scale extends beyond the reference; longer sentences sit at the edge. */
 const lengthCap = (view: LanguageView) => Math.max(30, (Math.floor((lengthReference(view) ?? 0) / 5) + 1) * 5);
 
-/** The course's mean sentence length plus two standard deviations: a reference line, not a threshold. */
 export function lengthReference(view: LanguageView): number | null {
 	const all = view.lessons.flatMap((lesson) => present(lesson.channels).flatMap(([, data]) => data.lengths));
 	if (!all.length) return null;
@@ -607,9 +530,7 @@ export function lengthReference(view: LanguageView): number | null {
 	return Math.round(mean + 2 * sd);
 }
 const ROW = 20;
-/** Mark area is proportional to the number of sentences of that length. */
 const radius = (count: number) => Math.min(9, 2.2 * Math.sqrt(count));
-/** A transcript square has the area of the circle drawn for the same count. */
 const side = (count: number) => Math.sqrt(Math.PI) * radius(count);
 
 function strip(view: LanguageView): string {
@@ -648,7 +569,6 @@ function strip(view: LanguageView): string {
 				row.data.medianLength === null
 					? ""
 					: `<line class="median-halo" x1="${x(row.data.medianLength)}" x2="${x(row.data.medianLength)}" y1="${y - 10}" y2="${y + 10}"/><line class="median" x1="${x(row.data.medianLength)}" x2="${x(row.data.medianLength)}" y1="${y - 10}" y2="${y + 10}"><title>Median ${row.data.medianLength} words</title></line>`;
-			// Transcript squares go above the median: the 6px halo would hide a 3.9px square at the median length, and the line still shows past the square's ends.
 			const marks = row.channel === "transcript" ? `${median}${dots}` : `${dots}${median}`;
 			return `<g data-lesson="${view.lessons.indexOf(row.lesson) + 1}">${label}<text class="page-label" x="${LABEL - 8}" y="${y + 4}" text-anchor="end">${CHANNEL_LABEL[row.channel]}</text>${marks}</g>`;
 		})
@@ -659,7 +579,6 @@ function strip(view: LanguageView): string {
 
 const BANDS: Array<[number, number, string]> = [[1, 10, "1–10"], [11, 20, "11–20"], [21, 30, "21–30"], [31, Infinity, "31+"]];
 
-/** Sentence counts by length band, per lesson and channel: the table form of the sentence-length chart. */
 function lengthTable(view: LanguageView): string {
 	const rows = view.lessons
 		.flatMap((lesson, index) =>
@@ -674,7 +593,6 @@ function lengthTable(view: LanguageView): string {
 
 const fixed = (value: number | null, digits: number) => (value === null ? "–" : value.toFixed(digits));
 
-/** Per 1,000 words, or a dash when there is too little text to say. */
 const perThousand = (count: number, words: number) => (words >= 100 ? String(Math.round((1000 * count) / words)) : "–");
 
 function profileTable(view: LanguageView): string {
@@ -708,7 +626,6 @@ function longestList(view: LanguageView): string {
 		.join("")}</ol>`;
 }
 
-/** "L3" with the full title on hover; the report's lesson key explains it. */
 const lessonCell = (index: number, title: string, rows = 2) =>
 	`<th scope="rowgroup" rowspan="${rows}"><span title="${esc(title)}">L${index + 1}</span></th>`;
 
@@ -756,7 +673,6 @@ const CONSTRUCTION_LABEL: Record<Construction, string> = {
 	nominal: `Sentences with ${NOMINAL_HEAVY} or more nominalisations`,
 };
 
-/** Closed construction lists directly below one lesson's counts, with sentence ids and sources. */
 function reviewLists(view: LanguageView, lesson: number): string {
 	return (Object.keys(CONSTRUCTION_LABEL) as Construction[])
 		.map((construction) => {
@@ -785,7 +701,6 @@ function vocabularyTable(view: LanguageView, vocabulary: Vocabulary): string {
 	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Word familiarity by lesson"><table class="blocks vocabulary"><caption class="sr">Word familiarity by lesson</caption><thead><tr><th scope="col">Lesson</th><th scope="col">Channel</th><th scope="col" class="num">Words</th><th scope="col" class="num"><abbr class="defined" tabindex="0" title="Words encountered infrequently in everyday language">Uncommon per 1,000 words</abbr></th><th scope="col"><abbr class="defined" tabindex="0" title="Words rarely encountered in everyday language">Rare per 1,000 words</abbr></th><th scope="col" class="num">Distinct rare words</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-/** One table of rare words, first use first, inside a single accordion; its columns sort. */
 function rareLists(view: LanguageView, vocabulary: Vocabulary): string {
 	const rows = [...vocabulary.rare]
 		.sort((a, b) => (view.places[a.ref]?.position ?? 0) - (view.places[b.ref]?.position ?? 0))
@@ -804,7 +719,6 @@ function acronymTable(view: LanguageView): string {
 	return `<div class="table-wrap" tabindex="0" role="region" aria-label="Acronyms"><table class="blocks"><caption class="sr">Acronyms</caption><thead><tr><th scope="col">Acronym</th><th scope="col" class="num">Uses</th><th scope="col">First used</th><th scope="col">Spelled out</th><th scope="col">Note</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-/** Sentences: length, readability, structure, and the sentences to look at. */
 export function renderSentences(view: LanguageView): string {
 	const english = view.locale.toLowerCase().startsWith("en");
 	const withTranscripts = transcribed(view);
@@ -825,7 +739,6 @@ ${method(`<p class="rule">${english ? `${withTranscripts ? "An id such as 3.9.s2
 </section>`;
 }
 
-/** Words and terms: how familiar the vocabulary is, acronyms, and where a newcomer may get stuck. */
 export function renderWords(view: LanguageView, terms?: TermsView): string {
 	const rates = (view.vocabulary?.lessons ?? []).flatMap((lesson, index) => lesson.screen.words ? [{ lesson: index + 1, rate: Math.round(per1000(lesson.screen.rare, lesson.screen.words)) }] : []).sort((a, b) => a.rate - b.rate);
 	const first = rates[0], last = rates.at(-1);

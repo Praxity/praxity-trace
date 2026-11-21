@@ -2,12 +2,10 @@ import { flowView, renderFlow } from "./flow.ts";
 import { visibleText } from "./text.ts";
 import { BLOOM, type Bloom, FINK, GAGNE, GAGNE_HELP, KNOWLEDGE_HELP, type VerbLevels, verbLevels } from "./outcomes.ts";
 
-/** The Bloom level after combining the verb list with the model's reading; the source says which was used. */
 export interface ObjectiveLevels {
 	bloomSource?: "verb" | "generated" | null;
 	verbBloom?: Bloom | null;
 	modelBloom?: Bloom | null;
-	/** A single listed verb level and the reviewer's whole-objective level differ. */
 	bloomDiffers?: boolean;
 	levelReason?: string | null;
 }
@@ -20,10 +18,8 @@ import { absence, generated, generatedSummary, legend, method, sectionHead, segm
 export interface AlignmentView {
 	partial?: true;
 	model: string;
-	/** Stated objectives with levels classified from their leading verb. */
 	objectives: Array<AlignmentAnswer["objectives"][number] & VerbLevels & ObjectiveLevels>;
 	objectiveGroups: Array<{ id: string; members: AlignmentView["objectives"] }>;
-	/** Knowledge checks, reflections and worksheet activities, in course order. Surveys are counted only. */
 	activities: Array<{
 		ref: string;
 		lesson: string;
@@ -32,25 +28,21 @@ export interface AlignmentView {
 		label: string;
 		objectives: string[];
 	}>;
-	/** Knowledge checks with the teaching each depends on. */
 	checks: Array<{
 		ref: string;
 		lesson: string;
 		page: number;
 		position: number;
 		question: string;
-		/** Placed before its teaching on purpose, such as a pre-test. */
 		pre: boolean;
 		objectives: string[];
 		support: Array<{ ref: string; channel: Channel; position: number; after: boolean }>;
 	}>;
 	surveys: number;
-	/** Course-wide block count, the x extent of the support strip. */
 	blocks: number;
 	lessons: LessonSpan[];
 	overlaps: AlignmentAnswer["overlaps"];
 	interpretation: AlignmentAnswer["interpretation"];
-	/** Readable locations for every ref the report shows. */
 	places: Places;
 }
 export function groupObjectives(objectives: AlignmentView["objectives"], overlaps: AlignmentAnswer["overlaps"]): AlignmentView["objectiveGroups"] {
@@ -82,7 +74,6 @@ export function alignmentView(course: Course, answer: AlignmentAnswer): Alignmen
 	const position = new Map(located.map((item, index) => [item.ref, index]));
 	const byRef = new Map(located.map((item) => [item.ref, item]));
 	const knowledge = answer.checks.filter((check) => check.purpose === "knowledge");
-	// The verb list is a measurement; where it has no level, the model's reading of verb and object fills in, marked as generated.
 	const objectives = answer.objectives.map((objective) => {
 		const fromVerb = verbLevels(objective.text);
 		const modelBloom = objective.modelBloom ?? null;
@@ -171,9 +162,6 @@ function matrix(view: AlignmentView): string {
 		...view.objectiveGroups.map((group) => ({
 			lessons: groupLessons(view, group),
 			unlinked: false,
-			// One line per group: the first objective in full, the rest as ids whose text shows on hover,
-			// so a large group does not stretch its row. The chart is aria-hidden, so the ids hover but take no
-			// focus; Table mode and the Course trace list every member in full.
 			label: (() => {
 				const [first, ...rest] = group.members;
 				if (!first) return "";
@@ -272,10 +260,6 @@ const dot = (count: number) =>
 		? `<svg width="20" height="20" role="img" aria-label="${count}"><circle class="level-dot" cx="10" cy="10" r="${Math.min(9, 3 * Math.sqrt(count)).toFixed(1)}"/></svg>`
 		: "";
 
-/**
- * Where each lesson's objectives sit in one taxonomy: lessons across, levels up, one dot per objective.
- * The same objectives appear under Bloom and Fink, so switching shows how they correspond.
- */
 type Taxonomy = "bloom" | "fink" | "gagne";
 const TAXONOMY_NAME: Record<Taxonomy, string> = { bloom: "Bloom level", fink: "Fink dimension", gagne: "Gagné capability" };
 
@@ -288,9 +272,6 @@ function taxonomyByLesson(view: AlignmentView): string {
 	const reviewed = (objective: AlignmentView["objectives"][number]) => (objective.bloomDiffers ? ` · Reviewer: ${objective.modelBloom} (generated)` : "");
 	const describe = (objective: AlignmentView["objectives"][number]) =>
 		`${objective.id} · ${objective.text} · Bloom: ${objective.bloom ?? "unclassified"}${objective.bloomSource === "generated" ? " (generated)" : ""}${reviewed(objective)} · Fink: ${objective.fink.join(", ") || "–"} · Gagné: ${objective.gagne ?? "–"}`;
-	// A reviewer level that differs from the listed one gets its own band right of the lesson's other dots,
-	// wide enough for its direct label, so its connector and label cross no other mark. Lessons with no
-	// difference keep the plain column. The width per character is an estimate for 11 px system-ui.
 	const reviewerLabel = (objective: AlignmentView["objectives"][number]) => `${objective.id} Reviewer: ${objective.modelBloom}`;
 	const BAND_PAD = 8, LABEL_GAP = DOT + 5;
 	const band = (objective: AlignmentView["objectives"][number]) => BAND_PAD + LABEL_GAP + Math.ceil(reviewerLabel(objective).length * 6.4) + 12;
@@ -298,7 +279,6 @@ function taxonomyByLesson(view: AlignmentView): string {
 		const unplaced = view.objectives.filter((objective) => levelsOf(objective, taxonomy).length === 0);
 		const rows = [...levels, ...(unplaced.length ? ["Unclassified"] : [])];
 		const height = TOP + rows.length * ROW + 24;
-		// Only the Bloom chart has a listed level to compare a reviewer level with.
 		const differs = (objective: AlignmentView["objectives"][number]) => taxonomy === "bloom" && objective.bloomDiffers === true;
 		let left = LABEL;
 		const columns = lessons.map((lesson) => {
@@ -308,7 +288,6 @@ function taxonomyByLesson(view: AlignmentView): string {
 			return column;
 		});
 		const width = left + 8;
-		// Ordered taxonomies read upward from the lowest level; Fink's dimensions are not a hierarchy.
 		const y = (index: number) => TOP + (ordered ? rows.length - 1 - index : index) * ROW + ROW / 2;
 		let out = "";
 		rows.forEach((level, index) => {
@@ -329,8 +308,6 @@ function taxonomyByLesson(view: AlignmentView): string {
 					out += dotAt(objective, cx + (inLine - (count - 1) / 2) * GAP, y(index) + line * 9 - (here.length > perLine ? 4 : 0), taxonomy === "fink" && objective.fink[0] !== level);
 				});
 			});
-			// The solid dot stays at the listed level, the verb-list measurement; the open grey circle at the
-			// reviewer's level is an interpretation, joined to it and labelled where it sits.
 			let bandStart = start + COL;
 			for (const objective of bands) {
 				const x = bandStart + BAND_PAD;
@@ -348,18 +325,10 @@ function taxonomyByLesson(view: AlignmentView): string {
 		});
 		return `<div class="taxo" data-taxonomy="${taxonomy}"><div class="scroll" tabindex="0" role="region" aria-label="Objectives by lesson and ${TAXONOMY_NAME[taxonomy]}"><svg width="${width}" height="${height}" role="img" aria-label="${view.objectives.length} objectives by lesson and ${TAXONOMY_NAME[taxonomy]}; the table view lists each objective with all three.">${out}</svg></div></div>`;
 	};
-	// Each framework reads upward from its foundations, as Bloom does from Remember: Fink from foundational
-	// knowledge, Gagné from verbal information through cognitive strategies, then attitudes and motor skills.
 	return `${chart("bloom", BLOOM, true)}${chart("fink", FINK, true)}${chart("gagne", GAGNE, true)}`;
 }
 
-/** Objectives by lesson and level for each framework: does demand rise across the course? */
 
-/**
- * A Bloom level and where it came from: the verb list, or the model's reading of verb and object. When
- * the two differ, the listed level stays the measurement and the reviewer's level follows as a generated
- * note with its reason and source pointer.
- */
 function levelCell(objective: AlignmentView["objectives"][number], view: AlignmentView): string {
 	const { bloom: level, levelReason: reason, bloomCandidates: candidates = [] } = objective;
 	if (!level) return `<span class="unclassified">Unclassified</span>`;
@@ -372,12 +341,10 @@ function levelCell(objective: AlignmentView["objectives"][number], view: Alignme
 	return `Listed: ${level}<div class="level-review">Reviewer: ${esc(objective.modelBloom ?? "")} ${generated(view.model, "generated")}</div>${reason ? `<div class="level-reason">${esc(reason)}</div>` : ""}${place ? `<span class="file">${esc(sourceOf(place))}</span>` : ""}`;
 }
 
-/** A category with its definition on hover and focus, or a dash. */
 function defined(value: string | null, help: (value: string) => string): string {
 	return value ? `<abbr class="defined" tabindex="0" title="${esc(help(value))}">${esc(value)}</abbr>` : "–";
 }
 
-/** Which parts of a performance objective (Mager) the objective states, with the quoted words on hover. */
 function performanceCell(performance: Performance | null | undefined): string {
 	if (!performance) return "–";
 	const parts = (["action", "conditions", "standard"] as const).filter((part) => performance[part]);

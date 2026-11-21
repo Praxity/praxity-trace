@@ -5,12 +5,10 @@ import { GUIDES, isViewId, type Reading } from "./guides.ts";
 import { esc } from "./places.ts";
 import type { Feedback } from "./text.ts";
 
-/** Absence claims share one coverage qualifier in HTML, SVG labels and plain tooltips. */
 export function absence(partial: boolean | undefined, complete: string, subject: string, format: "html" | "svg" | "text" = "html"): string {
 	if (!partial) return format === "text" ? complete : esc(complete);
 	const text = `${subject} not found in the inspected content`;
 	if (format === "text") return `${text} (see coverage note)`;
-	// Charts have role="img", so keep their labels noninteractive; the table supplies the coverage link.
 	if (format === "svg") return `${esc(text)} · <tspan>coverage note</tspan>`;
 	return `${esc(text)} · <a href="#coverage">coverage note</a>`;
 }
@@ -29,10 +27,6 @@ const span = (element: Tag, name: "rowspan" | "colspan") => Math.max(1, Number.p
 const textOf = (node: Tree): string =>
 	"value" in node && node.nodeName === "#text" ? node.value : isElement(node) && node.tagName === "br" ? " " : "childNodes" in node ? node.childNodes.map(textOf).join("") : "";
 
-/**
- * The cells of each row in a row group, each with the logical column it starts in. A rowspan holds
- * its columns in the rows below it, within the same group, as the HTML table model does.
- */
 function grid(rows: Tag[]): Array<Array<{ cell: Tag; column: number; columns: number }>> {
 	const held: number[] = [];
 	return rows.map((row) => {
@@ -50,15 +44,6 @@ function grid(rows: Tag[]): Array<Array<{ cell: Tag; column: number; columns: nu
 	});
 }
 
-/**
- * Narrow screens stack each table row into "column: value" lines (MODES_STYLE). Chromium drops
- * table semantics from elements shown as blocks, so each data table carries explicit table roles,
- * and each body cell names its column in data-label for the visible label. A label is the header
- * cells over the cell's logical column, outermost first; a cell spanning columns takes only the
- * headers those columns share, so a note across a whole row has none. The attributes go in at
- * their parsed offsets and every other byte stays as the renderer wrote it. A table hidden from
- * assistive technology is a chart drawn with table markup and keeps its layout.
- */
 export function reflowTables(html: string): string {
 	if (!html.includes("<table")) return html;
 	const inserts: Array<[number, string]> = [];
@@ -118,10 +103,6 @@ export interface SegmentOption {
 	checked?: boolean;
 }
 
-/**
- * An icon segmented control over radios: one tab stop, arrow keys move between options, and each
- * option's name is its accessible label and its tooltip.
- */
 export function segmented(name: string, label: string, options: SegmentOption[], className = ""): string {
 	return `<div class="seg ${className}" role="radiogroup" aria-label="${esc(label)}">${options
 		.map(
@@ -133,38 +114,27 @@ export function segmented(name: string, label: string, options: SegmentOption[],
 
 export interface ViewOptions {
 	readings?: Reading[];
-	/** Unique within the report; names the view's switch. */
 	id: string;
-	/** Heading level: 2 for a view that is a whole section, 3 for one of several in a section. */
 	level: 2 | 3;
 	title: string;
-	/** Heading id when other links point at it (h2 section ids). */
 	headingId?: string;
-	/** The design question the view answers, shown under the title. */
 	question?: string;
-	/** Controls that belong to this view only, placed before the Chart / Table switch. */
 	controls?: string;
-	/** Notes, legends or summaries shown in both modes, between the heading row and the panels. */
 	lead?: string;
-	/** Shown in both modes after the panels, inside the view: a note that reads from the chart above. */
 	after?: string;
-	/** Absent for views that are only a table: no switch, the table always shows. */
 	chart?: string;
 	table: string;
 }
 
-/** A heading the contents rail lists: a section, a view (with its id) or a generated summary. */
 export interface OutlineEntry {
 	title: string;
 	level: 2 | 3;
-	/** The element id the rail links to. */
 	anchor: string;
 	view?: string;
 }
 
 let drawn: OutlineEntry[] | null = null;
 
-/** Runs `draw` and returns what it rendered with the headings it drew, in order. */
 export function outline(draw: () => string): { html: string; entries: OutlineEntry[] } {
 	const outer = drawn;
 	drawn = [];
@@ -176,14 +146,8 @@ export function outline(draw: () => string): { html: string; entries: OutlineEnt
 	}
 }
 
-/**
- * A view's heading row and its two representations of the same data (ADR 0006): the chart, free to
- * be visual, and the table, which is the accessible one. The switch sits at the right end of the
- * heading row in every view; CSS :has() does the switching, so no script is needed.
- */
 export function viewBlock(options: ViewOptions): string {
 	const { id, level, title, headingId, question, controls = "", chart } = options;
-	// Every table outside the chart is data a reader may need at 320 CSS px, the lead's included.
 	const [lead, table, after] = [options.lead ?? "", options.table, options.after ?? ""].map(reflowTables);
 	drawn?.push({ title, level, anchor: headingId ?? `view-${id}`, view: id });
 	const heading = `<h${level}${headingId ? ` id="${esc(headingId)}"` : ""}>${esc(title)}</h${level}>`;
@@ -198,40 +162,27 @@ ${lead}${guide(id, options.readings)}${chart === undefined ? `<div class="mode-t
 </div>`;
 }
 
-/** The view's readings, closed by default beside "How this is counted", before the data. */
 function guide(id: string, readings: Reading[] = isViewId(id) ? GUIDES[id] : []): string {
 	return readings.length
 		? `<details class="method guide"><summary>What to look for</summary><dl class="readings">${readings.map((reading) => `<div${reading.mode ? ` data-guide-mode="${reading.mode}"` : ""}${reading.paceMode ? ` data-guide-pace="${reading.paceMode}"` : ""}><dt>${esc(reading.see)}</dt><dd>${esc(reading.could)}</dd></div>`).join("")}</dl></details>`
 		: "";
 }
 
-/**
- * A chart drawn once for the whole course and once per lesson. The lesson filter shows one; a
- * lesson's version spreads its pages across the width instead of dimming the rest.
- */
 export function lessonVariants(lessons: number[], render: (lesson: number | null) => string): string {
 	return `<div class="lesson-variant" data-lesson="all">${render(null)}</div>${lessons.map((lesson) => `<div class="lesson-variant" data-lesson="${lesson}" hidden>${render(lesson)}</div>`).join("")}`;
 }
 
-/** A legend whose symbols never wrap away from their labels. Items are [key class, label]. */
 export function legend(items: Array<[string, string]>, extra = ""): string {
 	return `<p class="legend">${items.map(([key, label]) => `<span class="legend-item"><span class="key ${esc(key)}"></span>${label}</span>`).join("")}${extra}</p>`;
 }
 
-/** The report-wide Chart / Table switch, in the top bar. */
 export const MODES_ALL = segmented("mode-all", "Show every view as", [
 	{ value: "chart", label: "Show every view as a chart", icon: "chart-bar", checked: true },
 	{ value: "table", label: "Show every view as a table", icon: "table" },
 ]);
 
-/** The report-wide lesson filter, in the top bar; the script fills it. */
 export const FILTER_ALL = `<div class="lesson-filter" data-filter-view="all"></div>`;
 
-/**
- * Sets every view's mode from the top bar and remembers it; builds the lesson filters. A filter hides
- * table rows from other lessons and dims chart marks from other lessons, so a course-wide chart keeps
- * its shape while the chosen lessons stand out.
- */
 export function modesClient(filterIcon: string) {
   const all = (value: string) => document.querySelectorAll<HTMLInputElement>('.view .seg-mode input[value="' + value + '"]').forEach((input) => { input.checked = true; });
   const saved = (() => { try { return localStorage.getItem('trace-mode'); } catch { return null; } })();
@@ -244,8 +195,6 @@ export function modesClient(filterIcon: string) {
   const meta = JSON.parse(document.getElementById('report-meta')?.textContent || '{"lessons":[]}');
   const lessons: Array<{ number: number; title: string }> = meta.lessons || [];
   if (lessons.length < 2) return;
-  // The lessons a row belongs to: a pair of pages can span two. Explicit attributes first, then a
-  // page pointer, then a leading "L3" or "3.9" in the row's first cell.
   const tagged = (element: HTMLElement | SVGElement): number[] => {
     if (element.dataset.lessons) return element.dataset.lessons.split(' ').map(Number);
     if (element.dataset.lesson) return [Number(element.dataset.lesson)];
@@ -261,12 +210,8 @@ export function modesClient(filterIcon: string) {
     const match = first && /^(?:L(\d+)\b|(\d+)\.\d+\b)/.exec(first.textContent.trim());
     return match ? [Number(match[1] ?? match[2])] : [];
   };
-  // One lesson or all: a chart drawn per lesson swaps in its expanded version; other charts dim
-  // marks from other lessons; tables hide their rows.
   const apply = (scope: Element | null, lesson: number | null) => {
     if (!scope) return;
-    // Tagged rows, list items and lesson headings hide when none of their lessons match.
-    // Untagged chart rows keep their context while individual marks dim.
     scope.querySelectorAll<HTMLElement>('tbody tr, li[data-lesson], li[data-lessons], .review-lesson[data-lesson]').forEach((row) => {
       const own = row.closest('.mode-chart') ? tagged(row) : lessonsOf(row);
       row.hidden = lesson !== null && own.length > 0 && !own.includes(lesson);
@@ -274,7 +219,6 @@ export function modesClient(filterIcon: string) {
     scope.querySelectorAll<HTMLElement>('.lesson-variant').forEach((variant) => {
       variant.hidden = variant.dataset.lesson !== (lesson === null ? 'all' : String(lesson));
     });
-    // Marks dim; row labels, which also carry pages, stay readable.
     scope.querySelectorAll<HTMLElement | SVGElement>('.mode-chart :is([data-page],[data-lesson],[data-lessons]):not(tr)').forEach((mark) => {
       if (mark.closest('.lesson-variant, th')) return;
       mark.classList.toggle('filtered-out', lesson !== null && !tagged(mark).includes(lesson));
@@ -369,15 +313,11 @@ table[role=table] .bar{display:none}
 .mode-chart .filtered-out{opacity:.12}
 `;
 
-/** Interpretation label with model provenance on hover and focus. */
 export const generated = (model: string, word = "Interpretation") =>
 	`<abbr class="defined generated" tabindex="0" title="${esc(`Model: ${model}`)}">${word}</abbr>`;
 
-/** The model's short reading of the view above it, each point citing its pages. */
-/** `about` names what the summary reads, so several summaries stay distinct in the contents rail. */
 export function generatedSummary(model: string, items: string, about: string): string {
 	if (!items) return "";
-	// Named after the section it closes, which is the last section drawn.
 	const base = `${drawn?.findLast((entry) => entry.level === 2)?.anchor ?? "report"}-summary`;
 	const earlier = drawn?.filter((entry) => entry.anchor === base || entry.anchor.startsWith(`${base}-`)).length ?? 0;
 	const anchor = earlier ? `${base}-${earlier + 1}` : base;
@@ -385,11 +325,9 @@ export function generatedSummary(model: string, items: string, about: string): s
 	return `<div class="generated-summary" id="${esc(anchor)}"><h3>${generated(model)} of ${esc(about)}</h3><ul class="interpretation">${items}</ul></div>`;
 }
 
-/** Counting rules and sources, closed by default: stated for anyone who checks, out of the way for everyone else. */
 export const method = (body: string, summary = "How this is counted") =>
 	`<details class="method"><summary>${summary}</summary>${body}</details>`;
 
-/** The heading of a section that holds several views, with the question the section answers. */
 export const sectionHead = (id: string, title: string, question: string, note = "") =>
 	(drawn?.push({ title, level: 2, anchor: id }),
 	`<div class="section-head"><h2 id="${esc(id)}">${esc(title)}</h2><p class="view-question">${esc(question)}</p>${note}</div>`);

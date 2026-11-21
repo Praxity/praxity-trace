@@ -2,7 +2,6 @@ import type { Block, Course, SourceLocation, TypedNarration, TypedAssessment } f
 import { contentBlocks, pageKey } from "./places.ts";
 import { countWords, narrations, type PreviewLine, previewLines, narrationText, wordCount } from "./text.ts";
 
-/** A question with a right answer (GLOSSARY.md): a correct option or a matching pair. */
 export function isKnowledgeCheck(block: Block): boolean | null {
 	if (block.type !== "assessment") return false;
 	if (block.ref) return block.assessment?.correctness === "keyed" ? true : null;
@@ -11,14 +10,9 @@ export function isKnowledgeCheck(block: Block): boolean | null {
 }
 
 
-/**
- * What the learner does with a block. Chosen for design decisions, not grammar
- * categories: a table is read like text, an accordion is explored.
- */
 export const ROLES = ["text", "media", "explore", "response"] as const;
 export type Role = (typeof ROLES)[number];
 
-/** Default roles; card and sequence settings are resolved by roleOf. */
 export const ROLE_BY_TYPE: Record<string, Role> = {
 	text: "text",
 	quote: "text",
@@ -46,12 +40,6 @@ export const ROLE_BY_TYPE: Record<string, Role> = {
 	signature: "response",
 };
 
-/**
- * A block's role. Cards hide content only as flip cards or a carousel (`layout: slides`); a grid,
- * masonry or rows of cards shows every card at once, so it reads like text.
- * Sequences put steps in a scroll strip only when horizontal and scrollable. Schema 1 omits
- * those settings, so its sequences count as text without inferring hidden content.
- */
 export function roleOf(block: { type: string; data?: Record<string, unknown> }): Role | undefined {
 	if (block.type === "sequence") return block.data?.orientation === "horizontal" && block.data?.scrollable === true ? "explore" : "text";
 	if (block.type !== "card") return ROLE_BY_TYPE[block.type];
@@ -68,7 +56,6 @@ export interface Mark {
 	narration?: TypedNarration[];
 	lesson: string;
 	page: number;
-	/** Position within the lesson, counting only charted blocks. */
 	order: number;
 	role: Role;
 	type: string;
@@ -79,9 +66,7 @@ export interface Mark {
 	words: number;
 }
 
-/** Adult silent reading of non-fiction (Brysbaert, 2019). */
 export const READING_WPM = 238;
-/** Used for schema 1 script estimates and when schema 0 has no measured audio. */
 const FALLBACK_SPEAKING_WPM = 150;
 
 export interface PagePace {
@@ -92,7 +77,6 @@ export interface PagePace {
 	title: string;
 	words: number;
 	readingSeconds: number;
-	/** Measured schema 0 audio plus script estimates; schema 1 is all script estimates. */
 	narrationSeconds: number;
 	estimatedNarrationSeconds: number;
 	recordedNarration?: Array<{ ref: string; seconds: number; location: SourceLocation | null; provenance: "sidecar-recorded" }>;
@@ -109,7 +93,6 @@ export interface LessonAnatomy {
 	pace: PagePace[];
 }
 
-/** Course minutes at the start of each page, keyed "lesson.page"; a page lasts its narration or reading time, whichever is longer. */
 export function pageClock(anatomy: LessonAnatomy[]): { startOf: Map<string, number>; lessons: Array<{ title: string; start: number }>; totalMinutes: number } {
 	const startOf = new Map<string, number>();
 	const lessons: Array<{ title: string; start: number }> = [];
@@ -124,27 +107,22 @@ export function pageClock(anatomy: LessonAnatomy[]): { startOf: Map<string, numb
 	return { startOf, lessons, totalMinutes: clock / 60 };
 }
 
-/** A run of consecutive pages within one lesson, with the time they take. */
 export interface Stretch {
 	lesson: number;
 	from: number;
 	to: number;
 	pages: number;
-	/** Each page's narration or reading time, whichever is longer. */
 	seconds: number;
 }
 
-/** Presentation rhythm, described rather than judged: the longest runs of one kind of page. */
 export interface Rhythm {
 	withoutAction: Stretch[];
 	textOnly: Stretch[];
-	/** The model whose alignment review also found activities in prose, or null when blocks alone decided. */
 	generatedBy: string | null;
 }
 
 const MIN_STRETCH = 4;
 
-/** `generated` holds the "lesson.page" keys where an alignment review found an activity or check, prose instructions included. */
 export function rhythm(lessons: LessonAnatomy[], generated?: { model: string; pages: Set<string> }): Rhythm {
 	const acting = generated?.pages ?? new Set<string>();
 	const runs = (keep: (marks: Mark[], key: string) => boolean) =>

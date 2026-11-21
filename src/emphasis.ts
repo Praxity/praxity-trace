@@ -36,7 +36,6 @@ export interface EmphasisView {
 
 const TAG = /<\/?([a-z][\w:-]*)\b((?:[^>"']|"[^"]*"|'[^']*')*)>/gi;
 
-/** One visible HTML field; words in nested emphasis count once in the share. */
 function extract(html: string): { spans: Array<{ kind: EmphasisKind; text: string }>; words: number; emphasizedWords: number } {
 	const open: Array<{ tag: string; kind: EmphasisKind; text: string }> = [];
 	const found: typeof open = [];
@@ -94,7 +93,6 @@ export function emphasisView(course: Course, concepts?: ConceptsView, alignment?
 	}));
 	for (const item of locateBlocks(course)) {
 		const lesson = lessons[item.lessonNumber - 1];
-		// Headings are styled by the theme, not emphasised by the author, so they would swamp the count.
 		if (!lesson || item.credit || item.block.type === "heading") continue;
 		for (const html of visibleStrings(item.block.data)) {
 			const extracted = extract(html.replace(/<h[1-6]\b[\s\S]*?<\/h[1-6]>/gi, " "));
@@ -121,9 +119,7 @@ const KIND_LABEL: Record<EmphasisKind, string> = { strong: "Bold", em: "Italic",
 const tagLabel = (kind: EmphasisKind) => KIND_LABEL[kind];
 
 export function renderEmphasis(view: EmphasisView): string {
-	// Only the kinds this course uses get a column.
 	const used = KINDS.filter((kind) => view.lessons.some((lesson) => lesson.counts[kind] > 0));
-	// One stacked bar per lesson on a shared scale: phrases by kind, then words and share at the right end.
 	const total = (lesson: EmphasisView["lessons"][number]) => used.reduce((sum, kind) => sum + lesson.counts[kind], 0);
 	const most = Math.max(1, ...view.lessons.map(total));
 	const unit = 420 / most;

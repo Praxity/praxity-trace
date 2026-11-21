@@ -5,7 +5,6 @@ export class JsonInputError extends Error {}
 
 const inputName = (source: string) => source === "-" ? "standard input" : basename(source);
 
-/** Decode at the byte boundary, before any JSON reader sees the input. */
 export async function readInput(path: string): Promise<string> {
 	let bytes: Buffer;
 	if (path !== "-") bytes = await readFile(path);
@@ -22,7 +21,6 @@ export async function readInput(path: string): Promise<string> {
 	else if (bytes[0] === 0xfe && bytes[1] === 0xff) { encoding = "utf-16be"; bytes = bytes.subarray(2); }
 	let text: string;
 	try {
-		// Fatal decoding refuses malformed bytes rather than silently replacing text.
 		text = new TextDecoder(encoding, { fatal: true }).decode(bytes);
 	} catch (error) {
 		if (!(error instanceof TypeError) || !("code" in error) || error.code !== "ERR_ENCODING_INVALID_ENCODED_DATA") throw error;
@@ -32,7 +30,6 @@ export async function readInput(path: string): Promise<string> {
 	return text;
 }
 
-/** Keep engine diagnostics, which may quote the entire input, out of errors. */
 export function parseJson(json: string, source = "JSON input"): unknown {
 	try { return JSON.parse(json); }
 	catch (error) {

@@ -180,7 +180,6 @@ test("objectives show by lesson under Bloom or Fink, switched in the heading row
 	for (const taxonomy of ["bloom", "fink"]) assert.match(html, new RegExp(`name="taxonomy" value="${taxonomy}"`));
 	assert.doesNotMatch(html, /value="solo"/);
 	const fink = html.split('data-taxonomy="fink"')[1]?.split('data-taxonomy=')[0] ?? "";
-	// An objective with two Fink dimensions appears in both rows, the second paler.
 	assert.equal((fink.match(/class="taxo-dot/g) ?? []).length, 3);
 	assert.match(fink, /class="taxo-dot second"/);
 	const bloom = html.split('data-taxonomy="bloom"')[1]?.split('data-taxonomy=')[0] ?? "";

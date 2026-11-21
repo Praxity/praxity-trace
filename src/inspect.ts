@@ -1,7 +1,6 @@
 import { parseJson } from "./input.ts";
 import { createHash } from "node:crypto";
 
-/** Output of Studio's `praxity inspect`. Block `data` is opaque grammar data. */
 export interface SourceLocation { file: string; startLine: number; endLine: number }
 export interface TypedText { ref: string; role: string; value: string; format: "html" | "markdown" | "plain"; location: SourceLocation | null }
 export interface Asset { uri: string; availability: "present" | "missing" | "remote" | "blocked"; sha256: string | null }
@@ -74,7 +73,6 @@ function object(value: unknown, path: string): Record<string, unknown> {
 	return isObject(value) ? value : fail(path, "an object");
 }
 
-/** Validates the fields Trace reads; everything else passes through untouched. */
 export function parseCourse(json: string, source = "course.json"): Course {
 	const root = object(parseJson(json, source), "$");
 	if (root.ok !== true) fail("$.ok", "true (inspect reported an error)");
@@ -115,10 +113,6 @@ export function parseCourse(json: string, source = "course.json"): Course {
 	};
 }
 
-/**
- * Views read narration from blocks. Studio can also narrate a whole page; that narration plays with the
- * page, so Trace attributes it to the page's first block.
- */
 export function withPageNarration(page: Page): Page {
 	const narration = typeof page.data.narration === "string" ? page.data.narration.trim() : "";
 	const [head, ...rest] = page.blocks;
@@ -127,7 +121,6 @@ export function withPageNarration(page: Page): Page {
 	return { ...page, blocks: [{ ...head, data: { ...head.data, narration: own ? `${narration}\n\n${own}` : narration } }, ...rest] };
 }
 
-/** Identifies the course revision: changes whenever any lesson source changes. */
 export function courseHash(course: Course): string {
 	if (course.schema === "praxity-inspect/1") return createHash("sha256").update(`trace-inspect/5\0${course.revision}`).digest("hex");
 	return createHash("sha256")
@@ -135,7 +128,6 @@ export function courseHash(course: Course): string {
 		.digest("hex");
 }
 
-/** Schema 1 is a text projection, never opaque grammar data. */
 function parseTypedCourse(root: Record<string, unknown>): Course {
 	if (root.projectionVersion !== undefined && root.projectionVersion !== 2) fail("$.projectionVersion", "2 or absent for earlier schema 1");
 	const expanded = root.projectionVersion === 2;
@@ -247,8 +239,6 @@ function parseTypedCourse(root: Record<string, unknown>): Course {
 			const blockRef = rawNarration.blockRef === null ? null : string(rawNarration.blockRef, `${path}.blockRef`);
 			if (blockRef !== null && blockPages.get(blockRef) !== page) fail(`${path}.blockRef`, "a block in the narration page");
 			const item: TypedNarration = { ...base, blockRef, pageRef, origin: rawNarration.origin, disabled: rawNarration.disabled, ...narrationEvidence(rawNarration, path) };
-			// A narration-only page still needs a positional ref for quotes and reviewer answers.
-			// This internal carrier has no Studio block identity; each script retains its page provenance.
 			if (!page.blocks.length) page.blocks.push({ id: "", type: "narration", parentRef: null, location: null, line: null, data: { typedTexts: [], typedNarrations: [] } });
 			const owner = blockRef === null ? page.blocks[0]! : page.blocks.find(block => block.ref === blockRef)!;
 			(owner.data.typedNarrations as TypedNarration[]).push(item);

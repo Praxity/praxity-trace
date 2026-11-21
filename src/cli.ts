@@ -86,7 +86,6 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 		await prepareItemCues(course, out, values.seed === undefined ? undefined : Number(values.seed), values.diagnostics);
 	} else await PREPARE[view](course, out);
 	if (values.comments) {
-		// Designer comments on the section this view renders in steer the next answer.
 		const SECTION: Record<keyof typeof PREPARE, string> = { alignment: "alignment", tasks: "tasks", concepts: "concepts", terms: "language", visuals: "visuals", distinctions: "concepts", "item-cues": "item-cues" };
 		const file = parseComments(await readInput(values.comments), values.comments);
 		const mine = { ...file, comments: file.comments.filter((comment) => (comment.view === SECTION[view] || (view === "alignment" && comment.view === "trace" && comment.target.objectives?.length))) };

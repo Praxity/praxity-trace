@@ -46,3 +46,27 @@ and swapped masked/plain probe objects before scoring. Course hash and prompt
 version validation also apply to the operator file, and recorded permutations
 must match its seed. A random default seed varies each run; `--seed` replays
 option order and eligible masking, while each preparation receives a new random ID. Repetition does not establish statistical independence between runs.
+
+## Implementation constraints
+
+Source: [implementation before comment removal](https://github.com/Praxity/praxity-trace/tree/43b707be616875eec49542460baecd77d95d0db8). The rules below govern the named files and symbols.
+
+### `src/alignment-view.ts`: `alignmentView`
+
+The verb list is a measurement; where it has no level, the model's reading of verb and object fills in, marked as generated.
+
+### `src/alignment-view.ts`: `levelCell`
+
+A Bloom level and where it came from: the verb list, or the model's reading of verb and object. When the two differ, the listed level stays the measurement and the reviewer's level follows as a generated note with its reason and source pointer.
+
+### `src/alignment.ts`: `performanceOf`
+
+Quoted, not paraphrased, so a designer can see exactly what the objective states.
+
+### `src/item-cues.ts`: `itemCuesReviewDirectory`
+
+Operator evidence lives beside the bundle; never give the review folder to solvers.
+
+### `src/recommendations.ts`: `reportHash`
+
+The course findings a recommendations answer was written from, so changed findings ask for a fresh answer. The guides are fixed tool text, not findings, so editing one leaves answers valid.
