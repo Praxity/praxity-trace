@@ -37,12 +37,17 @@ Keep engine diagnostics, which may quote the entire input, out of errors.
 
 ## npm distribution
 
+2026-11-22: The npm package name is `@praxity/trace`; the command remains
+`praxity-trace`. The portable inventory's `tool` field reads the package name
+from `package.json`. npm packs it as `praxity-trace-<version>.tgz`. Keep the
+package private until publishing is approved.
+
 Node refuses to strip TypeScript under `node_modules`. The npm package therefore
 ships compiled `lib/` JavaScript. `prepack` calls `scripts/package.mjs --npm`,
 using the existing TypeScript compiler API dev dependency with ES2023 output and
 rewritten relative import extensions. This preserves the function source used
 by `inlineClient`. The existing portable build keeps raw TypeScript and its
-inventory unchanged. Runtime data and package metadata remain one directory
+inventory format unchanged. Runtime data and package metadata remain one directory
 above each layout's modules (`src/` or `lib/`).
 
 The npm allowlist includes the tasks coding guide, which the tasks prompt names
