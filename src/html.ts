@@ -336,7 +336,9 @@ export async function readHtmlCourse(directory: string): Promise<Course> {
 		const refresh = first(doc, (node) => node.tagName === "meta" && (attr(node, "http-equiv") ?? "").toLowerCase() === "refresh" && /^\s*0\s*(?:;|$)/.test(attr(node, "content") ?? ""));
 		if (shell?.kind === "redirect" || refresh) continue;
 		stripUnseen(doc);
-		parsed.set(file, { doc, config: jsonScript(doc, "praxity-config"), bytes });
+		const config = jsonScript(doc, "praxity-config");
+		if (config?.pageRole === "glossary" || config?.pageRole === "resources") continue;
+		parsed.set(file, { doc, config, bytes });
 	}
 	const manifest = await readFile(join(directory, "imsmanifest.xml"), "utf8").catch((error: NodeJS.ErrnoException) => {
 		if (error.code === "ENOENT") return undefined;

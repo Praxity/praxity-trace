@@ -118,7 +118,7 @@ test("the course index numbers lessons, keys pages, flags credit pages and place
 
 for (const layout of ["pages", "modules"]) {
 	for (const version of [undefined, "12", "2004"]) {
-		test(`current Studio ${layout}, ${version ? `SCORM ${version}` : "standalone"}, preserves authored order and page sources`, async () => {
+		test(`current Studio ${layout}, ${version ? `SCORM ${version}` : "standalone"}, preserves authored order and page sources without adding glossary lessons`, async () => {
 			const directory = await mkdtemp(join(tmpdir(), "trace-studio-export-"));
 			try {
 				await cp(join(fixtures, `studio-current-${layout}`), directory, { recursive: true });
@@ -129,6 +129,7 @@ for (const layout of ["pages", "modules"]) {
 					["z-opening.html", "Lesson one", [["p1", 1], ["p2", 2]]],
 					["a-finish.html", "Lesson two", [["p3", 1]]],
 				]);
+				assert.ok(course.lessons.every(lesson => lesson.pages.every(page => page.blocks.length > 0)));
 				assert.deepEqual(locateBlocks(course).map(item => [item.ref, item.block.id]), [["1.1.1", "b1"], ["1.2.1", "b2"], ["2.1.1", "b3"]]);
 				assert.equal(course.lessons[0]?.pages[0]?.blocks[0]?.data.narration, undefined);
 				assert.equal(course.lessons[0]?.pages[1]?.blocks[0]?.data.narration, "Now try the practice.");
