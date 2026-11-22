@@ -1,6 +1,11 @@
 # Node and TypeScript, not Python
 
-Trace requires Node `>=24.22.1 <25` and runs source with type-stripped TypeScript. Python has better NLP (spaCy dependency parsing, textstat) and was the main alternative. Node won because Rubato and Studio's CLI already ship a Node 24 runtime, so bundling Trace adds almost nothing, while bundling Python and its models adds hundreds of megabytes. Most planned views are counting and timing, and semantic work goes to bundles. If a view later needs a dependency parser, add an optional Python sidecar that reads the same bundle.
+Trace requires Node `>=24.22.1 <27` and runs source with type-stripped TypeScript. Python has better NLP (spaCy dependency parsing, textstat) and was the main alternative. Node won because Rubato and Studio's CLI already ship a Node 24 runtime, so bundling Trace adds almost nothing, while bundling Python and its models adds hundreds of megabytes. Most planned views are counting and timing, and semantic work goes to bundles. If a view later needs a dependency parser, add an optional Python sidecar that reads the same bundle.
+
+2026-11-21: Support Node 24 and Node 26 LTS. The package range is
+`>=24.22.1 <27`; the CLI also rejects odd majors, including Node 25, which
+falls inside that numeric range but is not an LTS line. The runtime check
+reads the bounds from `package.json`, the owner of the supported range.
 
 ## Implementation constraints
 

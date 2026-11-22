@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { requireSupportedNode, UnsupportedNodeError } from "./runtime.ts";
 import { JsonInputError, parseJson, readInput } from "./input.ts";
 import { appendFile, mkdir, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -41,6 +42,7 @@ prepare item-cues writes only the masked probe by default; --diagnostics also wr
 Recommendations come last: build the report with every other answer, prepare from its report.json, then build again with --recommendations.`;
 
 try {
+requireSupportedNode(process.version);
 const { values, positionals } = parseArgs({
 	allowPositionals: true,
 	options: {
@@ -153,7 +155,7 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 }
 
 } catch (error) {
-	if (error instanceof JsonInputError) { console.error(error.message); process.exit(1); }
+	if (error instanceof JsonInputError || error instanceof UnsupportedNodeError) { console.error(error.message); process.exit(1); }
 	throw error;
 }
 

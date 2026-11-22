@@ -99,7 +99,7 @@ test("portable artifact inventories unchanged payload and runs after relocation 
 	assert.equal(gitStatus.status, 0, gitStatus.stderr);
 	assert.equal(inventory.source.dirty, gitStatus.stdout.trim().length > 0);
 	assert.deepEqual(inventory.target, { platform: "portable", arch: "portable" });
-	assert.equal(inventory.nodeRequirement, ">=24.22.1 <25");
+	assert.equal(inventory.nodeRequirement, ">=24.22.1 <27");
 	assert.equal(inventory.nodeRequirement, manifest.engines.node);
 	assert.equal(inventory.entry, "src/cli.ts");
 	assert.deepEqual(inventory.inventoryExcludes, ["inventory.json"]);
@@ -244,11 +244,11 @@ test("packager validates arguments and fails before writing when a runtime depen
 	await cp(packager, join(fake, "scripts/package.mjs"));
 	for (const path of ["LICENSE", "LICENSING.md", "NOTICE.md"]) await writeFile(join(fake, path), "Synthetic licence\n");
 	for (const path of ["src/cli.ts", "data/bloom-verbs.json", "data/tubelex-en.tsv.gz", "skill/SKILL.md", "docs/task-coding-guide.md"]) await writeFile(join(fake, path), "synthetic\n");
-	await writeFile(join(fake, "package.json"), JSON.stringify({ name: "praxity-trace", version: "0.1.1", engines: { node: ">=24.22.1 <25" }, dependencies: { "trace-test-missing-runtime-dependency": "1.0.0" } }));
+	await writeFile(join(fake, "package.json"), JSON.stringify({ name: "praxity-trace", version: "0.1.1", engines: { node: ">=24.22.1 <27" }, dependencies: { "trace-test-missing-runtime-dependency": "1.0.0" } }));
 	const output = join(scratch, "must not exist");
 	assert.match(run([join(fake, "scripts/package.mjs"), "--output", output], scratch, 1).stderr, /trace-test-missing-runtime-dependency/);
 	await assert.rejects(lstat(output), { code: "ENOENT" });
-	await writeFile(join(fake, "package.json"), JSON.stringify({ name: "praxity-trace", version: "0.1.1", engines: { node: ">=24.22.1 <25" }, dependencies: {} }));
+	await writeFile(join(fake, "package.json"), JSON.stringify({ name: "praxity-trace", version: "0.1.1", engines: { node: ">=24.22.1 <27" }, dependencies: {} }));
 	const nested = join(fake, "src", "embedded artifact");
 	assert.match(run([join(fake, "scripts/package.mjs"), "--output", nested], scratch, 1).stderr, /inside a copied source directory/);
 	await assert.rejects(lstat(nested), { code: "ENOENT" });
