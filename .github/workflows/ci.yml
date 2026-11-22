@@ -24,15 +24,24 @@ jobs:
   npm-package:
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        include:
+          - os: macos-latest
+            node: 24.22.1
+          - os: windows-latest
+            node: 24.22.1
+          - os: ubuntu-24.04
+            node: 26.13.1
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 24.22.1
+          node-version: ${{ matrix.node }}
           package-manager-cache: false
+      - uses: pnpm/action-setup@v4
+        if: matrix.os == 'ubuntu-24.04'
       - run: corepack enable
+        if: matrix.os != 'ubuntu-24.04'
       - run: pnpm install --frozen-lockfile
       - run: npm run test:npm
 

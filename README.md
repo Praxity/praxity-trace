@@ -14,7 +14,7 @@ Status: experimental. Views and the report format may change between versions.
 
 Praxity packages are not published to npm yet; install the supplied tarball first.
 
-Trace requires Node `>=24.22.1 <25`. Replace `<version>` with the supplied
+Trace requires Node 24 or 26 LTS (`>=24.22.1 <27`). Replace `<version>` with the supplied
 tarball's version and install it with:
 
 ```sh
