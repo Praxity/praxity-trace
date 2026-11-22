@@ -12,6 +12,7 @@ const isElement = (node: Node): node is Element => "tagName" in node;
 const children = (node: Node): Node[] => "childNodes" in node ? node.childNodes : [];
 const attr = (node: Element, name: string): string | undefined => node.attrs.find((item) => item.name === name)?.value;
 const hasClass = (node: Element, name: string): boolean => (attr(node, "class") ?? "").split(/\s+/).includes(name);
+const studioSlide = (node: Element): boolean => hasClass(node, "deck-slide") && (node.tagName === "article" || node.tagName === "section" && attr(node, "data-deck-slide") !== undefined);
 const record = (value: unknown): value is RecordValue => typeof value === "object" && value !== null && !Array.isArray(value);
 const elements = (node: Node, test: (element: Element) => boolean): Element[] => {
 	const found: Element[] = [];
@@ -158,7 +159,7 @@ function studioPages(doc: Node, config: RecordValue | undefined): Page[] {
 	const authored = authoredBlocks(config);
 	const deckPages = Array.isArray(config?.deckPages) ? config.deckPages.filter(record) : [];
 	const pageData = new Map(deckPages.filter((page) => typeof page.id === "string").map((page) => [page.id as string, page]));
-	return elements(doc, (node) => node.tagName === "article" && hasClass(node, "deck-slide")).map((slide, index) => {
+	return elements(doc, studioSlide).map((slide, index) => {
 		const id = attr(slide, "data-deck-slide") ?? attr(slide, "id") ?? `page-${index + 1}`;
 		const segments = new Map<string, string[]>();
 		for (const item of Array.isArray(pageData.get(id)?.segments) ? pageData.get(id)?.segments as unknown[] : []) {
@@ -274,24 +275,24 @@ async function ordinaryPages(doc: Node, directory: string, file: string): Promis
 }
 
 function ordered(files: string[], parsed: Map<string, { doc: Node; config?: RecordValue }>, manifest?: string): string[] {
-	if (manifest) {
-		const xml = parse(manifest);
-		const organization = first(xml, (node) => node.tagName === "organization");
-		const resources = new Map(elements(xml, (node) => node.tagName === "resource").map((node) => [attr(node, "identifier"), attr(node, "href") ?? (first(node, (child) => child.tagName === "file") && attr(first(node, (child) => child.tagName === "file") as Element, "href"))]));
-		const fromManifest = organization ? elements(organization, (node) => node.tagName === "item").map((node) => resources.get(attr(node, "identifierref"))).filter((file): file is string => !!file).map((file) => posix.normalize(decodeURIComponent(file.split(/[?#]/)[0] ?? ""))) : [];
-		return [...new Set(fromManifest.filter((file) => files.includes(file)))];
-	}
 	const studio = files.filter((file) => parsed.get(file)?.config);
 	if (studio.length) {
 		const deckPages = (parsed.get(studio[0] as string)?.config?.deckPages ?? []) as RecordValue[];
 		const index = new Map(deckPages.map((page, number) => [page.id, number]));
 		return [...studio].sort((a, b) => {
 			const start = (file: string) => {
-				const slide = first(parsed.get(file)?.doc as Node, (node) => node.tagName === "article" && hasClass(node, "deck-slide"));
+				const slide = first(parsed.get(file)?.doc as Node, studioSlide);
 				return slide ? index.get(attr(slide, "data-deck-slide")) ?? Infinity : Infinity;
 			};
 			return start(a) - start(b) || a.localeCompare(b);
 		});
+	}
+	if (manifest) {
+		const xml = parse(manifest);
+		const organization = first(xml, (node) => node.tagName === "organization");
+		const resources = new Map(elements(xml, (node) => node.tagName === "resource").map((node) => [attr(node, "identifier"), attr(node, "href") ?? (first(node, (child) => child.tagName === "file") && attr(first(node, (child) => child.tagName === "file") as Element, "href"))]));
+		const fromManifest = organization ? elements(organization, (node) => node.tagName === "item").map((node) => resources.get(attr(node, "identifierref"))).filter((file): file is string => !!file).map((file) => posix.normalize(decodeURIComponent(file.split(/[?#]/)[0] ?? ""))) : [];
+		return [...new Set(fromManifest.filter((file) => files.includes(file)))];
 	}
 	const index = files.find((file) => /^index\.html?$/i.test(file));
 	const links = index ? elements(parsed.get(index)?.doc as Node, (node) => node.tagName === "a").map((node) => attr(node, "href") ?? "").map((href) => decodeURIComponent(href.split(/[?#]/)[0] ?? "")).map((href) => posix.normalize(posix.join(dirname(index), href))).filter((file) => files.includes(file)) : [];
@@ -335,14 +336,16 @@ export async function readHtmlCourse(directory: string): Promise<Course> {
 		const refresh = first(doc, (node) => node.tagName === "meta" && (attr(node, "http-equiv") ?? "").toLowerCase() === "refresh" && /^\s*0\s*(?:;|$)/.test(attr(node, "content") ?? ""));
 		if (shell?.kind === "redirect" || refresh) continue;
 		stripUnseen(doc);
-		parsed.set(file, { doc, config: jsonScript(doc, "praxity-config"), bytes });
+		const config = jsonScript(doc, "praxity-config");
+		if (config?.pageRole === "glossary" || config?.pageRole === "resources") continue;
+		parsed.set(file, { doc, config, bytes });
 	}
 	const manifest = await readFile(join(directory, "imsmanifest.xml"), "utf8").catch((error: NodeJS.ErrnoException) => {
 		if (error.code === "ENOENT") return undefined;
 		throw error;
 	});
-	const paged = [...parsed].filter(([, item]) => typeof item.config?.pageId === "string" && typeof item.config.lessonId === "string" && !first(item.doc, (node) => node.tagName === "article" && hasClass(node, "deck-slide")));
-	if (paged.length && !manifest) return pagedCourse(paged, directory);
+	const paged = [...parsed].filter(([, item]) => typeof item.config?.pageId === "string" && typeof item.config.lessonId === "string" && !first(item.doc, studioSlide));
+	if (paged.length) return pagedCourse(paged, directory);
 	const lessons: Lesson[] = [];
 	let courseTitle = "";
 	let locale = "";
@@ -350,7 +353,7 @@ export async function readHtmlCourse(directory: string): Promise<Course> {
 		const item = parsed.get(file);
 		if (!item) continue;
 		const { doc, config, bytes } = item;
-		const studio = !!first(doc, (node) => node.tagName === "article" && hasClass(node, "deck-slide")) || !!first(doc, (node) => attr(node, "data-block-type") !== undefined);
+		const studio = !!first(doc, studioSlide) || !!first(doc, (node) => attr(node, "data-block-type") !== undefined);
 		const pages = studio ? studioPages(doc, config) : await ordinaryPages(doc, directory, file);
 		const captions = studio ? await supplyCaptionTracks(doc, pages, directory, file) : captionFingerprint(pages.flatMap(page => page.blocks));
 		if (!pages.some((page) => page.blocks.length)) continue;

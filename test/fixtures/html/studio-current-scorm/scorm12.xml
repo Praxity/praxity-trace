@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="com.praxity.synthetic" version="1.0"
+  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd">
+  <metadata>
+    <schema>ADL SCORM</schema>
+    <schemaversion>1.2</schemaversion>
+
+  </metadata>
+  <organizations default="praxity-org">
+    <organization identifier="praxity-org">
+      <title>Current course</title>
+      <item identifier="praxity-item" identifierref="praxity-resource">
+        <title>Current course</title>
+      </item>
+    </organization>
+  </organizations>
+  <resources>
+    <resource identifier="praxity-resource" type="webcontent" adlcp:scormtype="sco" href="index.html">
+      <file href="index.html"/>
+      <file href="z-opening.html"/>
+      <file href="y-practice.html"/>
+      <file href="a-finish.html"/>
+    </resource>
+  </resources>
+</manifest>

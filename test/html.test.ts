@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { readFile, mkdtemp, rm, stat } from "node:fs/promises";
+import { copyFile, cp, readFile, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -115,3 +115,28 @@ test("the course index numbers lessons, keys pages, flags credit pages and place
 	assert.equal(index.page(2, 10)?.title, "Sources");
 	assert.deepEqual(index.axis.lessons.map((lesson) => lesson.start), [0, 1]);
 });
+
+for (const layout of ["pages", "modules"]) {
+	for (const version of [undefined, "12", "2004"]) {
+		test(`current Studio ${layout}, ${version ? `SCORM ${version}` : "standalone"}, preserves authored order and page sources without adding glossary lessons`, async () => {
+			const directory = await mkdtemp(join(tmpdir(), "trace-studio-export-"));
+			try {
+				await cp(join(fixtures, `studio-current-${layout}`), directory, { recursive: true });
+				if (version) await copyFile(join(fixtures, "studio-current-scorm", `scorm${version}.xml`), join(directory, "imsmanifest.xml"));
+				const course = await readHtmlCourse(directory);
+				assert.deepEqual(course.course, { title: "Current course", locale: "en" });
+				assert.deepEqual(course.lessons.map(lesson => [lesson.file, lesson.title, lesson.pages.map(page => [page.id, page.number])]), [
+					["z-opening.html", "Lesson one", [["p1", 1], ["p2", 2]]],
+					["a-finish.html", "Lesson two", [["p3", 1]]],
+				]);
+				assert.ok(course.lessons.every(lesson => lesson.pages.every(page => page.blocks.length > 0)));
+				assert.deepEqual(locateBlocks(course).map(item => [item.ref, item.block.id]), [["1.1.1", "b1"], ["1.2.1", "b2"], ["2.1.1", "b3"]]);
+				assert.equal(course.lessons[0]?.pages[0]?.blocks[0]?.data.narration, undefined);
+				assert.equal(course.lessons[0]?.pages[1]?.blocks[0]?.data.narration, "Now try the practice.");
+				assert.equal(languageView(course).lessons[0]?.channels.narration.sentences, 1);
+				assert.ok(course.lessons.every(lesson => /^[0-9a-f]{64}$/.test(lesson.sha256)));
+				assert.deepEqual(course.lessons.flatMap(lesson => lesson.pages.flatMap(page => page.blocks.map(block => block.line))), layout === "modules" ? [6, 7, 6] : [6, 6, 6]);
+			} finally { await rm(directory, { recursive: true, force: true }); }
+		});
+	}
+}
