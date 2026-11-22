@@ -1,5 +1,7 @@
 import packageJson from "../package.json" with { type: "json" };
 
+export class UnsupportedNodeError extends Error {}
+
 export function requireSupportedNode(version: string): void {
 	const range = packageJson.engines.node;
 	const bounds = /^>=(\d+)\.(\d+)\.(\d+) <(\d+)$/.exec(range);
@@ -11,5 +13,5 @@ export function requireSupportedNode(version: string): void {
 		const belowMinimum = major < minimumMajor || (major === minimumMajor && (minor < minimumMinor || (minor === minimumMinor && patch < minimumPatch)));
 		if (!belowMinimum && major < upperMajor && major % 2 === 0) return;
 	}
-	throw new Error(`Trace requires an even-numbered Node LTS release (${range}); found ${version}.`);
+	throw new UnsupportedNodeError(`Trace requires Node ${minimumMajor} (${minimumMajor}.${minimumMinor}.${minimumPatch} or later) or Node ${upperMajor - 1}; received ${version}`);
 }

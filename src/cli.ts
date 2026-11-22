@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { requireSupportedNode } from "./runtime.ts";
+import { requireSupportedNode, UnsupportedNodeError } from "./runtime.ts";
 import { JsonInputError, parseJson, readInput } from "./input.ts";
 import { appendFile, mkdir, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -155,7 +155,7 @@ if (command === "prepare" && rest.length === 2 && rest[0] === "recommendations")
 }
 
 } catch (error) {
-	if (error instanceof JsonInputError) { console.error(error.message); process.exit(1); }
+	if (error instanceof JsonInputError || error instanceof UnsupportedNodeError) { console.error(error.message); process.exit(1); }
 	throw error;
 }
 

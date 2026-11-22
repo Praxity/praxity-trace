@@ -22,7 +22,7 @@ npm install "./praxity-trace-<version>.tgz"
 npx --no-install praxity-trace --help
 ```
 
-To work from source, install pnpm and run:
+To work from source, use Node 24.22.1, install pnpm and run:
 
 ```sh
 git clone https://github.com/Praxity/praxity-trace.git
