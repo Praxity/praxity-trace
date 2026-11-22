@@ -168,7 +168,7 @@ async function build(directory) {
 	}
 	const inventory = {
 		schemaVersion: 1,
-		tool: "praxity-trace",
+		tool: manifest.name,
 		version: manifest.version,
 		source,
 		target: { platform: "portable", arch: "portable" },

@@ -23,6 +23,8 @@ try {
 	};
 	const run = (cli, args, cwd, env = environment) => execFileSync(node, [cli, ...args], { cwd, env, encoding: "utf8", timeout: 120_000 });
 	const [packed] = JSON.parse(run(npm, ["pack", "--json", "--pack-destination", scratch], root, { ...process.env, ...environment }));
+	assert.equal(packed.name, "@praxity/trace");
+	assert.equal(packed.filename, `praxity-trace-${packed.version}.tgz`);
 	console.log(JSON.stringify({ filename: packed.filename, size: packed.size, unpackedSize: packed.unpackedSize, files: packed.files.map(file => file.path) }, null, 2));
 	assert.ok(packed.files.some(file => file.path === "lib/cli.js"));
 	assert.ok(!packed.files.some(file => /^(?:src|scripts|node_modules)\/|^test\/(?!fixtures\/tasks\/)/.test(file.path)));
@@ -30,9 +32,14 @@ try {
 	await mkdir(project);
 	await writeFile(join(project, "package.json"), '{"private":true}\n');
 	run(npm, ["install", join(scratch, packed.filename), "--no-audit", "--no-fund"], project);
+	const installed = join(project, "node_modules", "@praxity", "trace");
+	const manifest = JSON.parse(await readFile(join(installed, "package.json"), "utf8"));
+	assert.equal(manifest.name, "@praxity/trace");
+	assert.equal(manifest.private, true);
+	assert.deepEqual(manifest.bin, { "praxity-trace": "lib/cli.js" });
 	const packedPaths = new Set(packed.files.map(file => file.path));
 	for (const file of packed.files.filter(file => /^(?:skill|docs)\/.*\.md$/i.test(file.path))) {
-		const markdown = await readFile(join(project, "node_modules/praxity-trace", file.path), "utf8");
+		const markdown = await readFile(join(installed, file.path), "utf8");
 		const links = [
 			...markdown.matchAll(/\]\(\s*(?:<([^>]+)>|([^\s)]+))(?:\s+["'][^\n]*?["'])?\s*\)/g),
 			...markdown.matchAll(/^\s*\[[^\]]+\]:\s*(?:<([^>]+)>|(\S+))/gm),
